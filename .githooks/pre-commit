@@ -1,88 +1,50 @@
 #!/usr/bin/env python3
-import os
-import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "fmv-core-python"))
+
+from fmvcore.hook import Check, Gates, run  # noqa: E402
+
 UV = ("uv", "--project", "tools", "run")
-ALWAYS = (
-    ("format", (*UV, "ruff", "format", "--check", "tools/")),
-    ("lint", (*UV, "ruff", "check", "tools/")),
-    ("types", (*UV, "mypy", "tools/smsmedia", "tools/scripts")),
-    (
-        "tests",
-        (
-            *UV,
-            "python",
-            "-m",
-            "pytest",
-            "tools/tests",
-            "--cov=smsmedia",
-            "--cov=tools/scripts",
-            "--cov-config=tools/pyproject.toml",
-            "--cov-fail-under=95",
+GATES = Gates(
+    always=(
+        Check("format", (*UV, "ruff", "format", "--check", "tools/")),
+        Check("lint", (*UV, "ruff", "check", "tools/")),
+        Check("types", (*UV, "mypy", "tools/smsmedia", "tools/scripts")),
+        Check(
+            "tests",
+            (
+                *UV,
+                "python",
+                "-m",
+                "pytest",
+                "tools/tests",
+                "--cov=smsmedia",
+                "--cov=tools/scripts",
+                "--cov-config=tools/pyproject.toml",
+                "--cov-fail-under=95",
+            ),
         ),
     ),
+    player=(
+        Check("rom", ("make", "rom")),
+        Check("analyse", ("make", "analyse")),
+        Check("timing", ("make", "timing")),
+        Check("replay", (*UV, "python", "-m", "pytest", "tools/tests/test_replay_on_z80.py")),
+    ),
+    player_paths=(
+        "src/",
+        "include/",
+        "Makefile",
+        "Dockerfile",
+        "tools/smsmedia/vdptiming.py",
+        "tools/scripts/check_vdp_timing.py",
+    ),
+    always_required={"SMSMEDIA_FFMPEG_REQUIRED": "1"},
+    player_required={"SMSMEDIA_FFMPEG_REQUIRED": "1", "SMSMEDIA_ROM_REQUIRED": "1"},
 )
-PLAYER = (
-    ("rom", ("make", "rom")),
-    ("analyse", ("make", "analyse")),
-    ("timing", ("make", "timing")),
-    ("replay", (*UV, "python", "-m", "pytest", "tools/tests/test_replay_on_z80.py")),
-)
-PLAYER_PATHS = (
-    "src/",
-    "include/",
-    "Makefile",
-    "Dockerfile",
-    "tools/smsmedia/vdptiming.py",
-    "tools/scripts/check_vdp_timing.py",
-)
-ALWAYS_REQUIRED = {"SMSMEDIA_FFMPEG_REQUIRED": "1"}
-PLAYER_REQUIRED = {**ALWAYS_REQUIRED, "SMSMEDIA_ROM_REQUIRED": "1"}
-
-
-def staged() -> list[str]:
-    done = subprocess.run(
-        ("git", "diff", "--cached", "--name-only"),
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return done.stdout.split()
-
-
-def touches_player(paths: list[str]) -> bool:
-    return any(path.startswith(PLAYER_PATHS) for path in paths)
-
-
-def failures(
-    checks: tuple[tuple[str, tuple[str, ...]], ...], required: dict[str, str]
-) -> list[str]:
-    environment = {**os.environ, **required}
-    failed: list[str] = []
-    for name, command in checks:
-        done = subprocess.run(
-            command, cwd=ROOT, capture_output=True, text=True, check=False, env=environment
-        )
-        if done.returncode != 0:
-            failed = [*failed, name]
-            sys.stderr.write(done.stdout)
-            sys.stderr.write(done.stderr)
-    return failed
-
-
-def main() -> int:
-    player = touches_player(staged())
-    failed = failures(ALWAYS, ALWAYS_REQUIRED)
-    failed = [*failed, *failures(PLAYER, PLAYER_REQUIRED)] if player else failed
-    if failed:
-        sys.stderr.write(f"\ncommit refused: {', '.join(failed)}\n")
-        return 1
-    return 0
-
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run(ROOT, GATES))

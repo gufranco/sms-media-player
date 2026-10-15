@@ -46,7 +46,7 @@ jobs:
       - name: Fetch the regression films
         run: uv --project tools run python tools/scripts/fetch_clips.py
 
-      - name: The gate the encoder job runs
+      - name: The gate the baker job runs
         env:
           SMSMEDIA_CLIPS_REQUIRED: "1"
           SMSMEDIA_FFMPEG_REQUIRED: "1"

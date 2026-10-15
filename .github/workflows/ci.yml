@@ -13,6 +13,9 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  UV_FROZEN: "1"
+
 jobs:
   commits:
     name: Commit format
@@ -58,8 +61,8 @@ jobs:
           fi
           echo "every subject parses"
 
-  encoder:
-    name: Encoder
+  baker:
+    name: Baker
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -70,6 +73,7 @@ jobs:
         with:
           version: "0.12.23"
           enable-cache: true
+          cache-suffix: baker
 
       - name: Install ffmpeg, which the decode path shells out to
         run: |
