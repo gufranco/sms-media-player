@@ -7,9 +7,10 @@ one adds what an assistant specifically needs on top of it.
 
 Full motion video for the Sega Master System, in two halves from one codebase.
 An offline baker turns a video file into an SMS ROM, and a library puts a
-cutscene inside somebody else's game. It is a port of the Neo Geo
-[`neogeo-media-player`](https://github.com/gufranco/neogeo-media-player), redesigned rather than translated, because the two machines
-differ in the exact dimension that design leans on.
+cutscene inside somebody else's game. It and
+[`neogeo-media-player`](https://github.com/gufranco/neogeo-media-player) are
+members of one family of tools, never a port of one another; the two machines
+differ in the exact dimension the design leans on.
 
 It is a public member of a family with neogeo-media-player, the two kept as
 alike as their hardware allows, and held to the requirements in

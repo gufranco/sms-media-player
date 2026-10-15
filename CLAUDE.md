@@ -79,6 +79,11 @@ Owner's instruction, 2026-10-15: this project and neogeo-media-player are public
 members of one family, kept as alike as their hardware allows and sharing as
 much code as possible.
 
+Owner's instruction, the same day: never describe one member as a port, fork,
+translation or derivative of another, in a README, a commit, a comment or any
+other text, in any language. The Neo Geo player came first, but work has moved
+between the members in both directions since, and more consoles will join.
+
 ## The film fills the cartridge
 
 Owner's instruction, 2026-10-15, replacing the five-second openings of
