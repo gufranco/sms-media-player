@@ -381,6 +381,7 @@ computing the switch point offline so the player never branches on the raster.
 | File | Contents |
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | The engineering contract: hard rules, the Power of 10 mapping, layout, and what will bite you |
+| [`FAMILY.md`](FAMILY.md) | The standard shared with aes-movie-player and fmv-core-python, identical in each |
 | [`tools/DESIGN.md`](tools/DESIGN.md) | Why each baker module, script and test is shaped as it is, with the measurements behind it |
 | [`CHANGELOG.md`](CHANGELOG.md) | What was tried, measured and rejected, and what each failure cost |
 | [`RELEASES.md`](RELEASES.md) | Version history, generated from commit subjects |
