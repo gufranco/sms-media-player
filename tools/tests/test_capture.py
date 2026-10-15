@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from fmvcore import capture as core
 
 from smsmovie import bake, capture, stream
 
@@ -60,52 +61,17 @@ class TestReplay:
 
 
 class TestAlignment:
-    def test_a_capture_that_matches_from_an_offset_is_found(self, blob):
+    def test_a_recording_of_the_replay_aligns_past_its_boot_fields(self, blob):
         # Arrange
         played = capture.replay_fields(blob)
         boot = np.zeros((3, GEOMETRY.height, GEOMETRY.width, 3), dtype=np.uint8)
         recorded = np.concatenate([boot, played.fields])
 
         # Act
-        found = capture.align(recorded, played.fields)
+        found = core.align(recorded, played.fields)
 
         # Assert
         assert (found.offset, found.mismatches) == (3, 0)
-
-    def test_a_capture_that_never_matches_reports_every_sample(self, blob):
-        # Arrange
-        played = capture.replay_fields(blob)
-        recorded = np.full_like(played.fields, 7)
-
-        # Act
-        found = capture.align(recorded, played.fields)
-
-        # Assert
-        assert found.mismatches == found.sampled
-
-
-class TestMixing:
-    def test_a_clean_transfer_mixes_nothing(self):
-        # Arrange
-        before, after = picture(10), picture(200)
-        fields = np.stack([before, before, after])
-
-        # Act
-        share = capture.mixed_share(fields, completes=[0, 2])
-
-        # Assert
-        assert share == 0.0
-
-    def test_a_field_matching_neither_frame_is_counted(self):
-        # Arrange
-        before, after, wrong = picture(10), picture(200), picture(90)
-        fields = np.stack([before, wrong, after])
-
-        # Act
-        share = capture.mixed_share(fields, completes=[0, 2])
-
-        # Assert
-        assert share == 1.0
 
 
 class TestError:
@@ -120,30 +86,6 @@ class TestError:
         assert floor == pytest.approx(0.0, abs=1e-6)
 
 
-class TestLag:
-    def test_a_frame_shown_on_time_has_no_lag(self):
-        # Arrange
-        source = np.stack([gradient(shift) for shift in range(10)])
-        shown = source.copy()
-
-        # Act
-        lags = capture.measured_lags(shown, source, completes=[2, 5, 8], window=4)
-
-        # Assert
-        assert lags == [0, 0, 0]
-
-    def test_a_frame_shown_late_reports_how_late(self):
-        # Arrange
-        source = np.stack([gradient(shift) for shift in range(10)])
-        shown = np.roll(source, 2, axis=0)
-
-        # Act
-        lags = capture.measured_lags(shown, source, completes=[4, 6, 8], window=4)
-
-        # Assert
-        assert lags == [2, 2, 2]
-
-
 class TestEdges:
     def test_a_stream_that_completes_nothing_is_refused(self):
         # Arrange
@@ -155,27 +97,6 @@ class TestEdges:
 
         # Assert
         assert str(refused.value) == "the stream completes no frame"
-
-    def test_a_capture_shorter_than_the_stream_stops_the_search(self, blob):
-        # Arrange
-        played = capture.replay_fields(blob)
-        recorded = played.fields[:2]
-
-        # Act
-        found = capture.align(recorded, played.fields)
-
-        # Assert
-        assert found.mismatches == found.sampled
-
-    def test_a_completion_past_the_capture_is_not_measured(self):
-        # Arrange
-        source = np.stack([gradient(shift) for shift in range(6)])
-
-        # Act
-        lags = capture.measured_lags(source, source, completes=[2, 9], window=2)
-
-        # Assert
-        assert lags == [0]
 
 
 class TestFlips:

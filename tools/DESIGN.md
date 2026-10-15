@@ -90,6 +90,11 @@ The share of pixels matching neither neighbouring frame during a transfer is
 the glitch at a cut. A fourth, the lag, is measured by matching rather than
 taken from the encoder, so it checks the schedule instead of trusting it.
 
+Alignment, the mixed-field share and the lag are measured by
+[`fmvcore/capture.py`](../fmv-core-python/fmvcore/capture.py); this module
+replays the Master System stream into the fields they are measured on, and
+holds the floor of this console's 64 colours.
+
 #### `replay_fields`
 
 Render the screen after each field, up to the last frame shown.
@@ -98,15 +103,6 @@ A frame is shown on the field that flips the name table to it, which is
 one field after the end marker that closes its transfer. Streams from
 before the second table have no flip, and there the end marker is the
 moment the frame shows.
-
-#### `align`
-
-Find the offset at which a recording repeats the oracle exactly.
-
-The final field is left out. What follows the last frame is the player's
-end-of-film handling, which the stream does not describe: a player that
-reset the screen on that field measured as a mismatch on a capture that
-was otherwise exact.
 
 ### [`smsmovie/cartridge.py`](smsmovie/cartridge.py)
 

@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Final
 
 import numpy as np
+from fmvcore import capture as core
 from fmvcore import colour
+from fmvcore.capture import Played
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -39,12 +41,10 @@ def read_capture(path: Path) -> np.ndarray:
     return whole[:, PICTURE_TOP : PICTURE_TOP + PICTURE_HEIGHT]
 
 
-def measure(played: capture.Played, source: np.ndarray) -> dict[str, float]:
+def measure(played: Played, source: np.ndarray) -> dict[str, float]:
     usable = min(played.fields.shape[0], source.shape[0])
     sampled = range(played.completes[0], usable, SAMPLE_EVERY)
-    lags = capture.measured_lags(
-        played.fields, source, completes=played.completes, window=LAG_WINDOW
-    )
+    lags = core.measured_lags(played.fields, source, completes=played.completes, window=LAG_WINDOW)
     pairs = list(zip(played.completes, lags, strict=False))
     matched = [
         colour.oklab_error(played.fields[field], source[field - lag]) for field, lag in pairs
@@ -62,24 +62,24 @@ def measure(played: capture.Played, source: np.ndarray) -> dict[str, float]:
         "frame_error": float(np.mean(matched)),
         "blurred_frame_error": float(np.mean(blurred)),
         "lattice_floor": float(np.mean([capture.lattice_floor(source[i]) for i in sampled])),
-        "mixed_share": capture.mixed_share(played.fields, completes=played.completes),
+        "mixed_share": core.mixed_share(played.fields, completes=played.completes),
         "lag_first_s": lags[0] / rate,
         "lag_median_s": float(np.median(lags)) / rate,
         "lag_last_s": lags[-1] / rate,
     }
 
 
-def worst_mixed(played: capture.Played) -> tuple[int, int, int]:
+def worst_mixed(played: Played) -> tuple[int, int, int]:
     best = (0.0, played.completes[0], played.completes[0], played.completes[0])
     for previous, current in zip(played.completes, played.completes[1:], strict=False):
         for index in range(previous + 1, current):
-            share = capture.mixed_share(played.fields[[previous, index, current]], completes=[0, 2])
+            share = core.mixed_share(played.fields[[previous, index, current]], completes=[0, 2])
             if share > best[0]:
                 best = (share, previous, index, current)
     return best[1], best[2], best[3]
 
 
-def worst_frame(played: capture.Played, source: np.ndarray) -> tuple[int, int, int]:
+def worst_frame(played: Played, source: np.ndarray) -> tuple[int, int, int]:
     usable = [field for field in played.completes if field < source.shape[0]]
     errors = [colour.oklab_error(played.fields[field], source[field]) for field in usable]
     position = played.completes.index(usable[int(np.argmax(errors))])
@@ -88,7 +88,7 @@ def worst_frame(played: capture.Played, source: np.ndarray) -> tuple[int, int, i
     return previous, played.completes[position], following
 
 
-def write_sheet(path: Path, played: capture.Played, source: np.ndarray) -> None:
+def write_sheet(path: Path, played: Played, source: np.ndarray) -> None:
     previous, middle, current = worst_mixed(played)
     if middle == previous:
         previous, middle, current = worst_frame(played, source)
@@ -116,7 +116,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def decode_source(args: argparse.Namespace, played: capture.Played) -> np.ndarray:
+def decode_source(args: argparse.Namespace, played: Played) -> np.ndarray:
     seconds = played.fields.shape[0] / console.NTSC_FIELD_HZ
     source = np.stack(
         list(
@@ -139,7 +139,7 @@ def decode_source(args: argparse.Namespace, played: capture.Played) -> np.ndarra
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     played = capture.replay_fields(args.stream.read_bytes())
-    found = capture.align(read_capture(args.capture), played.fields)
+    found = core.align(read_capture(args.capture), played.fields)
     report: dict[str, float] = {
         "emulator_offset": found.offset,
         "emulator_mismatches": found.mismatches,
