@@ -819,13 +819,13 @@ on a console. The unrolled copy here is the same instructions made legal by
 where they run, and `test_replay_on_z80.py` runs the built replay with the V
 counter held at chosen lines to prove no byte escapes the window.
 
-The cycle counts are the assembler's, printed in brackets against every
-instruction SDCC emits, so this module maintains no table of its own and cannot
-disagree with the toolchain about what an instruction costs.
-
-Two paths reach a write. Falling through from the previous one is the obvious
-one. The other is the branch at the bottom of a loop, which is where a loop's
-interval is actually decided.
+The listing is read and walked by
+[`fmvcore/sdccz80.py`](../fmv-core-python/fmvcore/sdccz80.py) and
+[`fmvcore/writetiming.py`](../fmv-core-python/fmvcore/writetiming.py), which
+take the cycle counts from the assembler and follow every branch, call and
+return. This module holds what is the Master System's: the VDP ports, the 29
+and 16 T-state floors, the guarded blank copy, and which listings the build
+produced.
 
 Control-port pairs are held to the active-display floor everywhere, guarded
 block or not. Sega's documentation gives 29 T-states for VRAM, CRAM and
@@ -867,27 +867,6 @@ Listings older than the source they were assembled from.
 
 A failed or partial build leaves the previous listing in place, and
 measuring it would pass code that is not the code being shipped.
-
-#### `_repeating`
-
-A block-repeat instruction paces itself, and too fast.
-
-`otir` writes a byte every 21 T-states with no branch to slow it, which
-is under the threshold and cannot be spaced out. It reads as one
-instruction, so nothing that measures the gap between instructions would
-ever see it.
-
-#### `_cheapest_paths`
-
-The cheapest path from every write to every write it can reach next.
-
-Branches are followed both ways, so a loop is measured along the path it
-actually takes rather than as the sum of every instruction in its range.
-A taken branch costs the listing's figure and a fall-through past a
-conditional one the smaller not-taken figure, so the cheapest path is
-the one charged. Calls into another listing and returns to every call
-site are followed too; a call to code outside the listings is charged
-its own cycles only, which can only make a path look faster.
 
 ### [`smsmedia/workingset.py`](smsmedia/workingset.py)
 

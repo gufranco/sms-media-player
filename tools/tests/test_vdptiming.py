@@ -4,6 +4,7 @@ import os
 import textwrap
 
 import pytest
+from fmvcore import sdccz80
 
 from smsmedia import vdptiming
 
@@ -71,69 +72,6 @@ PADDED_CONTROL_PAIR = """
     0000004B D3 BF            [11]  117 \tout\t(#0xBF), a
     0000004D C9               [10]  118 \tret
 """
-
-
-class TestParsing:
-    def test_it_reads_every_emitted_instruction(self):
-        # Arrange
-        text = textwrap.dedent(PACED_LOOP)
-
-        # Act
-        listing = vdptiming.parse(text)
-
-        # Assert
-        assert [i.mnemonic for i in listing.instructions][:3] == ["di", "ld", "inc"]
-
-    def test_it_reads_the_whole_block(self):
-        # Arrange
-        text = textwrap.dedent(PACED_LOOP)
-
-        # Act
-        listing = vdptiming.parse(text)
-
-        # Assert
-        assert listing.instructions[-1].mnemonic == "ret"
-
-    def test_it_reads_the_assembler_cycle_count(self):
-        # Arrange
-        text = textwrap.dedent(PACED_LOOP)
-
-        # Act
-        listing = vdptiming.parse(text)
-
-        # Assert
-        outi = next(i for i in listing.instructions if i.mnemonic == "outi")
-        assert outi.cycles == 16
-
-    def test_it_reads_a_label_address(self):
-        # Arrange
-        text = textwrap.dedent(PACED_LOOP)
-
-        # Act
-        listing = vdptiming.parse(text)
-
-        # Assert
-        assert listing.labels["00050$"] == 0x3A
-
-    def test_a_line_with_no_code_is_not_an_instruction(self):
-        # Arrange
-        text = "    0000003A                        104 00050$:\n"
-
-        # Act
-        listing = vdptiming.parse(text)
-
-        # Assert
-        assert listing.instructions == []
-
-    def test_an_empty_listing_parses(self):
-        # Arrange
-        text = ""
-
-        # Act
-        listing = vdptiming.parse(text)
-
-        # Assert
-        assert listing.instructions == []
 
 
 class TestClassification:
@@ -230,7 +168,7 @@ class TestIntervals:
         report = vdptiming.check(listing, source="repeating")
 
         # Assert
-        assert [v.cycles for v in report.violations] == [vdptiming.REPEAT_INTERVAL]
+        assert [v.cycles for v in report.violations] == [sdccz80.REPEAT_INTERVAL]
 
     def test_the_paced_loop_clears_the_documented_floor_by_one_cycle(self):
         # Arrange
@@ -340,140 +278,6 @@ class TestTheShippedPlayer:
 
         # Assert
         assert [v.describe() for report in reports for v in report.violations] == []
-
-
-NOT_TAKEN_PATH = """
-    00000010 D3 BE            [11]    1 \tout\t(#0xBE), a
-    00000012 28 04            [12]    2 \tjr\tz, 00090$
-    00000014 D3 BE            [11]    3 \tout\t(#0xBE), a
-    00000016 C9               [10]    4 \tret
-    00000018                          5 00090$:
-    00000018 C9               [10]    6 \tret
-"""
-
-FORWARD_TAKEN = """
-    00000010 D3 BE            [11]    1 \tout\t(#0xBE), a
-    00000012 28 05            [12]    2 \tjr\tz, 00090$
-    00000014 00               [ 4]    3 \tnop
-    00000015 00               [ 4]    4 \tnop
-    00000016 00               [ 4]    5 \tnop
-    00000017 00               [ 4]    6 \tnop
-    00000018 00               [ 4]    7 \tnop
-    00000019                          8 00090$:
-    00000019 D3 BE            [11]    9 \tout\t(#0xBE), a
-    0000001B C9               [10]   10 \tret
-"""
-
-CONDITIONAL_RETURN = """
-    00000010 D3 BE            [11]    1 \tout\t(#0xBE), a
-    00000012 C0               [11]    2 \tret\tNZ
-    00000013 D3 BE            [11]    3 \tout\t(#0xBE), a
-    00000015 C9               [10]    4 \tret
-"""
-
-CLOBBERED_PORT_REGISTER = """
-    00000010 0E BF            [ 7]    1 \tld\tc, #0xBF
-    00000012 4F               [ 4]    2 \tld\tc, a
-    00000013 ED A3            [16]    3 \touti
-    00000015 ED A3            [16]    4 \touti
-    00000017 C9               [10]    5 \tret
-"""
-
-PORT_REGISTER_ACROSS_FUNCTIONS = """
-    00000010 0E BF            [ 7]    1 \tld\tc, #0xBF
-    00000012 C9               [10]    2 \tret
-    00000013                          3 _next:
-    00000013 ED A3            [16]    4 \touti
-    00000015 ED A3            [16]    5 \touti
-    00000017 C9               [10]    6 \tret
-"""
-
-
-def branching_listing(branches: int) -> str:
-    lines = ["    00000010 D3 BE            [11]    1 \tout\t(#0xBE), a"]
-    for step in range(branches):
-        address = 0x12 + step * 2
-        lines.append(f"    {address:08X} 28 00            [12]    2 \tjr\tz, 0{step:04d}$")
-        lines.append(f"    {address + 2:08X}                          3 0{step:04d}$:")
-    end = 0x12 + branches * 2
-    lines.append(f"    {end:08X} D3 BE            [11]    4 \tout\t(#0xBE), a")
-    return "\n".join(lines) + "\n"
-
-
-class TestBranchingPaths:
-    def test_a_branch_not_taken_costs_its_short_figure(self):
-        # Arrange
-        listing = textwrap.dedent(NOT_TAKEN_PATH)
-
-        # Act
-        report = vdptiming.check(listing, source="fall")
-
-        # Assert
-        assert [v.cycles for v in report.violations] == [18]
-
-    def test_a_forward_branch_taken_reaches_a_write_the_straight_walk_would_miss(self):
-        # Arrange
-        listing = textwrap.dedent(FORWARD_TAKEN)
-
-        # Act
-        report = vdptiming.check(listing, source="taken")
-
-        # Assert
-        assert [v.cycles for v in report.violations] == [23]
-
-    def test_a_conditional_return_does_not_end_the_path(self):
-        # Arrange
-        listing = textwrap.dedent(CONDITIONAL_RETURN)
-
-        # Act
-        report = vdptiming.check(listing, source="ret")
-
-        # Assert
-        assert [v.cycles for v in report.violations] == [16]
-
-    def test_branches_that_would_multiply_into_thousands_of_paths_still_settle(self):
-        # Arrange
-        listing = branching_listing(12)
-
-        # Act
-        report = vdptiming.check(listing, source="paths")
-
-        # Assert
-        assert [gap.cycles for gap in report.gaps] == [11 + 12 * 7]
-
-    def test_a_walk_that_cannot_settle_fails_rather_than_passing(self, monkeypatch):
-        # Arrange
-        monkeypatch.setattr(vdptiming, "_walk_budget", lambda _program: 0)
-        listing = branching_listing(2)
-
-        # Act
-        with pytest.raises(ValueError) as refused:
-            vdptiming.check(listing, source="paths")
-
-        # Assert
-        assert str(refused.value).endswith("in paths did not settle")
-
-
-class TestThePortRegister:
-    def test_overwriting_c_forgets_the_port_it_held(self):
-        # Arrange
-        listing = textwrap.dedent(CLOBBERED_PORT_REGISTER)
-
-        # Act
-        report = vdptiming.check(listing, source="clobber")
-
-        # Assert
-        assert [v.cycles for v in report.violations] == [16]
-
-    def test_a_new_function_forgets_the_port_the_last_one_loaded(self):
-        # Arrange
-        listing = textwrap.dedent(PORT_REGISTER_ACROSS_FUNCTIONS)
-
-        # Act
-        report = vdptiming.check(listing, source="functions")
-
-        # Assert
-        assert [v.cycles for v in report.violations] == [16]
 
 
 class TestWhatTheGateCanSee:
@@ -660,182 +464,12 @@ class TestTheBlankCopy:
         assert len(report.unguarded) == 2
 
 
-CALLEE_ENDING_ON_A_WRITE = """
-    00000000                          7 _set_register::
-    00000000 D3 BF            [11]    8 \tout\t(#0xBF), a
-    00000002 C9               [10]    9 \tret
-"""
-
-CALLER_WRITING_AT_ONCE = """
-    00000000                          7 _caller::
-    00000000 CDr00r00         [17]    8 \tcall\t_set_register
-    00000003 D3 BF            [11]    9 \tout\t(#0xBF), a
-    00000005 C9               [10]   10 \tret
-"""
-
-TAIL_JUMP_OUT_OF_THE_LISTINGS = """
-    00000000                          7 _caller::
-    00000000 CDr00r00         [17]    8 \tcall\t_finish
-    00000003 D3 BF            [11]    9 \tout\t(#0xBF), a
-    00000005 C9               [10]   10 \tret
-    00000006                         11 _finish::
-    00000006 D3 BF            [11]   12 \tout\t(#0xBF), a
-    00000008 C3r00r00         [10]   13 \tjp\t_SMS_somewhere
-"""
-
-UPPERCASE_CONDITION_LOOP = """
-    00000000                          7 _spin::
-    00000000                          8 00101$:
-    00000000 D3 BE            [11]    9 \tout\t(#0xBE), a
-    00000002 20 FC            [12]   10 \tjr\tNZ, 00101$
-    00000004 C9               [10]   11 \tret
-"""
-
-TWO_FUNCTIONS_ONE_LOCAL_LABEL = """
-    00000000                          7 _first::
-    00000000                          8 00104$:
-    00000000 00               [ 4]    9 \tnop
-    00000001 C9               [10]   10 \tret
-    00000002                         11 _second::
-    00000002 D3 BE            [11]   12 \tout\t(#0xBE), a
-    00000004                         13 00104$:
-    00000004 18 FC            [12]   14 \tjr\t00104$
-"""
-
-
-class TestThePathLeavesTheListing:
-    def test_a_write_before_a_return_is_measured_against_the_callers_next(self):
-        # Arrange
-        texts = {"callee.lst": CALLEE_ENDING_ON_A_WRITE, "caller.lst": CALLER_WRITING_AT_ONCE}
-
-        # Act
-        reports = vdptiming.check_program(texts)
-
-        # Assert
-        callee = reports[0]
-        assert [(gap.cycles, gap.to_source) for gap in callee.violations] == [(21, "caller.lst")]
-
-    def test_a_tail_jump_out_of_the_listings_returns_to_the_caller(self):
-        # Arrange
-        listing = TAIL_JUMP_OUT_OF_THE_LISTINGS
-
-        # Act
-        report = vdptiming.check(listing, source="tail")
-
-        # Assert
-        assert [gap.cycles for gap in report.violations] == [21]
-
-
-class TestTheBranchesCompilersWrite:
-    def test_an_uppercase_condition_is_followed(self):
-        # Arrange
-        listing = UPPERCASE_CONDITION_LOOP
-
-        # Act
-        report = vdptiming.check(listing, source="spin")
-
-        # Assert
-        assert [(gap.cycles, gap.wrapped) for gap in report.violations] == [(23, True)]
-
-    def test_a_local_label_resolves_inside_its_own_function(self):
-        # Arrange
-        listing = TWO_FUNCTIONS_ONE_LOCAL_LABEL
-
-        # Act
-        parsed = vdptiming.parse(listing)
-
-        # Assert
-        assert (parsed.labels["_first/00104$"], parsed.labels["_second/00104$"]) == (0, 4)
-
-
-CALLER_WRITING_THEN_CALLING = """
-    00000000                          7 _caller::
-    00000000 D3 BF            [11]    8 \tout\t(#0xBF), a
-    00000002 CDr00r00         [17]    9 \tcall\t_set_register
-    00000005 C9               [10]   10 \tret
-"""
-
-TAIL_JUMP_INTO_A_LISTED_FUNCTION = """
-    00000000                          7 _caller::
-    00000000 D3 BF            [11]    8 \tout\t(#0xBF), a
-    00000002 C3r00r00         [10]    9 \tjp\t_set_register
-"""
-
-TAIL_JUMPS_IN_A_CIRCLE = """
-    00000000                          7 _ping::
-    00000000 C3r00r00         [10]    8 \tjp\t_pong
-    00000003                          9 _pong::
-    00000003 C8               [11]   10 \tret\tz
-    00000004 C3r00r00         [10]   11 \tjp\t_ping
-    00000006                         11 _start::
-    00000006 D3 BF            [11]   12 \tout\t(#0xBF), a
-    00000008 CDr00r00         [17]   13 \tcall\t_ping
-    0000000B D3 BF            [11]   14 \tout\t(#0xBF), a
-    0000000D C9               [10]   15 \tret
-"""
-
-BRANCH_TO_THE_END = """
-    00000000                          7 _leave::
-    00000000 D3 BF            [11]    8 \tout\t(#0xBF), a
-    00000002 18 00            [12]    9 \tjr\t00199$
-    00000004                         10 00199$:
-"""
-
 OTHER_PORTS = """
     00000000                          7 _sound::
     00000000 D3 7F            [11]    8 \tout\t(#0x7F), a
     00000002                          9 \t; a comment the assembler kept
     00000002 C9               [10]   10 \tret
 """
-
-
-class TestThePathIntoAnotherFunction:
-    def test_a_call_reaches_the_callees_first_write(self):
-        # Arrange
-        texts = {"caller.lst": CALLER_WRITING_THEN_CALLING, "callee.lst": CALLEE_ENDING_ON_A_WRITE}
-
-        # Act
-        reports = vdptiming.check_program(texts)
-
-        # Assert
-        assert [(gap.cycles, gap.to_source) for gap in reports[0].violations] == [
-            (28, "callee.lst")
-        ]
-
-    def test_a_tail_jump_reaches_the_listed_functions_first_write(self):
-        # Arrange
-        texts = {
-            "caller.lst": TAIL_JUMP_INTO_A_LISTED_FUNCTION,
-            "callee.lst": CALLEE_ENDING_ON_A_WRITE,
-        }
-
-        # Act
-        reports = vdptiming.check_program(texts)
-
-        # Assert
-        assert [(gap.cycles, gap.to_source) for gap in reports[0].violations] == [
-            (21, "callee.lst")
-        ]
-
-    def test_tail_jumps_in_a_circle_settle(self):
-        # Arrange
-        listing = TAIL_JUMPS_IN_A_CIRCLE
-
-        # Act
-        report = vdptiming.check(listing, source="circle")
-
-        # Assert
-        assert report.violations == []
-
-    def test_a_branch_to_a_label_past_the_last_instruction_ends_the_path(self):
-        # Arrange
-        listing = BRANCH_TO_THE_END
-
-        # Act
-        report = vdptiming.check(listing, source="end")
-
-        # Assert
-        assert report.gaps == []
 
 
 class TestWritesTheGateIgnores:
@@ -848,43 +482,3 @@ class TestWritesTheGateIgnores:
 
         # Assert
         assert [instruction.port for instruction in parsed.instructions] == [None, None]
-
-
-DATA_LABEL_INSIDE_A_FUNCTION = """
-    00000000                          7 _set_register::
-    00000000 D3 BF            [11]    8 \tout\t(#0xBF), a
-    00000002 18 03            [12]    9 \tjr\t00102$
-    00000004                         10 __str_0:
-    00000004 41 42 00                11 \t.ascii "AB"
-    00000007                         12 00102$:
-    00000007 C9               [10]   13 \tret
-    00000008                         14 _caller::
-    00000008 CDr00r00         [17]   15 \tcall\t_set_register
-    0000000B D3 BF            [11]   16 \tout\t(#0xBF), a
-    0000000D C9               [10]   17 \tret
-"""
-
-
-class TestWhoOwnsAnInstruction:
-    def test_a_data_label_inside_a_function_owns_no_code(self):
-        # Arrange
-        listing = DATA_LABEL_INSIDE_A_FUNCTION
-
-        # Act
-        parsed = vdptiming.parse(listing)
-
-        # Assert
-        assert parsed.owners == ["_set_register"] * 3 + ["_caller"] * 3
-
-    def test_a_return_after_a_data_label_still_reaches_the_caller(self):
-        # Arrange
-        listing = DATA_LABEL_INSIDE_A_FUNCTION
-
-        # Act
-        report = vdptiming.check(listing, source="strings")
-
-        # Assert
-        leaving = [
-            (gap.second.address, gap.cycles) for gap in report.gaps if gap.first.address == 0
-        ]
-        assert leaving == [(0x0B, 11 + 12 + 10)]
