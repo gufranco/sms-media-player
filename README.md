@@ -119,6 +119,16 @@ would hum through the whole opening.
 
 ## Build
 
+The baker shares its decode path with aes-movie-player through the
+[fmv-core-python](https://github.com/gufranco/fmv-core-python) submodule, so
+clone with submodules. A source archive from the download button cannot carry
+a submodule and does not run.
+
+```bash
+git clone --recurse-submodules https://github.com/gufranco/sms-movie-player.git
+git submodule update --init   # in a clone made without the flag
+```
+
 Every build goes through Docker. There is no host toolchain path.
 
 ```bash

@@ -315,6 +315,27 @@ wheels = [
 ]
 
 [[package]]
+name = "fmvcore"
+version = "0.1.0"
+source = { editable = "../fmv-core-python" }
+dependencies = [
+    { name = "numpy" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "numpy", specifier = "==2.5.4" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "faker", specifier = "==40.43.0" },
+    { name = "mypy", specifier = "==2.4.0" },
+    { name = "pytest", specifier = "==9.1.1" },
+    { name = "pytest-cov", specifier = "==7.1.0" },
+    { name = "ruff", specifier = "==0.17.0" },
+]
+release = [{ name = "python-semantic-release", specifier = "==10.7.0" }]
+
+[[package]]
 name = "gitdb"
 version = "4.0.12"
 source = { registry = "https://pypi.org/simple" }
@@ -885,6 +906,7 @@ name = "smsmovie"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "fmvcore" },
     { name = "numpy" },
 ]
 
@@ -902,7 +924,10 @@ release = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "numpy", specifier = "==2.5.4" }]
+requires-dist = [
+    { name = "fmvcore", editable = "../fmv-core-python" },
+    { name = "numpy", specifier = "==2.5.4" },
+]
 
 [package.metadata.requires-dev]
 dev = [

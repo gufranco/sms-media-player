@@ -10,6 +10,7 @@ from typing import Final
 
 import numpy as np
 import numpy.typing as npt
+from fmvcore import ffmpeg
 
 from smsmovie import (
     arguments,
@@ -74,7 +75,7 @@ def add_picture_flags(parser: argparse.ArgumentParser) -> None:
         type=arguments.number(low=0.0, high=limits.MAX_DITHER, name="--dither"),
         default=limits.DEFAULT_DITHER,
     )
-    parser.add_argument("--scaler", choices=limits.SCALERS, default=limits.DEFAULT_SCALER)
+    parser.add_argument("--scaler", choices=ffmpeg.SCALERS, default=limits.DEFAULT_SCALER)
     parser.add_argument(
         "--max-banks",
         type=arguments.count(low=1, high=limits.DEFAULT_MAX_BANKS, name="--max-banks"),
@@ -278,7 +279,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     _show_dial_reports()
-    info = frames.probe(args.source)
+    info = ffmpeg.probe(args.source)
     geometry = geometry_for(args.columns, args.rows)
     _describe_source(args.source, info=info, geometry=geometry)
 
@@ -311,7 +312,7 @@ def _describe_bake(baked: Baked, *, fps: float) -> None:
         print(f"the clock passed the last {baked.unshown_tail} decoded frames before they fit")
 
 
-def _describe_source(source: Path, *, info: frames.SourceInfo, geometry: bake.Geometry) -> None:
+def _describe_source(source: Path, *, info: ffmpeg.SourceInfo, geometry: bake.Geometry) -> None:
     print(
         f"source {source.name}: {info.width}x{info.height}, "
         f"{info.fps:.2f} fps, {info.duration:.1f} s"

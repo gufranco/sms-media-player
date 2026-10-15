@@ -6,8 +6,9 @@ from typing import Final
 
 import numpy as np
 import numpy.typing as npt
+from fmvcore import ffmpeg
 
-from smsmovie import bake, capture, frames, pattern
+from smsmovie import bake, capture, pattern
 
 PREVIEW_FRAMES: Final = 4
 
@@ -40,7 +41,7 @@ def save_png(path: Path, image: npt.NDArray[np.uint8]) -> None:
     height, width = image.shape[:2]
     subprocess.run(
         [
-            frames.require_tool("ffmpeg"),
+            ffmpeg.require_tool("ffmpeg"),
             "-y",
             "-loglevel",
             "error",

@@ -19,17 +19,6 @@ DEFAULT_DITHER: Final = 1.0
 PALETTE_KEEP_MARGIN: Final = 0.3
 MAX_DITHER: Final = smscolor.MAX_DITHER
 DEFAULT_SCALER: Final = "area"
-SCALERS: Final = (
-    "area",
-    "bicubic",
-    "bilinear",
-    "fast_bilinear",
-    "gauss",
-    "lanczos",
-    "neighbor",
-    "sinc",
-    "spline",
-)
 MAX_DENOISE: Final = 64.0
 MAX_SOURCE_SECONDS: Final = 4 * 60 * 60
 DEFAULT_FPS: Final = 12.0

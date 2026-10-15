@@ -309,6 +309,7 @@ tools/scripts/      one-shot helpers: fetch the clips, rebuild the fixture
 tools/tests/        the encoder suite, including the multi-clip gate
 tools/DESIGN.md     why each baker module, script and test is shaped as it is
 tools/clips.manifest.json  identity of the films the gate bakes, never the films
+fmv-core-python/    submodule: the family's shared baker code, decode path first
 media/clips/        fetched films, ignored, never committed
 build/              generated, never committed
 specs/              design notes, not committed

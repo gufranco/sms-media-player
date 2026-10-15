@@ -29,40 +29,6 @@ def clip(tmp_path_factory):
     return path
 
 
-class TestProbe:
-    def test_it_reads_the_source_geometry(self, clip):
-        # Arrange
-        source = clip
-
-        # Act
-        result = frames.probe(source)
-
-        # Assert
-        assert result.width == 320
-        assert result.height == 240
-
-    def test_it_reads_the_duration(self, clip):
-        # Arrange
-        source = clip
-
-        # Act
-        result = frames.probe(source)
-
-        # Assert
-        assert result.duration == pytest.approx(2.0, abs=0.2)
-
-    def test_a_missing_file_is_refused(self, tmp_path):
-        # Arrange
-        absent = tmp_path / "absent.mp4"
-
-        # Act
-        with pytest.raises(FileNotFoundError) as refused:
-            frames.probe(absent)
-
-        # Assert
-        assert str(refused.value) == f"no such source file: {absent}"
-
-
 class TestDecode:
     def test_it_yields_frames_at_the_requested_size(self, clip):
         # Arrange
@@ -201,29 +167,6 @@ class TestAspect:
 
         # Assert
         assert wide.mean() == pytest.approx(square[16:32].mean(), abs=40)
-
-
-class TestRequireTool:
-    def test_an_absent_tool_is_named_plainly(self, monkeypatch):
-        # Arrange
-        monkeypatch.setattr(frames.shutil, "which", lambda _name: None)
-
-        # Act
-        with pytest.raises(RuntimeError) as refused:
-            frames.require_tool("ffmpeg")
-
-        # Assert
-        assert str(refused.value) == "ffmpeg is not on the path, and the decode path needs it"
-
-    def test_a_present_tool_resolves_to_its_path(self, monkeypatch):
-        # Arrange
-        monkeypatch.setattr(frames.shutil, "which", lambda _name: "/usr/bin/ffmpeg")
-
-        # Act
-        resolved = frames.require_tool("ffmpeg")
-
-        # Assert
-        assert resolved == "/usr/bin/ffmpeg"
 
 
 class TestDecodeRefusals:

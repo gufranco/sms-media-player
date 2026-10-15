@@ -290,10 +290,12 @@ rather than the index that names it.
 
 ### [`smsmovie/frames.py`](smsmovie/frames.py)
 
-Drive ffmpeg to produce frames at the console's raster and rate.
-
-Decoding streams rather than materialising the whole film, because a bake
-holds one frame plus the working set rather than the movie. The scaler runs
+Build the filter chain that turns a film into frames at the console's raster
+and rate, and hand it to the decode path in
+[`fmvcore/ffmpeg.py`](../fmv-core-python/fmvcore/ffmpeg.py), which streams the
+frames and refuses a failed or torn decode. This module keeps only what the
+Master System decides: the raster in whole tiles, the frame ceiling at the
+field rate, and the scale and crop below. The scaler runs
 at decode time so nothing downstream ever sees a pixel that is not on the
 console's grid.
 

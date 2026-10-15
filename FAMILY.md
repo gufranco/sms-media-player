@@ -181,5 +181,6 @@ patterns in 16 KB of VRAM, so the dictionary cannot be resident: it is paged in
 as the film plays, and the binding constraint is the bytes the console accepts
 in a field rather than the size of a cartridge. It converts game openings of
 five seconds at most, carries no sound by its owner's decision, and measures
-its frame rate, denoise and reuse threshold per bake. It does not consume
-`fmv-core-python` yet; its shared modules move there first.
+its frame rate, denoise and reuse threshold per bake. It decodes through
+`fmv-core-python`, whose decode path came from here, and its remaining shared
+modules move there one at a time.

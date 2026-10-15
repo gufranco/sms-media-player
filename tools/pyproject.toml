@@ -4,8 +4,12 @@ version = "0.1.0"
 description = "Offline baker that turns a video file into a Sega Master System movie ROM"
 requires-python = ">=3.14"
 dependencies = [
+    "fmvcore",
     "numpy==2.5.4",
 ]
+
+[tool.uv.sources]
+fmvcore = { path = "../fmv-core-python", editable = true }
 
 [dependency-groups]
 dev = [

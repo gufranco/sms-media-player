@@ -6,8 +6,9 @@ from pathlib import Path
 from typing import Final
 
 import numpy as np
+from fmvcore import ffmpeg
 
-from smsmovie import arguments, bake, cartridge, frames, limits, tune
+from smsmovie import arguments, bake, cartridge, limits, tune
 
 SCOUT_DENOISE: Final = 4.0
 DEFAULT_SCOUT_SECONDS: Final = 40.0
@@ -217,7 +218,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    info = frames.probe(args.source)
+    info = ffmpeg.probe(args.source)
     end = args.end if args.end is not None else info.duration
     print(f"source {args.source.name}: {info.duration:.1f} s")
     print(
