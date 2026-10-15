@@ -156,16 +156,10 @@ download is a gate that does not run on a clean clone. It is generated from
 arithmetic by `tools/scripts/make_fixture.py`, so it is the project's own
 work rather than somebody else's film.
 
-#### `verify`
-
-Decide whether this file is the film the manifest names.
-
-SHA-256 decides. The size is checked first because it rejects the wrong
-file without reading it, and because the two failures mean different
-things: a size that does not match is a different film, while a size that
-matches with a digest that does not is the right film re-encoded, cut, or
-corrupted. Saying which is what turns a refusal into something the reader
-can act on.
+The check itself, size first and then SHA-256, is
+[`fmvcore/clips.py`](../fmv-core-python/fmvcore/clips.py); this module holds
+the Master System's manifest schema, where the films live, and the budgets
+each film is held to.
 
 ### [`smsmovie/console.py`](smsmovie/console.py)
 
@@ -1015,7 +1009,10 @@ and stays ignored. Nothing here is redistributed: the manifest holds a URL
 the publisher operates, and the digests exist so a copy can be recognised
 rather than trusted.
 
-A download that does not match its digest is deleted rather than kept. A
+The download, its retries and its verification are
+[`fmvcore/fetch.py`](../fmv-core-python/fmvcore/fetch.py); this script names
+the films and the user agent. A download that does not match its digest is
+deleted rather than kept. A
 half-right file left on disk is worse than an absent one, because the next
 run reports it as present and the gate then measures a film nobody chose.
 

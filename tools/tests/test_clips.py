@@ -1,15 +1,10 @@
 from __future__ import annotations
 
 import dataclasses
-import hashlib
 
 import pytest
-from fakes import seeded
 
 from smsmovie import clips
-
-FAKE = seeded()
-FILM = FAKE.file_name(extension="mp4")
 
 
 class TestTheManifestIsWellFormed:
@@ -171,64 +166,6 @@ class TestTheManifestIsWellFormed:
 
 
 class TestVerification:
-    def test_a_matching_file_passes(self, tmp_path):
-        # Arrange
-        payload = b"a short film that is not really a film"
-        path = tmp_path / "clip.mp4"
-        path.write_bytes(payload)
-        clip = dataclasses.replace(
-            clips.by_key("synthetic"),
-            bytes=len(payload),
-            sha256=hashlib.sha256(payload).hexdigest(),
-        )
-
-        # Act
-        verdict = clips.verify(path, clip)
-
-        # Assert
-        assert verdict.ok is True
-
-    def test_a_wrong_size_is_named_as_the_wrong_file(self, tmp_path):
-        # Arrange
-        path = tmp_path / "clip.mp4"
-        path.write_bytes(b"short")
-        clip = dataclasses.replace(clips.by_key("synthetic"), bytes=999, sha256="0" * 64)
-
-        # Act
-        verdict = clips.verify(path, clip)
-
-        # Assert
-        assert verdict.ok is False
-        assert "size" in verdict.diagnosis
-
-    def test_a_right_size_with_wrong_content_is_named_as_altered(self, tmp_path):
-        # Arrange
-        payload = b"x" * 32
-        path = tmp_path / "clip.mp4"
-        path.write_bytes(payload)
-        clip = dataclasses.replace(clips.by_key("synthetic"), bytes=len(payload), sha256="0" * 64)
-
-        # Act
-        verdict = clips.verify(path, clip)
-
-        # Assert
-        assert verdict.ok is False
-        assert "re-encoded" in verdict.diagnosis
-
-    def test_a_mismatch_prints_what_the_file_actually_is(self, tmp_path):
-        # Arrange
-        payload = b"y" * 32
-        path = tmp_path / "clip.mp4"
-        path.write_bytes(payload)
-        clip = dataclasses.replace(clips.by_key("synthetic"), bytes=len(payload), sha256="0" * 64)
-        actual = hashlib.sha256(payload).hexdigest()
-
-        # Act
-        verdict = clips.verify(path, clip)
-
-        # Assert
-        assert actual in verdict.diagnosis
-
     def test_an_absent_file_says_how_to_get_it(self, tmp_path):
         # Arrange
         clip = dataclasses.replace(clips.by_key("synthetic"), bytes=1, sha256="0" * 64)
@@ -240,18 +177,6 @@ class TestVerification:
         # Assert
         assert verdict.ok is False
         assert "fetch_clips" in verdict.diagnosis
-
-    def test_a_clip_with_no_digest_is_refused_because_nothing_can_recognise_it(self, tmp_path):
-        # Arrange
-        path = tmp_path / "clip.mp4"
-        path.write_bytes(b"anything")
-        clip = dataclasses.replace(clips.by_key("synthetic"), sha256=None)
-
-        # Act
-        verdict = clips.verify(path, clip)
-
-        # Assert
-        assert verdict.ok is False
 
     def test_every_clip_carries_a_digest_including_the_committed_one(self):
         # Arrange
@@ -332,17 +257,3 @@ class TestResolution:
 
         # Assert
         assert any(clip.key == wanted for clip, _ in available)
-
-
-class TestAClipWithNoPublishedSize:
-    def test_wrong_content_is_not_described_as_the_right_length(self, tmp_path):
-        # Arrange
-        path = tmp_path / FILM
-        path.write_bytes(b"not the film")
-        clip = dataclasses.replace(clips.by_key("synthetic"), bytes=None, sha256="0" * 64)
-
-        # Act
-        verdict = clips.verify(path, clip)
-
-        # Assert
-        assert verdict.diagnosis.startswith(f"{FILM} has the wrong content, which means")
