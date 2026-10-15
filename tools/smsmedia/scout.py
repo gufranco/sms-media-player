@@ -8,7 +8,7 @@ from typing import Final
 import numpy as np
 from fmvcore import arguments, ffmpeg
 
-from smsmovie import bake, cartridge, limits, tune
+from smsmedia import bake, cartridge, limits, tune
 
 SCOUT_DENOISE: Final = 4.0
 DEFAULT_SCOUT_SECONDS: Final = 40.0
@@ -191,7 +191,7 @@ def add_scan_flags(parser: argparse.ArgumentParser) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="smsmovie.scout")
+    parser = argparse.ArgumentParser(prog="smsmedia.scout")
     parser.add_argument("source", type=Path)
     add_scan_flags(parser)
     parser.add_argument(

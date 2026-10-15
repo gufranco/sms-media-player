@@ -5,7 +5,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 
-from smsmovie import smscolor
+from smsmedia import smscolor
 
 VRAM_BYTES: Final = 1 << 14
 

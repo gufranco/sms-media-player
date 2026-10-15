@@ -5,7 +5,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 
-from smsmovie import console, limits, pattern, smscolor, stream
+from smsmedia import console, limits, pattern, smscolor, stream
 
 VRAM_BYTES: Final = console.VRAM_BYTES
 CRAM_BYTES: Final = console.CRAM_BYTES

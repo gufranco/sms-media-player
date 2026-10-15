@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from smsmovie import bake, schedule
+from smsmedia import bake, schedule
 
 GEOMETRY = bake.Geometry(columns=8, rows=6, top_row=0)
 SLOT = 6

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from smsmovie import workingset
+from smsmedia import workingset
 
 
 def patterns(values: list[int]) -> np.ndarray:

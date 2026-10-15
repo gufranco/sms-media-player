@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from smsmovie import vdptiming
+from smsmedia import vdptiming
 
 
 def main(argv: list[str] | None = None) -> int:

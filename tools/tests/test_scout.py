@@ -5,7 +5,7 @@ import subprocess
 import pytest
 from fakes import seeded
 
-from smsmovie import cartridge, limits, scout, tune
+from smsmedia import cartridge, limits, scout, tune
 
 FAKE = seeded()
 FILM = FAKE.file_name(extension="mp4")

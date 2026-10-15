@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from smsmovie import palettes, pattern, smscolor
+from smsmedia import palettes, pattern, smscolor
 
 
 def fresh_fit(frame, **options):

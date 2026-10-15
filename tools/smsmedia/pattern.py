@@ -5,7 +5,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 
-from smsmovie import console
+from smsmedia import console
 
 TILE_PX: Final = 8
 BATCH_RANK: Final = 2

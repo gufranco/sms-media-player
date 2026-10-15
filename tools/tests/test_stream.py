@@ -1,6 +1,6 @@
 import pytest
 
-from smsmovie import stream
+from smsmedia import stream
 
 
 def vram(addr: int, length: int) -> stream.Write:

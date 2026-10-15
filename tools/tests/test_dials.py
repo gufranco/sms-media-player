@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from smsmovie import cartridge, clips, dials, rate, tune
+from smsmedia import cartridge, clips, dials, rate, tune
 
 SMALL = tune.bake.Geometry(columns=8, rows=6, top_row=0)
 FULL = tune.bake.Geometry(columns=32, rows=24, top_row=0)

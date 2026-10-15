@@ -1,7 +1,7 @@
 import pytest
 from fakes import seeded
 
-from smsmovie import cartridge, frames, limits, scout
+from smsmedia import cartridge, frames, limits, scout
 
 FAKE = seeded()
 FILM = FAKE.file_name(extension="mp4")

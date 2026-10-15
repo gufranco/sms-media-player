@@ -1,5 +1,5 @@
 [project]
-name = "smsmovie"
+name = "smsmedia"
 version = "0.1.0"
 description = "Offline baker that turns a video file into a Sega Master System movie ROM"
 requires-python = ">=3.14"
@@ -29,7 +29,7 @@ requires = ["hatchling==1.32.4"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["smsmovie"]
+packages = ["smsmedia"]
 
 [tool.ruff]
 line-length = 100
@@ -56,11 +56,11 @@ addopts = "-q -m 'not slow'"
 filterwarnings = ["error"]
 markers = [
     "slow: bakes through the full automatic search; run with -m slow",
-    "ffmpeg: decodes through ffmpeg; skipped without it unless SMSMOVIE_FFMPEG_REQUIRED=1",
+    "ffmpeg: decodes through ffmpeg; skipped without it unless SMSMEDIA_FFMPEG_REQUIRED=1",
 ]
 
 [tool.coverage.run]
-source = ["smsmovie"]
+source = ["smsmedia"]
 branch = true
 
 [tool.coverage.report]

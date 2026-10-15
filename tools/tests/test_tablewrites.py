@@ -1,6 +1,6 @@
 import pytest
 
-from smsmovie import pattern, stream, tablewrites
+from smsmedia import pattern, stream, tablewrites
 
 TILE = bytes(range(pattern.PATTERN_BYTES))
 

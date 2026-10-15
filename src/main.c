@@ -1,6 +1,6 @@
 #include "SMSlib.h"
 #include "assets.h"
-#include "fmv/movieplayer.h"
+#include "fmv/mediaplayer.h"
 #include "fmv/psg.h"
 #include "fmv/screen.h"
 #include "fmv/types.h"
@@ -20,7 +20,7 @@ typedef enum {
 SMS_EMBED_SEGA_ROM_HEADER(0, 0);
 SMS_EMBED_SDSC_HEADER(FMV_VERSION_MAJOR, FMV_VERSION_MINOR, 2026, 9, 4,
                       "gufranco",
-                      "SMS Movie Player",
+                      "SMS Media Player",
                       "Loops until stopped. Button 1 restarts, button 2 exits");
 
 static void hold_last_frame(void)

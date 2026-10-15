@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from smsmovie import console, smscolor, stream
+from smsmedia import console, smscolor, stream
 
 BANK_BYTES: Final = 16 * 1024
 

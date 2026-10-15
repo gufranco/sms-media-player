@@ -90,18 +90,18 @@ jobs:
         run: uv --project tools run ruff check tools/
 
       - name: Types
-        run: uv --project tools run mypy tools/smsmovie tools/scripts
+        run: uv --project tools run mypy tools/smsmedia tools/scripts
 
       - name: Fetch the regression films
         run: uv --project tools run python tools/scripts/fetch_clips.py
 
       - name: Tests and coverage
         env:
-          SMSMOVIE_CLIPS_REQUIRED: "1"
-          SMSMOVIE_FFMPEG_REQUIRED: "1"
+          SMSMEDIA_CLIPS_REQUIRED: "1"
+          SMSMEDIA_FFMPEG_REQUIRED: "1"
         run: |
           uv --project tools run python -m pytest tools/tests \
-            --cov=smsmovie \
+            --cov=smsmedia \
             --cov=tools/scripts \
             --cov-config=tools/pyproject.toml \
             --cov-report=term-missing \
@@ -109,8 +109,8 @@ jobs:
 
       - name: The recorded dials are still as good as the search finds
         env:
-          SMSMOVIE_CLIPS_REQUIRED: "1"
-          SMSMOVIE_FFMPEG_REQUIRED: "1"
+          SMSMEDIA_CLIPS_REQUIRED: "1"
+          SMSMEDIA_FFMPEG_REQUIRED: "1"
         run: uv --project tools run python -m pytest tools/tests -m slow
 
   rom:
@@ -140,7 +140,7 @@ jobs:
           ffmpeg -y -loglevel error -f lavfi \
             -i "testsrc2=size=320x240:rate=30:duration=3" \
             -pix_fmt yuv420p build/ci-source.mp4
-          uv --project tools run python -m smsmovie.cartridge \
+          uv --project tools run python -m smsmedia.cartridge \
             build/ci-source.mp4 --duration 2 --fps 8
 
       - name: Static analysis
@@ -154,7 +154,7 @@ jobs:
 
       - name: The replay writes only in the vertical blank
         env:
-          SMSMOVIE_ROM_REQUIRED: "1"
+          SMSMEDIA_ROM_REQUIRED: "1"
         run: >-
           uv --project tools run python -m pytest
           tools/tests/test_replay_on_z80.py
@@ -162,7 +162,7 @@ jobs:
       - name: The ROM is real
         run: |
           set -euo pipefail
-          rom=build/sms-movie-player.sms
+          rom=build/sms-media-player.sms
           test -s "$rom"
           size=$(wc -c < "$rom")
           echo "$rom is $size bytes"
@@ -178,7 +178,7 @@ jobs:
           from pathlib import Path
           import sys
 
-          rom = Path("build/sms-movie-player.sms").read_bytes()
+          rom = Path("build/sms-media-player.sms").read_bytes()
           if rom[0x7FF0:0x7FF8] != b"TMR SEGA":
               sys.exit("no SEGA header at 0x7FF0")
 
@@ -203,5 +203,5 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: rom
-          path: build/sms-movie-player.sms
+          path: build/sms-media-player.sms
           retention-days: 14

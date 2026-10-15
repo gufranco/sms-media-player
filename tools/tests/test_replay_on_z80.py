@@ -8,11 +8,11 @@ from pathlib import Path
 import pytest
 from z80 import Cpu, Memory
 
-from smsmovie import console, stream
+from smsmedia import console, stream
 
 ROOT = Path(__file__).resolve().parents[2]
-ROM = ROOT / "build" / "sms-movie-player.sms"
-SYMBOLS = ROOT / "build" / "sms-movie-player.noi"
+ROM = ROOT / "build" / "sms-media-player.sms"
+SYMBOLS = ROOT / "build" / "sms-media-player.noi"
 WINDOW = 0x8000
 RETURN = 0xFFF0
 STACK = 0xDFF0
@@ -29,7 +29,7 @@ PALETTE = bytes(range(32))
 BAD = 0x80
 RETIRED_KINDS = (0x03, 0x04)
 FIRST_BANK = 2
-ROM_REQUIRED_ENV = "SMSMOVIE_ROM_REQUIRED"
+ROM_REQUIRED_ENV = "SMSMEDIA_ROM_REQUIRED"
 ACTIVE_FLOOR = 29
 BLANK_FLOOR = 16
 GUARD = bytes([0xDB, V_COUNTER, 0xFE, 0xC0, 0x38])

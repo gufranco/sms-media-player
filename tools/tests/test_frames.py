@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from smsmovie import frames
+from smsmedia import frames
 
 pytestmark = pytest.mark.ffmpeg
 

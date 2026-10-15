@@ -1,5 +1,5 @@
-#ifndef FMV_MOVIEPLAYER_H
-#define FMV_MOVIEPLAYER_H
+#ifndef FMV_MEDIAPLAYER_H
+#define FMV_MEDIAPLAYER_H
 
 #include "fmv/types.h"
 

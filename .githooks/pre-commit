@@ -9,7 +9,7 @@ UV = ("uv", "--project", "tools", "run")
 ALWAYS = (
     ("format", (*UV, "ruff", "format", "--check", "tools/")),
     ("lint", (*UV, "ruff", "check", "tools/")),
-    ("types", (*UV, "mypy", "tools/smsmovie", "tools/scripts")),
+    ("types", (*UV, "mypy", "tools/smsmedia", "tools/scripts")),
     (
         "tests",
         (
@@ -18,7 +18,7 @@ ALWAYS = (
             "-m",
             "pytest",
             "tools/tests",
-            "--cov=smsmovie",
+            "--cov=smsmedia",
             "--cov=tools/scripts",
             "--cov-config=tools/pyproject.toml",
             "--cov-fail-under=95",
@@ -36,11 +36,11 @@ PLAYER_PATHS = (
     "include/",
     "Makefile",
     "Dockerfile",
-    "tools/smsmovie/vdptiming.py",
+    "tools/smsmedia/vdptiming.py",
     "tools/scripts/check_vdp_timing.py",
 )
-ALWAYS_REQUIRED = {"SMSMOVIE_FFMPEG_REQUIRED": "1"}
-PLAYER_REQUIRED = {**ALWAYS_REQUIRED, "SMSMOVIE_ROM_REQUIRED": "1"}
+ALWAYS_REQUIRED = {"SMSMEDIA_FFMPEG_REQUIRED": "1"}
+PLAYER_REQUIRED = {**ALWAYS_REQUIRED, "SMSMEDIA_ROM_REQUIRED": "1"}
 
 
 def staged() -> list[str]:

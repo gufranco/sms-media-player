@@ -8,7 +8,7 @@ import numpy as np
 import numpy.typing as npt
 from fmvcore import ffmpeg
 
-from smsmovie import bake, capture, pattern
+from smsmedia import bake, capture, pattern
 
 PREVIEW_FRAMES: Final = 4
 

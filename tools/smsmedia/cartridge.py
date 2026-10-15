@@ -13,7 +13,7 @@ import numpy.typing as npt
 from fmvcore import arguments, ffmpeg
 from fmvcore.arguments import AUTO
 
-from smsmovie import (
+from smsmedia import (
     bake,
     dials,
     frames,
@@ -128,7 +128,7 @@ def add_dial_flags(parser: argparse.ArgumentParser) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="smsmovie.cartridge")
+    parser = argparse.ArgumentParser(prog="smsmedia.cartridge")
     parser.add_argument("source", type=Path)
     add_dial_flags(parser)
     add_window_flags(parser)

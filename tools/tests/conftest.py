@@ -3,7 +3,7 @@ import shutil
 
 import pytest
 
-FFMPEG_REQUIRED_ENV = "SMSMOVIE_FFMPEG_REQUIRED"
+FFMPEG_REQUIRED_ENV = "SMSMEDIA_FFMPEG_REQUIRED"
 DECODERS = ("ffmpeg", "ffprobe")
 
 

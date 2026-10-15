@@ -1,4 +1,4 @@
-PROJECT      := sms-movie-player
+PROJECT      := sms-media-player
 ROM          := build/$(PROJECT).sms
 DOCKER_IMAGE := $(PROJECT)-toolchain
 DOCKER_USER  := $(shell id -u):$(shell id -g)

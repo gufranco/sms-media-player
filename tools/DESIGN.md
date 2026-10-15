@@ -4,11 +4,11 @@ Why each part of the baker, its scripts and its tests is shaped as it is, with t
 
 ## The baker
 
-### [`smsmovie/__init__.py`](smsmovie/__init__.py)
+### [`smsmedia/__init__.py`](smsmedia/__init__.py)
 
 Offline baker that turns a video file into a Sega Master System movie ROM.
 
-### [`smsmovie/bake.py`](smsmovie/bake.py)
+### [`smsmedia/bake.py`](smsmedia/bake.py)
 
 Turn decoded frames into the command stream the on-cart player replays.
 
@@ -74,7 +74,7 @@ frame's pattern for a field and are served on the next. They are drawn
 with the new frame's palettes, because CRAM is rewritten every frame, and
 the displayed error charges them for it.
 
-### [`smsmovie/capture.py`](smsmovie/capture.py)
+### [`smsmedia/capture.py`](smsmedia/capture.py)
 
 Compare what the screen showed, field by field, with the film it came from.
 
@@ -104,7 +104,7 @@ one field after the end marker that closes its transfer. Streams from
 before the second table have no flip, and there the end marker is the
 moment the frame shows.
 
-### [`smsmovie/cartridge.py`](smsmovie/cartridge.py)
+### [`smsmedia/cartridge.py`](smsmedia/cartridge.py)
 
 One command: point it at a video file and get the ROM assets.
 
@@ -131,7 +131,7 @@ Shortening a film is the owner's decision. The baker reports the figure
 that would fit and stops, which is the same contract the Neo Geo project
 holds: no path shortens a movie to make it fit.
 
-### [`smsmovie/clips.py`](smsmovie/clips.py)
+### [`smsmedia/clips.py`](smsmedia/clips.py)
 
 The films the gate bakes, and how to know a copy is the right one.
 
@@ -157,7 +157,7 @@ The check itself, size first and then SHA-256, is
 the Master System's manifest schema, where the films live, and the budgets
 each film is held to.
 
-### [`smsmovie/console.py`](smsmovie/console.py)
+### [`smsmedia/console.py`](smsmedia/console.py)
 
 The console's memory map, and the state the player leaves it in.
 
@@ -190,7 +190,7 @@ Source: Charles MacDonald's VDP documentation.
 The second table costs the pattern slots it sits on, so patterns now end at
 0x3000: 384 slots instead of 448.
 
-### [`smsmovie/dials.py`](smsmovie/dials.py)
+### [`smsmedia/dials.py`](smsmedia/dials.py)
 
 The three settings measured per bake, settled in the order they depend on.
 
@@ -219,7 +219,7 @@ at a probe rate and baking at another tunes for a film that is not made.
 The rate search runs with the given values, or with fixed stand-ins where
 those are still to be measured.
 
-### [`smsmovie/fidelity.py`](smsmovie/fidelity.py)
+### [`smsmedia/fidelity.py`](smsmedia/fidelity.py)
 
 How far what the console shows is from the frame it was asked to show.
 
@@ -270,7 +270,7 @@ decide which cells can share a pattern, and appearance is what that
 question is about, so the feature is the colour each pixel resolves to
 rather than the index that names it.
 
-### [`smsmovie/frames.py`](smsmovie/frames.py)
+### [`smsmedia/frames.py`](smsmedia/frames.py)
 
 Build the filter chain that turns a film into frames at the console's raster
 and rate, and hand it to the decode path in
@@ -289,7 +289,7 @@ baked into the frames would be worse than they look, because the encoder
 would spend pattern slots and transfer budget on them all the way to the
 screen.
 
-### [`smsmovie/limits.py`](smsmovie/limits.py)
+### [`smsmedia/limits.py`](smsmedia/limits.py)
 
 The measured limits every bake is held to.
 
@@ -343,7 +343,7 @@ cartoon and from 0.0695 to 0.0437 on the game footage between none and 1.0,
 and the owner picked 1.0 from the rendered sheets. Above 1.0 the threshold
 passes half a step and moves a value already on a level.
 
-### [`smsmovie/output.py`](smsmovie/output.py)
+### [`smsmedia/output.py`](smsmedia/output.py)
 
 What a bake leaves on disk, and how it avoids leaving the wrong thing.
 
@@ -352,7 +352,7 @@ after an earlier one succeeded would otherwise leave that earlier film in
 place, and `make rom` would ship it without a word, so a failure removes it
 and a success replaces each file in one rename.
 
-### [`smsmovie/palettes.py`](smsmovie/palettes.py)
+### [`smsmedia/palettes.py`](smsmedia/palettes.py)
 
 Fit the two hardware palettes to one frame, and assign a palette per cell.
 
@@ -400,7 +400,7 @@ particular entries cover its pixels. Alternating assignment and refitting
 is Lloyd's algorithm over the two palettes, and it is where most of the
 per-cell error can actually be recovered.
 
-### [`smsmovie/pattern.py`](smsmovie/pattern.py)
+### [`smsmedia/pattern.py`](smsmedia/pattern.py)
 
 Pack 8x8 four-bit tiles into the VDP's pattern format, and build name
 table entries.
@@ -421,7 +421,7 @@ The bit order within a plane byte is the one place a wrong reading would not
 raise. It shows instead as every 8-pixel cell being mirrored left to right,
 which is unmistakable on a rendered frame and is checked there.
 
-### [`smsmovie/placement.py`](smsmovie/placement.py)
+### [`smsmedia/placement.py`](smsmedia/placement.py)
 
 Decide which VRAM slot every cell of a frame draws from.
 
@@ -452,7 +452,7 @@ depends on this frame's palettes. Its appearance is therefore recomputed
 against the current CRAM rather than remembered, and a cell is matched
 only against residents rendered under the palette that cell chose.
 
-### [`smsmovie/rate.py`](smsmovie/rate.py)
+### [`smsmedia/rate.py`](smsmedia/rate.py)
 
 Choose the frame rate a film can actually hold, by measuring it.
 
@@ -485,7 +485,7 @@ holds, because a slower one cannot be preferred once a faster one keeps
 time. When nothing holds, the slowest wins: the unevenness only grows with
 the rate.
 
-### [`smsmovie/replay.py`](smsmovie/replay.py)
+### [`smsmedia/replay.py`](smsmedia/replay.py)
 
 Replay a baked stream into a model of the console, and render what it shows.
 
@@ -517,7 +517,7 @@ the film plays and any light here is light the player put there. That
 makes the measurement a constant rather than a budget: the answer is
 zero, and any other answer is the defect.
 
-### [`smsmovie/schedule.py`](smsmovie/schedule.py)
+### [`smsmedia/schedule.py`](smsmedia/schedule.py)
 
 Choose which frame to show next by the clock, so the picture keeps time.
 
@@ -546,7 +546,7 @@ A frame is padded before its chunks, so it appears on the last field of
 its slot. Picking the frame for the slot's first field showed every frame
 a slot late, half a second at 3 fps.
 
-### [`smsmovie/scout.py`](smsmovie/scout.py)
+### [`smsmedia/scout.py`](smsmedia/scout.py)
 
 Find the passage of a film that encodes best, which is the largest lever.
 
@@ -568,7 +568,7 @@ The numbers it reports are estimates from samples, not a bake. A window it
 likes still has to be baked, and the baker remains the thing that decides
 whether a film fits.
 
-### [`smsmovie/smscolor.py`](smsmovie/smscolor.py)
+### [`smsmedia/smscolor.py`](smsmedia/smscolor.py)
 
 The Master System colour space, and distance within it.
 
@@ -639,7 +639,7 @@ The chroma weight reaches the decision here, which is the only place it
 can change anything: with per-channel rounding the choice is made before
 any perceptual metric is consulted, so weighting it had no effect at all.
 
-### [`smsmovie/stream.py`](smsmovie/stream.py)
+### [`smsmedia/stream.py`](smsmedia/stream.py)
 
 The command stream the on-cart player replays.
 
@@ -698,7 +698,7 @@ A frame that already needs more fields than the target is left alone.
 Dropping its work to hit a deadline would be the encoder deciding to
 show a worse picture than the one it was asked for.
 
-### [`smsmovie/tablewrites.py`](smsmovie/tablewrites.py)
+### [`smsmedia/tablewrites.py`](smsmedia/tablewrites.py)
 
 Turn uploads and name table changes into the fewest, longest runs.
 
@@ -715,7 +715,7 @@ unchanged entry between two changes makes the frame smaller and spares
 the player an address setup. Only cells whose entries sit at consecutive
 addresses are joined.
 
-### [`smsmovie/tune.py`](smsmovie/tune.py)
+### [`smsmedia/tune.py`](smsmedia/tune.py)
 
 Choose encoder settings by measuring them, rather than by guessing.
 
@@ -794,7 +794,7 @@ fraction of a percent of them is invisible while several percent is a
 smear on motion. The error number barely registers either, so the share is
 carried separately and gates the pool the search chooses from.
 
-### [`smsmovie/vdptiming.py`](smsmovie/vdptiming.py)
+### [`smsmedia/vdptiming.py`](smsmedia/vdptiming.py)
 
 Measure the spacing between VDP port writes in the code that shipped.
 
@@ -889,7 +889,7 @@ the one charged. Calls into another listing and returns to every call
 site are followed too; a call to code outside the listings is charged
 its own cycles only, which can only make a path look faster.
 
-### [`smsmovie/workingset.py`](smsmovie/workingset.py)
+### [`smsmedia/workingset.py`](smsmedia/workingset.py)
 
 What lives in VRAM right now, and what it costs to change that.
 
@@ -970,7 +970,7 @@ Compare an emulator capture with the film it was baked from, field by field.
 Record the ROM first, windowed and without sound, then run from the repository
 root:
 
-    mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/sms-movie-player.sms
+    mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/sms-media-player.sms
     uv --project tools run python tools/scripts/compare_capture.py \
         --capture /tmp/run.mov --source film.mp4 --start 60 --json /tmp/report.json
 

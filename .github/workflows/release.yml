@@ -48,15 +48,15 @@ jobs:
 
       - name: The gate the encoder job runs
         env:
-          SMSMOVIE_CLIPS_REQUIRED: "1"
-          SMSMOVIE_FFMPEG_REQUIRED: "1"
+          SMSMEDIA_CLIPS_REQUIRED: "1"
+          SMSMEDIA_FFMPEG_REQUIRED: "1"
         run: |
           set -euo pipefail
           uv --project tools run ruff format --check tools/
           uv --project tools run ruff check tools/
-          uv --project tools run mypy tools/smsmovie tools/scripts
+          uv --project tools run mypy tools/smsmedia tools/scripts
           uv --project tools run python -m pytest tools/tests \
-            --cov=smsmovie \
+            --cov=smsmedia \
             --cov=tools/scripts \
             --cov-config=tools/pyproject.toml \
             --cov-fail-under=95
@@ -64,14 +64,14 @@ jobs:
 
       - name: The gate the ROM job runs
         env:
-          SMSMOVIE_ROM_REQUIRED: "1"
+          SMSMEDIA_ROM_REQUIRED: "1"
         run: |
           set -euo pipefail
           mkdir -p build
           ffmpeg -y -loglevel error -f lavfi \
             -i "testsrc2=size=320x240:rate=30:duration=3" \
             -pix_fmt yuv420p build/ci-source.mp4
-          uv --project tools run python -m smsmovie.cartridge \
+          uv --project tools run python -m smsmedia.cartridge \
             build/ci-source.mp4 --duration 2 --fps 8
           make analyse
           make rom

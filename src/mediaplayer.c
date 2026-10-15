@@ -1,4 +1,4 @@
-#include "fmv/movieplayer.h"
+#include "fmv/mediaplayer.h"
 
 #include "fmv/assert.h"
 

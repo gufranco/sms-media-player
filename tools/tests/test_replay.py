@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from smsmovie import console, pattern, replay, stream
+from smsmedia import console, pattern, replay, stream
 
 
 def vram_write(addr, data):

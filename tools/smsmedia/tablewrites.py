@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Final
 
-from smsmovie import pattern, stream
+from smsmedia import pattern, stream
 
 NAME_GAP_FILL: Final = 1
 ENTRY_BYTES: Final = 2

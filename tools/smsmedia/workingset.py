@@ -6,7 +6,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 
-from smsmovie import console, pattern
+from smsmedia import console, pattern
 
 PATTERN_BYTES: Final = console.PATTERN_BYTES
 UNPLACED: Final = -1

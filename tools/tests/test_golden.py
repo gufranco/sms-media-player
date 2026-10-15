@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from fmvcore import colour
 
-from smsmovie import bake, capture, limits, stream
+from smsmedia import bake, capture, limits, stream
 
 GOLDEN_STREAM_BYTES = 51303
 GOLDEN_BANKS = 4

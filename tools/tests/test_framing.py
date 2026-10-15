@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from smsmovie import bake, cartridge, console, limits, pattern, replay, smscolor
+from smsmedia import bake, cartridge, console, limits, pattern, replay, smscolor
 
 BUDGET = 1400
 CAP = 220

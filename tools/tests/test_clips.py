@@ -4,7 +4,7 @@ import dataclasses
 
 import pytest
 
-from smsmovie import clips
+from smsmedia import clips
 
 
 class TestTheManifestIsWellFormed:
