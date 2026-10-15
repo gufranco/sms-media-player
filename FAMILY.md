@@ -240,6 +240,7 @@ That choice has a price, paid deliberately:
 | ROMs | Never committed, and never published when built from someone else's work |
 | Names | Players are `<console>-media-player` with a `<console>media` package; the core is `fmv-core-python` with the `fmvcore` package |
 | Language | Everything committed is English, except the README translations |
+| Licence | MIT in every member, one `LICENSE` file at the root. Code is never copied from a project under a licence MIT cannot carry, such as GPL; such a project is read for ideas only and cited in the development log |
 | Builds | Docker for every player build, in an image pinned by digest, run as the calling user; no host toolchain path |
 
 ---
