@@ -430,7 +430,7 @@ from the same command, and look at the sheet before quoting a number.
   image to a base digest and a dated Debian snapshot with every package
   version named.
 - Test data whose value does not matter, file names and opaque payloads,
-  comes from the seeded Faker in `tools/tests/fakes.py`. Frame content
+  comes from the seeded Faker in the core, `fmvcore.testing`. Frame content
   stays on seeded numpy generators.
 - Tests that decode through ffmpeg carry the `ffmpeg` marker. Without
   ffmpeg they skip, unless `SMSMEDIA_FFMPEG_REQUIRED=1`, which CI and the

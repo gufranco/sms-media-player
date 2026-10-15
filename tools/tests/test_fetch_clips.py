@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from fakes import seeded
+from fmvcore.testing import seeded
 
 from smsmedia import clips
 

@@ -1,5 +1,5 @@
 import pytest
-from fakes import seeded
+from fmvcore.testing import seeded
 
 from smsmedia import cartridge, frames, limits, scout
 

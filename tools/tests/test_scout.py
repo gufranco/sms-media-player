@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess
 
 import pytest
-from fakes import seeded
+from fmvcore.testing import seeded
 
 from smsmedia import cartridge, limits, scout, tune
 
