@@ -1,30 +1,83 @@
+English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
+
 <div align="center">
 
 # SMS Media Player
 
-<strong>Full motion video for game openings on a stock Sega Master System,<br>
-and a library that puts a cutscene inside your own game.</strong>
+<strong>Full-screen video on a stock Sega Master System,<br>
+its tiles paged through VRAM while the film plays.</strong>
 
 <br>
 
-[![Licence](https://img.shields.io/badge/licence-GPL--3.0-blue?style=flat-square)](LICENSE)
-[![Target](https://img.shields.io/badge/target-Sega%20Master%20System-red?style=flat-square)](#the-constraint-that-shapes-everything)
+[![Licence](https://img.shields.io/badge/licence-MIT-blue?style=flat-square)](LICENSE)
+[![Target](https://img.shields.io/badge/target-Sega%20Master%20System-red?style=flat-square)](#hardware-ceilings)
 [![Toolchain](https://img.shields.io/badge/toolchain-SDCC%20%2B%20devkitSMS-informational?style=flat-square)](Dockerfile)
-[![Status](https://img.shields.io/badge/status-plays%20video-brightgreen?style=flat-square)](#what-works-today)
+[![Status](https://img.shields.io/badge/status-plays%20video-brightgreen?style=flat-square)](#what-it-is)
 
 </div>
 
 <p align="center">
-  <a href="#the-constraint-that-shapes-everything"><strong>The constraint</strong></a> &nbsp;|&nbsp;
-  <a href="#build"><strong>Build</strong></a> &nbsp;|&nbsp;
-  <a href="#what-works-today"><strong>Status</strong></a> &nbsp;|&nbsp;
+  <a href="#quick-start"><strong>Quick start</strong></a> &nbsp;|&nbsp;
+  <a href="#how-it-works"><strong>How it works</strong></a> &nbsp;|&nbsp;
   <a href="#quality"><strong>Quality</strong></a> &nbsp;|&nbsp;
-  <a href="AGENTS.md"><strong>Engineering contract</strong></a>
+  <a href="#verification"><strong>Verification</strong></a> &nbsp;|&nbsp;
+  <a href="#the-family"><strong>The family</strong></a>
 </p>
+
+<div align="center">
+
+<img src="readme/demo.gif" alt="Six seconds of the Sintel trailer playing from the built Master System cartridge, captured from mednafen" width="640">
+
+<sub>Six seconds of the Sintel trailer, captured from mednafen running the built cartridge at the console's own 256x192. The same film opens the Neo Geo player's README. Sintel is by the Blender Foundation, CC BY 3.0.</sub>
+
+</div>
+
+```bash
+uv --project tools run python -m smsmedia.cartridge ~/Movies/my-film.mkv --duration 5
+make rom
+# build/sms-media-player.sms
+```
 
 ---
 
-## The constraint that shapes everything
+## What it is
+
+A baker that turns any video file into a Master System cartridge, and a Z80
+player that shows it full screen on a stock console. The baker runs on the
+host; the player and every ROM build run in a pinned Docker image.
+
+The whole path runs: preprocessing, the encoder, bank packing, the Z80 player
+and the controls.
+
+| Piece | State |
+|---|---|
+| Encoder and working-set policy | Working, with a replay oracle that agrees with it to five decimals |
+| Picture | 256x192, the whole raster. A source of another shape is cropped to fill it |
+| Z80 replay loop | Working. Pattern and name runs at 30 cycles a byte against Sega's documented floor of 29; the palette and name table flip at 16 inside a V counter guard in the vertical blank. Held by a build gate and by running the built replay on a Z80 |
+| Sound | None. The player silences the PSG at boot and the stream carries picture only |
+| Controls | Plays on a loop. Button 1 restarts, button 2 exits to a black screen. A corrupt stream stops on a red one |
+| Field rate | Paced for NTSC, 59.92 fields a second, which the Game Gear also runs at. The player draws one chunk a field, so a 50 Hz PAL console plays the same stream at about five sixths of its intended speed. Nothing here has been checked on a PAL console |
+| Regression set | Six clips of different kinds baked on every test run |
+| Hardware run | Not done. Every figure here comes from an emulator or a listing |
+
+## What every player does
+
+The family sets one list of requirements for every player in
+[FAMILY.md](FAMILY.md). Where this one stands:
+
+| Requirement | Here |
+|---|---|
+| The picture fills the screen | Yes. 256x192, the whole raster, scaled to cover and cropped. Bars baked into a source file are not cropped yet |
+| Picture quality before frame rate | Yes. The rate search stops at 12 fps |
+| Sound with no added hardware | Not yet. The player is silent and silences the PSG at boot; sound from the PSG is planned |
+| A silent build | Today every build is silent |
+| The whole cartridge | Up to 64 banks of 16 KB, 1 MB. The larger sizes the standard Sega mapper addresses are planned |
+| Quality follows length | Partly. Rate, denoise and reuse are measured per bake, and the baker reports the running time that fits rather than resizing the film to the cartridge |
+| A media-player menu | Not yet. The film loops; button 1 restarts and button 2 exits |
+
+## How it works
+
+### The constraint that shapes everything
 
 This is a port of the Neo Geo [`neogeo-media-player`](https://github.com/gufranco/neogeo-media-player),
 redesigned rather than translated.
@@ -56,22 +109,6 @@ never keeps a tile from an earlier frame: a frame merges its fresh tiles down
 to the slots the displayed frame leaves free, so a busy frame loses detail
 rather than showing stale patches.
 
-## What works today
-
-The whole path runs: preprocessing, the encoder, bank packing, the Z80 player
-and the controls.
-
-| Piece | State |
-|---|---|
-| Encoder and working-set policy | Working, with a replay oracle that agrees with it to five decimals |
-| Picture | 256x192, the whole raster. A source of another shape is cropped to fill it |
-| Z80 replay loop | Working. Pattern and name runs at 30 cycles a byte against Sega's documented floor of 29; the palette and name table flip at 16 inside a V counter guard in the vertical blank. Held by a build gate and by running the built replay on a Z80 |
-| Sound | None. The player silences the PSG at boot and the stream carries picture only |
-| Controls | Plays on a loop. Button 1 restarts, button 2 exits to a black screen. A corrupt stream stops on a red one |
-| Field rate | Paced for NTSC, 59.92 fields a second, which the Game Gear also runs at. The player draws one chunk a field, so a 50 Hz PAL console plays the same stream at about five sixths of its intended speed. Nothing here has been checked on a PAL console |
-| Regression set | Six clips of different kinds baked on every test run |
-| Hardware run | Not done. Every figure here comes from an emulator or a listing |
-
 ### The picture is the whole screen
 
 All 256 by 192 pixels, with nothing framing it. A source of another shape is
@@ -86,57 +123,79 @@ working set and a quarter of the per-field budget delivering black.
 library half needs. The picture is centred, and the rows and columns it leaves
 over are held black by the player.
 
-### What a cartridge costs
+### Sound
 
-Measured across the regression set at 12 fps, 256 by 192, dither at full
-strength, two-second windows, so a bank either way moves the figure by half:
-
-| Clip | Kind | Banks per second | 62 banks hold |
-|---|---|---|---|
-| Synthetic block field | synthetic | 6.0 | 10s |
-| Sintel trailer | 3D animation | 4.0 | 15s |
-| Popeye for President | hand-drawn cartoon | 3.0 | 20s |
-| Vespero en Hong Kong | live action | 6.0 | 10s |
-| Cute Colorful Bird | animals | 5.0 | 12s |
-| Bhagoria dance | people | 6.0 | 10s |
-
-Every one holds a five-second opening with room to spare.
-
-Cost varies with the footage far more than with any setting, so compare two
-cartridges only when they came from the same source window. Nothing here
-shortens a film to make it fit: the baker reports the running time that would
-fit and stops.
-
-## No sound
-
-The player is silent today; sound from the PSG is planned. The
-stream holds picture only, and the player never enables the line interrupt,
-so the whole field, active display included, is free for the transfer loop.
+The player is silent today; sound from the PSG is planned. The stream holds
+picture only, and the player never enables the line interrupt, so the whole
+field, active display included, is free for the transfer loop.
 
 It still writes the PSG once, at boot: full attenuation on all four channels.
 A console powers up with its tone channels audible, so leaving the chip alone
-would hum through the whole opening.
+would hum through the whole film.
 
-## Build
+### Prior art
 
-The baker shares its decode path with neogeo-media-player through the
-[fmv-core-python](https://github.com/gufranco/fmv-core-python) submodule, so
-clone with submodules. A source archive from the download button cannot carry
-a submodule and does not run.
+Four video efforts exist for this console. Three encode a 1-bit silhouette
+animation, where large flat regions and a two-colour palette make tile
+deduplication far more effective than colour film will ever allow, so their
+numbers are not a target.
+
+The one colour player, [gligli's Bad Apple
+3D](https://www.smspower.org/Homebrew/BadApple3DFullLength-SMS), is the honest
+benchmark: 256x192 at 12.5 fps, 2,724 frames, three minutes and thirty-eight
+seconds filling a 4 MB ROM, with 10.3 kHz sampled audio underneath. It draws
+28 distinct colours, which is inside the 32 the hardware shows at once, so it
+sets no precedent for exceeding them.
+
+Its encoder source has not been located. GliGli's [tiler](https://github.com/gligli/tiler)
+repository is a later and different project, a general video codec named
+TileMotion whose palettes are RGBA8888 and whose reference decoder is HTML5
+Canvas, with no Z80 or Master System target in it. An earlier revision of this
+file cited it as the Bad Apple encoder, which was wrong.
+
+One technique from that work carries into this design. Writing VRAM during
+active display as well as blanking roughly doubles the budget, with the encoder
+computing the switch point offline so the player never branches on the raster.
+
+## Hardware ceilings
+
+Every figure here carries its source in [AGENTS.md](AGENTS.md).
+
+| Resource | Ceiling | Consequence |
+|---|---|---|
+| VRAM | 16 KB, 512 patterns of 32 bytes | The dictionary cannot be resident. Patterns are paged in while the film plays, and the second name table leaves 383 slots for the film |
+| VDP data port, active display | 29 T-states between writes | Pattern and name runs go out at 30 T-states a byte |
+| VDP data port, blanking | 16 T-states between writes | Only the guarded closing run, palettes and the name table flip, uses it |
+| Colours | 64, in two palettes of 16 | A cell of 8x8 pixels draws from one palette, so a cell has 16 colours |
+| Field rate, NTSC | 59.9227 Hz, 228 T-states a line, 262 lines | One chunk of the stream a field |
+| Cartridge | 64 banks of 16 KB through the Sega mapper, two of them code | The baker's ceiling today is 62 banks of film |
+| Work RAM | 8 KB at `$C000`, mirrored at `$E000` | The mapper registers live in the mirror |
+
+## Quick start
+
+### Prerequisites
+
+| Tool | Version | Install |
+|:-----|:--------|:--------|
+| Docker | any recent | [docs.docker.com](https://docs.docker.com/get-docker/) |
+| uv | latest | [docs.astral.sh/uv](https://docs.astral.sh/uv/) |
+| Python | 3.14, fetched by uv from [`.python-version`](.python-version) | |
+| ffmpeg and ffprobe | any recent | [ffmpeg.org](https://ffmpeg.org) |
+| mednafen | any recent | Only to run the cartridge on this machine |
+
+### Get the code
+
+The baker shares its decode, colour, film and capture code with the Neo Geo
+player through the [fmv-core-python](https://github.com/gufranco/fmv-core-python)
+submodule, so clone with submodules. A source archive from the download button
+cannot carry a submodule and does not run.
 
 ```bash
 git clone --recurse-submodules https://github.com/gufranco/sms-media-player.git
 git submodule update --init   # in a clone made without the flag
 ```
 
-Every build goes through Docker. There is no host toolchain path.
-
-```bash
-make rom        # build/sms-media-player.sms
-make analyse    # cppcheck at exhaustive level, must exit 0
-make shell      # a shell inside the toolchain image
-make clean
-```
+### Make a cartridge
 
 Bake a cartridge from any video file, then build:
 
@@ -155,37 +214,26 @@ lost the most, so a poor result can be traced to the frames that caused it.
 `frames_unshown_at_end` counts the decoded frames at the end of the film that
 the clock passed before a slot was free for them.
 
-Install the pre-commit hook once. On every commit it runs the formatter, linter, type checker and the test suite with its coverage floor, and when a staged path can change the player it also builds the ROM and runs the static analysis, the timing gate and the Z80 replay:
+### Running it
 
-```bash
-make hooks
-```
-
-The encoder runs on the host, on the Python pinned in [`.python-version`](.python-version) (3.14), with `uv` and `ffmpeg` installed. `uv` reads the pin and fetches that Python if it is missing:
-
-```bash
-uv --project tools run ruff format tools/
-uv --project tools run ruff check tools/
-uv --project tools run mypy tools/smsmedia tools/scripts
-uv --project tools run python -m pytest tools/tests --cov=smsmedia --cov=tools/scripts \
-    --cov-config=tools/pyproject.toml --cov-fail-under=95
-```
-
-The regression set bakes six clips of deliberately different kinds. They are
-not in the repository and are not ours to redistribute, so the manifest holds
-their identity and a script fetches and verifies them:
-
-```bash
-uv --project tools run python tools/scripts/fetch_clips.py
-```
-
-Without them only the committed synthetic clip runs, and the gate is much
-weaker. Every credit and licence is in `tools/clips.manifest.json`.
-
-Run it windowed. Never fullscreen.
+On hardware, copy `build/sms-media-player.sms` to a flash cartridge. Under an
+emulator, run it windowed, never fullscreen:
 
 ```bash
 mednafen -video.fs 0 -sound 0 build/sms-media-player.sms
+```
+
+### Toolchain
+
+Every ROM build goes through Docker, and there is no host toolchain path. The
+[`Dockerfile`](Dockerfile) pins SDCC by package version, devkitSMS by commit and
+the base image by digest, and the build runs as the calling user.
+
+```bash
+make rom        # build/sms-media-player.sms
+make analyse    # cppcheck at exhaustive level, must exit 0
+make shell      # a shell inside the toolchain image
+make clean
 ```
 
 ## Quality
@@ -362,31 +410,84 @@ Denoise is measured rather than fixed because the right strength is a property
 of the footage. Three fifteen-second windows of one film preferred three
 different strengths, with an 8% spread between the best and worst pick.
 
-## Prior art
+### What a cartridge costs
 
-Four video efforts exist for this console. Three encode a 1-bit silhouette
-animation, where large flat regions and a two-colour palette make tile
-deduplication far more effective than colour film will ever allow, so their
-numbers are not a target.
+Measured across the regression set at 12 fps, 256 by 192, dither at full
+strength, two-second windows, so a bank either way moves the figure by half:
 
-The one colour player, [gligli's Bad Apple
-3D](https://www.smspower.org/Homebrew/BadApple3DFullLength-SMS), is the honest
-benchmark: 256x192 at 12.5 fps, 2,724 frames, three minutes and thirty-eight
-seconds filling a 4 MB ROM, with 10.3 kHz sampled audio underneath. It draws
-28 distinct colours, which is inside the 32 the hardware shows at once, so it
-sets no precedent for exceeding them.
+| Clip | Kind | Banks per second | 62 banks hold |
+|---|---|---|---|
+| Synthetic block field | synthetic | 6.0 | 10s |
+| Sintel trailer | 3D animation | 4.0 | 15s |
+| Popeye for President | hand-drawn cartoon | 3.0 | 20s |
+| Vespero en Hong Kong | live action | 6.0 | 10s |
+| Cute Colorful Bird | animals | 5.0 | 12s |
+| Bhagoria dance | people | 6.0 | 10s |
 
-Its encoder source has not been located. GliGli's [tiler](https://github.com/gligli/tiler)
-repository is a later and different project, a general video codec named
-TileMotion whose palettes are RGBA8888 and whose reference decoder is HTML5
-Canvas, with no Z80 or Master System target in it. An earlier revision of this
-file cited it as the Bad Apple encoder, which was wrong.
+Every one holds a five-second opening with room to spare.
 
-One technique from that work carries into this design. Writing VRAM during
-active display as well as blanking roughly doubles the budget, with the encoder
-computing the switch point offline so the player never branches on the raster.
+Cost varies with the footage far more than with any setting, so compare two
+cartridges only when they came from the same source window. Nothing here
+shortens a film to make it fit: the baker reports the running time that would
+fit and stops.
 
-## Documentation
+## Verification
+
+Nothing here has run on a console yet. Every figure comes from an emulator, a
+listing or the replay oracle, and the owner's Game Gear is the hardware check.
+
+| Check | What it settles |
+|---|---|
+| Replay oracle | The baker's model of the stream replays to the picture the encoder meant, to five decimals |
+| mednafen capture | A frame captured from mednafen matches the replay oracle pixel for pixel, so the oracle stands for the screen |
+| `make timing` | Every VDP write pair in the compiled player clears 29 T-states, or 16 inside the guarded vertical-blank copy, walking every listing as one program |
+| `test_replay_on_z80.py` | The built replay runs on a Z80 with the V counter held at chosen lines, and no palette byte or flip reaches the VDP outside the window |
+| Regression set | Six films of different kinds bake on every test run, each held to a measured error and bank budget |
+| Game Gear with an Everdrive | Write timing on the same VDP core at the same clock. It remaps colour and shows only the centre 160x144, so it settles neither colour nor the screen edges |
+
+No emulator enforces the VDP write spacing, so a change to the transfer loop is
+unverified until it has run on hardware, however good the local numbers look.
+
+## Repository layout
+
+| Path | Contents |
+|---|---|
+| [`src/`](src) and [`include/fmv/`](include/fmv) | The Z80 player in C and assembly, one module per file |
+| [`tools/smsmedia/`](tools/smsmedia) | The baker, one module per stage |
+| [`tools/scripts/`](tools/scripts) | Fetch the regression films, rebuild the fixture, check write timing, compare a capture |
+| [`tools/tests/`](tools/tests) | The encoder suite, including the multi-clip gate and the Z80 replay |
+| [`fmv-core-python/`](https://github.com/gufranco/fmv-core-python) | Submodule: the family's shared baker and measurement code |
+| [`readme/`](readme) | The demo GIF |
+| `media/clips/` | Fetched films, ignored, never committed |
+| `build/` | Generated, never committed |
+
+## Development
+
+Install the pre-commit hook once. On every commit it runs the formatter,
+linter, type checker and the test suite with its coverage floor, and when a
+staged path can change the player it also builds the ROM and runs the static
+analysis, the timing gate and the Z80 replay:
+
+```bash
+make hooks
+```
+
+| Command | What it does |
+|:--------|:-------------|
+| `uv --project tools run ruff format tools/` | Format |
+| `uv --project tools run ruff check tools/` | Lint gate |
+| `uv --project tools run mypy tools/smsmedia tools/scripts` | Type gate |
+| `uv --project tools run python -m pytest tools/tests --cov=smsmedia --cov=tools/scripts --cov-config=tools/pyproject.toml --cov-fail-under=95` | Tests, with the 95% coverage floor |
+| `uv --project tools run python tools/scripts/fetch_clips.py` | Fetch and verify the regression films |
+| `make rom`, `make analyse`, `make timing` | The player gates, in the pinned image |
+
+The regression set bakes six clips of deliberately different kinds. They are
+not in the repository and are not ours to redistribute, so the manifest holds
+their identity and the script above fetches and verifies them. Without them
+only the committed synthetic clip runs, and the gate is much weaker. Every
+credit and licence is in [`tools/clips.manifest.json`](tools/clips.manifest.json).
+
+### Documentation
 
 | File | Contents |
 |---|---|
@@ -398,6 +499,68 @@ computing the switch point offline so the player never branches on the raster.
 | [`Dockerfile`](Dockerfile) | The toolchain image, with devkitSMS pinned by commit |
 | [`tools/clips.manifest.json`](tools/clips.manifest.json) | The regression films: identity, credit and licence, never the films |
 
-## Licence
+## FAQ
 
-[GPL-3.0](LICENSE).
+<details>
+<summary><strong>Why are the tiles paged instead of stored in ROM?</strong></summary>
+<br>
+
+The Master System draws only from VRAM, and VRAM holds 512 patterns. A film
+needs thousands, so they live in the cartridge and the player copies each
+frame's new ones into slots the screen is not showing.
+
+</details>
+
+<details>
+<summary><strong>Does it run on a Game Gear?</strong></summary>
+<br>
+
+A Game Gear with an Everdrive runs Master System ROMs, and that is how write
+timing gets checked here. In Master System mode it shows only the centre 160 by
+144 of the picture and remaps the palette, so the full picture is a Master
+System's to show.
+
+</details>
+
+<details>
+<summary><strong>Does it play on a PAL console?</strong></summary>
+<br>
+
+It is paced for NTSC, 59.92 fields a second. The player draws one chunk a
+field, so a 50 Hz console plays the same stream at about five sixths of its
+intended speed. Nothing here has been checked on a PAL console.
+
+</details>
+
+<details>
+<summary><strong>Why is it silent?</strong></summary>
+<br>
+
+The transfer loop owns every cycle of the field today, and the PSG has no
+sample channel, so sound costs Z80 time the picture now uses. Sound is a
+requirement the family sets, and it is planned.
+
+</details>
+
+## The family
+
+This player is one of a family that plays full-motion video on consoles that
+were never meant to show it. The members share one standard,
+[FAMILY.md](FAMILY.md), and every piece of baker code the hardware does not
+force lives once in the core.
+
+| Member | What it is |
+|:--|:--|
+| [neogeo-media-player](https://github.com/gufranco/neogeo-media-player) | A full-screen film with sound on a Neo Geo AES or MVS, and a library that plays one inside another game |
+| [sms-media-player](https://github.com/gufranco/sms-media-player) | This repository |
+| [fmv-core-python](https://github.com/gufranco/fmv-core-python) | The baker and measurement code the players share |
+
+## Licence and credits
+
+[MIT](LICENSE).
+
+Built with [SDCC](https://sdcc.sourceforge.net/) and
+[devkitSMS](https://github.com/sverx/devkitSMS). The demo film is the
+[Sintel](https://durian.blender.org/) trailer by the Blender Foundation, CC BY
+3.0. The regression films and their licences are listed in
+[`tools/clips.manifest.json`](tools/clips.manifest.json).
