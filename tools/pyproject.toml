@@ -1,0 +1,68 @@
+[project]
+name = "smsmovie"
+version = "0.1.0"
+description = "Offline baker that turns a video file into a Sega Master System movie ROM"
+requires-python = ">=3.14"
+dependencies = [
+    "numpy==2.5.4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "pytest-cov==7.1.0",
+    "ruff==0.17.0",
+    "mypy==2.4.0",
+    "faker==40.43.0",
+    "z80 @ git+https://github.com/gufranco/zilog-z80-python.git@e2fedbd600640f1f5079a15668cda0662037133c",
+]
+release = [
+    "python-semantic-release==10.7.0",
+]
+
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["smsmovie"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "PL", "RUF", "ARG", "PTH"]
+ignore = ["PLR0913"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR2004"]
+
+[tool.mypy]
+strict = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -m 'not slow'"
+filterwarnings = ["error"]
+markers = [
+    "slow: bakes through the full automatic search; run with -m slow",
+    "ffmpeg: decodes through ffmpeg; skipped without it unless SMSMOVIE_FFMPEG_REQUIRED=1",
+]
+
+[tool.coverage.run]
+source = ["smsmovie"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+]

@@ -1,0 +1,123 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      level:
+        description: >-
+          Force a bump level. Leave as commits to let the history decide.
+        required: false
+        default: commits
+        type: choice
+        options: [commits, patch, minor, major]
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    name: Gates
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884
+        with:
+          version: "0.12.23"
+          enable-cache: true
+
+      - name: Install ffmpeg, which the decode path shells out to
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Cache the regression films
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: media/clips
+          key: clips-${{ hashFiles('tools/clips.manifest.json') }}
+
+      - name: Fetch the regression films
+        run: uv --project tools run python tools/scripts/fetch_clips.py
+
+      - name: The gate the encoder job runs
+        env:
+          SMSMOVIE_CLIPS_REQUIRED: "1"
+          SMSMOVIE_FFMPEG_REQUIRED: "1"
+        run: |
+          set -euo pipefail
+          uv --project tools run ruff format --check tools/
+          uv --project tools run ruff check tools/
+          uv --project tools run mypy tools/smsmovie tools/scripts
+          uv --project tools run python -m pytest tools/tests \
+            --cov=smsmovie \
+            --cov=tools/scripts \
+            --cov-config=tools/pyproject.toml \
+            --cov-fail-under=95
+          uv --project tools run python -m pytest tools/tests -m slow
+
+      - name: The gate the ROM job runs
+        env:
+          SMSMOVIE_ROM_REQUIRED: "1"
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          ffmpeg -y -loglevel error -f lavfi \
+            -i "testsrc2=size=320x240:rate=30:duration=3" \
+            -pix_fmt yuv420p build/ci-source.mp4
+          uv --project tools run python -m smsmovie.cartridge \
+            build/ci-source.mp4 --duration 2 --fps 8
+          make analyse
+          make rom
+          uv --project tools run python tools/scripts/check_vdp_timing.py
+          uv --project tools run python -m pytest \
+            tools/tests/test_replay_on_z80.py
+
+  publish:
+    name: Publish
+    needs: gates
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884
+        with:
+          version: "0.12.23"
+
+      - name: What the next version will be
+        env:
+          LEVEL: ${{ inputs.level }}
+        run: |
+          set -euo pipefail
+          release=(uv --project tools run --only-group release)
+          if [ "$LEVEL" = "commits" ]; then
+            "${release[@]}" semantic-release --noop version --print
+          else
+            "${release[@]}" semantic-release --noop version "--$LEVEL" --print
+          fi
+
+      - name: Tag and publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LEVEL: ${{ inputs.level }}
+        run: |
+          set -euo pipefail
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          release=(uv --project tools run --only-group release)
+          if [ "$LEVEL" = "commits" ]; then
+            "${release[@]}" semantic-release version --push --vcs-release
+          else
+            "${release[@]}" semantic-release \
+              version "--$LEVEL" --push --vcs-release
+          fi
