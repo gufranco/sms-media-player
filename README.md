@@ -1,6 +1,6 @@
 <div align="center">
 
-# SMS Movie Player
+# SMS Media Player
 
 <strong>Full motion video for game openings on a stock Sega Master System,<br>
 and a library that puts a cutscene inside your own game.</strong>
@@ -26,7 +26,7 @@ and a library that puts a cutscene inside your own game.</strong>
 
 ## The constraint that shapes everything
 
-This is a port of the Neo Geo [`aes-movie-player`](https://github.com/gufranco/aes-movie-player),
+This is a port of the Neo Geo [`neogeo-media-player`](https://github.com/gufranco/neogeo-media-player),
 redesigned rather than translated.
 
 The Neo Geo holds **1,048,576 tiles resident in character ROM**, so its player
@@ -109,7 +109,7 @@ fit and stops.
 
 ## No sound
 
-The player is built to convert game openings, and it carries no sound. The
+The player is silent today; sound from the PSG is planned. The
 stream holds picture only, and the player never enables the line interrupt,
 so the whole field, active display included, is free for the transfer loop.
 
@@ -119,20 +119,20 @@ would hum through the whole opening.
 
 ## Build
 
-The baker shares its decode path with aes-movie-player through the
+The baker shares its decode path with neogeo-media-player through the
 [fmv-core-python](https://github.com/gufranco/fmv-core-python) submodule, so
 clone with submodules. A source archive from the download button cannot carry
 a submodule and does not run.
 
 ```bash
-git clone --recurse-submodules https://github.com/gufranco/sms-movie-player.git
+git clone --recurse-submodules https://github.com/gufranco/sms-media-player.git
 git submodule update --init   # in a clone made without the flag
 ```
 
 Every build goes through Docker. There is no host toolchain path.
 
 ```bash
-make rom        # build/sms-movie-player.sms
+make rom        # build/sms-media-player.sms
 make analyse    # cppcheck at exhaustive level, must exit 0
 make shell      # a shell inside the toolchain image
 make clean
@@ -141,7 +141,7 @@ make clean
 Bake a cartridge from any video file, then build:
 
 ```bash
-uv --project tools run python -m smsmovie.cartridge input.mp4 --start 300 --duration 5 \
+uv --project tools run python -m smsmedia.cartridge input.mp4 --start 300 --duration 5 \
     --preview build/preview.png
 make rom
 make timing     # VDP write spacing, read out of the assembler's own listing
@@ -166,8 +166,8 @@ The encoder runs on the host, on the Python pinned in [`.python-version`](.pytho
 ```bash
 uv --project tools run ruff format tools/
 uv --project tools run ruff check tools/
-uv --project tools run mypy tools/smsmovie tools/scripts
-uv --project tools run python -m pytest tools/tests --cov=smsmovie --cov=tools/scripts \
+uv --project tools run mypy tools/smsmedia tools/scripts
+uv --project tools run python -m pytest tools/tests --cov=smsmedia --cov=tools/scripts \
     --cov-config=tools/pyproject.toml --cov-fail-under=95
 ```
 
@@ -185,14 +185,14 @@ weaker. Every credit and licence is in `tools/clips.manifest.json`.
 Run it windowed. Never fullscreen.
 
 ```bash
-mednafen -video.fs 0 -sound 0 build/sms-movie-player.sms
+mednafen -video.fs 0 -sound 0 build/sms-media-player.sms
 ```
 
 ## Quality
 
-**The per-field transfer is the binding constraint, not ROM.** An opening of
-five seconds at the full field budget fills about a third of the 62 banks, so
-cartridge space is not what limits a bake. What limits it is how many bytes
+**The per-field transfer is the binding constraint, not ROM.** Five seconds
+at the full field budget fills about a third of the 62 banks, so cartridge
+space is not what limits a short bake. What limits it is how many bytes
 reach the VDP each field, and a frame that needs more fields than its slot
 arrives late. A change is worth having when it raises perceived quality inside
 that transfer.
@@ -391,7 +391,7 @@ computing the switch point offline so the player never branches on the raster.
 | File | Contents |
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | The engineering contract: hard rules, the Power of 10 mapping, layout, and what will bite you |
-| [`FAMILY.md`](FAMILY.md) | The standard shared with aes-movie-player and fmv-core-python, identical in each |
+| [`FAMILY.md`](FAMILY.md) | The standard shared with neogeo-media-player and fmv-core-python, identical in each |
 | [`tools/DESIGN.md`](tools/DESIGN.md) | Why each baker module, script and test is shaped as it is, with the measurements behind it |
 | [`CHANGELOG.md`](CHANGELOG.md) | What was tried, measured and rejected, and what each failure cost |
 | [`RELEASES.md`](RELEASES.md) | Version history, generated from commit subjects |

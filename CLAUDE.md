@@ -27,9 +27,9 @@ Nothing here is verified by compiling. Run the gate.
 |---|---|
 | It builds | `make rom` |
 | The C holds | `make analyse` |
-| No VDP write pair is under its floor, and every blank copy is guarded | `make timing` and `SMSMOVIE_ROM_REQUIRED=1 pytest tools/tests/test_replay_on_z80.py`, after `make rom` |
-| The baker holds | `uv --project tools run ruff format --check tools/`, `ruff check tools/`, `mypy tools/smsmovie tools/scripts` |
-| The behaviour holds | `SMSMOVIE_CLIPS_REQUIRED=1 uv --project tools run python -m pytest tools/tests --cov=smsmovie --cov=tools/scripts --cov-config=tools/pyproject.toml --cov-fail-under=95` |
+| No VDP write pair is under its floor, and every blank copy is guarded | `make timing` and `SMSMEDIA_ROM_REQUIRED=1 pytest tools/tests/test_replay_on_z80.py`, after `make rom` |
+| The baker holds | `uv --project tools run ruff format --check tools/`, `ruff check tools/`, `mypy tools/smsmedia tools/scripts` |
+| The behaviour holds | `SMSMEDIA_CLIPS_REQUIRED=1 uv --project tools run python -m pytest tools/tests --cov=smsmedia --cov=tools/scripts --cov-config=tools/pyproject.toml --cov-fail-under=95` |
 | A commit is clean | `.githooks/pre-commit`, installed once by `make hooks` |
 | It runs on a console | the Game Gear, reported by the owner; nothing on this machine settles it |
 
@@ -69,26 +69,27 @@ test_framing.py` holds them there.
 
 Changing the picture size re-opens the tile cap, because the cap is bounded by
 how many slots the displayed frame is not still using. The sweep that set the
-constant in `tools/smsmovie/limits.py` is recorded under that module in
+constant in `tools/smsmedia/limits.py` is recorded under that module in
 [tools/DESIGN.md](tools/DESIGN.md); re-run the sweep rather than guessing a new
 one.
 
 ## A public member of a family
 
-Owner's instruction, 2026-10-15: this project and aes-movie-player are public
+Owner's instruction, 2026-10-15: this project and neogeo-media-player are public
 members of one family, kept as alike as their hardware allows and sharing as
 much code as possible.
 
-## Openings are five seconds at most
+## The film fills the cartridge
 
-Owner's figure, 2026-10-08: the openings this converts run five seconds at
-most. At the full field budget that is about 33 of the 62 banks, so ROM is not
-what limits a bake; the per-field transfer is. Spend the room on detail rather
-than on running time.
+Owner's instruction, 2026-10-15, replacing the five-second openings of
+2026-10-08: the player fills the largest cartridge the standard Sega mapper
+addresses, with no added hardware, and the baker sizes picture and sound to the
+film's length. A silent build spends the sound's share on a longer or better
+picture. [FAMILY.md](FAMILY.md) "What every player does" holds the full list.
 
-Perceived image quality outranks frame rate, by the owner's word the same day.
-When the two compete for bytes or slots, the picture wins; do not raise the
-rate search above its current candidates to buy motion.
+Perceived image quality outranks frame rate, by the owner's word on
+2026-10-08. When the two compete for bytes or slots, the picture wins; do not
+raise the rate search above its current candidates to buy motion.
 
 ## Non-negotiables
 
@@ -115,14 +116,14 @@ trusting the stored config, which can carry fullscreen over from an earlier
 session.
 
 ```
-mednafen -video.fs 0 -sound 0 build/sms-movie-player.sms
+mednafen -video.fs 0 -sound 0 build/sms-media-player.sms
 ```
 
 For an unattended check, record and extract the frame afterwards rather than
 sitting in front of it:
 
 ```
-mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/sms-movie-player.sms
+mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/sms-media-player.sms
 ffmpeg -i /tmp/run.mov -vf "select=eq(n\,90)" -vframes 1 /tmp/frame.png
 ```
 
@@ -163,8 +164,8 @@ constant from memory.
   before recording. A run killed with SIGTERM leaves the `.mov` unfinalised at
   32 bytes, which reads as a failed emulator rather than a truncated capture.
 - Running mypy on [`tools/scripts`](tools/scripts) alone poisons `.mypy_cache`:
-  the next full run reports `Module "smsmovie" has no attribute ...` for
-  imports that are fine. Always pass both `tools/smsmovie tools/scripts`, and
+  the next full run reports `Module "smsmedia" has no attribute ...` for
+  imports that are fine. Always pass both `tools/smsmedia tools/scripts`, and
   if the error appears, delete `.mypy_cache` rather than chasing it.
 
 ## Hardware testing runs on a Game Gear
@@ -188,13 +189,15 @@ a colour check or an edge-of-screen check.
 references. It is not committed. Read it before proposing a design change, and
 update it in the same turn as any decision that contradicts it.
 
-## There is no sound
+## Sound is coming back
 
-Owner's instruction, 2026-10-08: the player converts game openings, and sound
-support is removed entirely. The stream carries picture only and the player
-never enables the line interrupt. The single PSG write left is full
-attenuation at boot, because a console powers up with its tone channels
-audible. Do not add a sound path back.
+Owner's instruction, 2026-10-15, replacing the removal of 2026-10-08: the
+player carries sound like the Neo Geo player, from the PSG alone, with a silent
+build as an option. Until that lands the stream carries picture only, the line
+interrupt stays off, and the one PSG write is full attenuation at boot, because
+a console powers up with its tone channels audible. Any sound path is a change
+to the transfer loop's cycle budget and is unverified until it runs on the
+Game Gear.
 
 ## How the picture is judged
 

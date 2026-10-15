@@ -8,15 +8,17 @@ one adds what an assistant specifically needs on top of it.
 Full motion video for the Sega Master System, in two halves from one codebase.
 An offline baker turns a video file into an SMS ROM, and a library puts a
 cutscene inside somebody else's game. It is a port of the Neo Geo
-[`aes-movie-player`](https://github.com/gufranco/aes-movie-player), redesigned rather than translated, because the two machines
+[`neogeo-media-player`](https://github.com/gufranco/neogeo-media-player), redesigned rather than translated, because the two machines
 differ in the exact dimension that design leans on.
 
-It is a public member of a family with aes-movie-player, the two kept as
-alike as their hardware allows. It converts game openings of five seconds at
-most, and it carries no sound. That is the owner's
-decision of 2026-10-08: the stream is picture only, the player never enables
-the line interrupt, and its one write to the PSG is full attenuation at boot.
-Do not reintroduce a sound path.
+It is a public member of a family with neogeo-media-player, the two kept as
+alike as their hardware allows, and held to the requirements in
+[FAMILY.md](FAMILY.md) "What every player does". Today it is silent and stops
+at 1 MB: the stream is picture only, the player never enables the line
+interrupt, and its one write to the PSG is full attenuation at boot. Sound from
+the PSG, a silent build option and the whole cartridge are the owner's
+requirements of 2026-10-15, replacing the silent five-second openings of
+2026-10-08.
 
 The Neo Geo holds 1,048,576 tiles resident in character ROM, so its player writes
 tile numbers and nothing else. The Master System addresses 512 patterns in 16 KB
@@ -43,7 +45,7 @@ The tile cap is tied to this. A frame may only mint as many fresh patterns as
 there are slots the displayed frame is not still pointing at, and 768 cells
 reference far more of the 383 usable slots than 576 did. Any change to the
 picture size re-opens that number; the sweep that set the one in
-`tools/smsmovie/limits.py` is recorded under that module in
+`tools/smsmedia/limits.py` is recorded under that module in
 [tools/DESIGN.md](tools/DESIGN.md).
 
 A smaller picture is still supported through `--rows` and `--columns`, and it
@@ -182,7 +184,7 @@ Rules that follow:
   no flip reaches the VDP outside the window; with its branches patched out
   all 32 bytes and the flip do, so it is a check that can fail. It also
   measures every control-port pair as executed. It skips when no ROM is
-  built, so CI sets `SMSMOVIE_ROM_REQUIRED=1` and a missing ROM fails it.
+  built, so CI sets `SMSMEDIA_ROM_REQUIRED=1` and a missing ROM fails it.
 - Every chunk keeps room for a deferred closing run, 34 bytes, so moving one
   into the next field never pushes that field past its budget.
 - No measurement available in this repository can validate a change to the
@@ -271,7 +273,7 @@ saying why.
 ### Recorded exceptions to rules 6 and 9
 
 - `movie_cursor`, `movie_bank`, `movie_kind` and `movie_last_bank` in
-  `src/movieplayer.c` are globals shared with `src/replay.s`, because the
+  `src/mediaplayer.c` are globals shared with `src/replay.s`, because the
   replay is assembly and reads and writes them by symbol. Nothing else
   touches them.
 - The mapper register at `0xFFFF` is written through a cast `volatile`
@@ -304,7 +306,7 @@ Dockerfile          toolchain image: SDCC, devkitSMS built from a pinned commit
 Makefile            host target delegates to Docker; in-container target does the real build
 include/fmv/        public headers, one per module
 src/                implementation, one file per module
-tools/smsmovie/     the baker, one module per stage
+tools/smsmedia/     the baker, one module per stage
 tools/scripts/      one-shot helpers: fetch the clips, rebuild the fixture
 tools/tests/        the encoder suite, including the multi-clip gate
 tools/DESIGN.md     why each baker module, script and test is shaped as it is
@@ -318,7 +320,7 @@ specs/              design notes, not committed
 ## Build commands
 
 ```
-make rom        build the ROM at build/sms-movie-player.sms
+make rom        build the ROM at build/sms-media-player.sms
 make analyse    static analysis, must exit 0
 make timing     VDP write spacing in the built listings, after make rom
 make hooks      install the pre-commit hook: format, lint, types and tests, plus
@@ -333,8 +335,8 @@ The encoder runs on the host, not in the image:
 ```
 uv --project tools run ruff format tools/
 uv --project tools run ruff check tools/
-uv --project tools run mypy tools/smsmovie tools/scripts
-uv --project tools run python -m pytest tools/tests --cov=smsmovie --cov=tools/scripts \
+uv --project tools run mypy tools/smsmedia tools/scripts
+uv --project tools run python -m pytest tools/tests --cov=smsmedia --cov=tools/scripts \
     --cov-config=tools/pyproject.toml --cov-fail-under=95
 
 uv --project tools run python tools/scripts/fetch_clips.py     # the regression films
@@ -349,14 +351,14 @@ explicitly on every launch rather than trusting a stored config, which can carry
 fullscreen over from a previous session.
 
 ```
-mednafen -video.fs 0 -sound 0 build/sms-movie-player.sms
+mednafen -video.fs 0 -sound 0 build/sms-media-player.sms
 ```
 
 For an unattended capture, record and pull the frame out afterwards rather than
 watching it:
 
 ```
-mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/sms-movie-player.sms
+mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/sms-media-player.sms
 ffmpeg -i /tmp/run.mov -vf "select=eq(n\,90)" -vframes 1 /tmp/frame.png
 ```
 
@@ -401,7 +403,7 @@ A change to what the picture looks like is judged frame by frame against the
 source, with one command:
 
 ```
-mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/sms-movie-player.sms
+mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/sms-media-player.sms
 uv --project tools run python tools/scripts/compare_capture.py \
     --capture /tmp/run.mov --source <film> --start <seconds> --sheet /tmp/worst.png
 ```
@@ -431,9 +433,9 @@ from the same command, and look at the sheet before quoting a number.
   comes from the seeded Faker in `tools/tests/fakes.py`. Frame content
   stays on seeded numpy generators.
 - Tests that decode through ffmpeg carry the `ffmpeg` marker. Without
-  ffmpeg they skip, unless `SMSMOVIE_FFMPEG_REQUIRED=1`, which CI and the
+  ffmpeg they skip, unless `SMSMEDIA_FFMPEG_REQUIRED=1`, which CI and the
   pre-commit hook set, turns the skip into a failure. The listing and Z80
-  tests do the same with `SMSMOVIE_ROM_REQUIRED=1`.
+  tests do the same with `SMSMEDIA_ROM_REQUIRED=1`.
 - Every checkout takes the `fmv-core-python` submodule. A weekly job writes
   how many core commits the pin is behind, and lists them, to its run
   summary; the pin moves after the golden test and the regression set pass
