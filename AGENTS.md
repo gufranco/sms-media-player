@@ -434,6 +434,10 @@ from the same command, and look at the sheet before quoting a number.
   ffmpeg they skip, unless `SMSMOVIE_FFMPEG_REQUIRED=1`, which CI and the
   pre-commit hook set, turns the skip into a failure. The listing and Z80
   tests do the same with `SMSMOVIE_ROM_REQUIRED=1`.
+- Every checkout takes the `fmv-core-python` submodule. A weekly job writes
+  how many core commits the pin is behind, and lists them, to its run
+  summary; the pin moves after the golden test and the regression set pass
+  against the newer core.
 - A release publishes a version tag and the release notes, never a ROM.
 - A release runs its gates in a read-only job with no stored credential.
   Only the publish job holds a write token, and it installs the `release`
