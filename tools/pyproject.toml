@@ -3,6 +3,7 @@ name = "smsmedia"
 version = "0.1.0"
 description = "Offline baker that turns a video file into a Sega Master System movie ROM"
 requires-python = ">=3.14"
+license = "MIT"
 dependencies = [
     "fmvcore",
     "numpy==2.5.4",
