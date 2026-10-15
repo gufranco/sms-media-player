@@ -108,12 +108,18 @@ raise the rate search above its current candidates to buy motion.
 - **Never open an emulator fullscreen.** Always windowed, and minimised when the
   run exists only to produce a capture. See below.
 
-## Emulators run windowed
+## Emulators never take the screen
 
-A fullscreen emulator takes the display away from the user and does not give it
-back until the process exits. Pass the flag explicitly every time rather than
-trusting the stored config, which can carry fullscreen over from an earlier
-session.
+An emulator never takes the screen. A scripted run is headless and makes no
+sound, and a run the owner asked to watch opens windowed and minimised, never
+full screen. mednafen opens windowed when told to; pass the flag on every
+launch rather than trusting the stored config, which can carry fullscreen over
+from an earlier session. MAME starts full screen on macOS and `-video none`
+alone still opens a window, so a MAME run carries `SDL_VIDEODRIVER=dummy` with
+`-window -video none -sound none`. MAME is never the first witness either: its
+BIOS and configuration defaults produce failures and false positives, so the
+evidence comes from mednafen or Emulicious, and the [family standard](FAMILY.md)
+says the same for every member.
 
 ```
 mednafen -video.fs 0 -sound 0 build/sms-media-player.sms

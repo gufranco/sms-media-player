@@ -230,7 +230,7 @@ Taken from the hardware-tested sibling project, and each one applies here.
    Explanation belongs here, in the README, in the commit message, or, for
    why a baker module is shaped as it is, under that module in
    [tools/DESIGN.md](tools/DESIGN.md).
-6. **Emulators run windowed, never fullscreen.** See "Running the ROM" below.
+6. **Emulators never take the screen**: headless when scripted, windowed and minimised when watched, and MAME only as a cross-check. See "Running the ROM" below.
 7. **Hardware numbers come from a source.** Every constant tied to the VDP, the
    PSG, the mapper or the raster carries a citation in the design notes. A number
    with no source is not allowed to reach the code.
@@ -345,10 +345,16 @@ uv --project tools run python tools/scripts/make_fixture.py    # the committed c
 
 ## Running the ROM
 
-**Windowed, never fullscreen.** A fullscreen emulator seizes the display and the
-user does not get it back until the process exits. Pass the windowed flag
-explicitly on every launch rather than trusting a stored config, which can carry
-fullscreen over from a previous session.
+**Never full screen, headless when scripted.** An emulator never takes the screen. A scripted run is headless and makes no
+sound, and a run the owner asked to watch opens windowed and minimised, never
+full screen. mednafen opens windowed when told to; pass the flag on every
+launch rather than trusting the stored config, which can carry fullscreen over
+from an earlier session. MAME starts full screen on macOS and `-video none`
+alone still opens a window, so a MAME run carries `SDL_VIDEODRIVER=dummy` with
+`-window -video none -sound none`. MAME is never the first witness either: its
+BIOS and configuration defaults produce failures and false positives, so the
+evidence comes from mednafen or Emulicious, and the [family standard](FAMILY.md)
+says the same for every member.
 
 ```
 mednafen -video.fs 0 -sound 0 build/sms-media-player.sms
