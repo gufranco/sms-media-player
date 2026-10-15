@@ -5,8 +5,9 @@ import logging
 from dataclasses import dataclass, replace
 from typing import Final
 
+from fmvcore.arguments import AUTO
+
 from smsmovie import bake, limits, rate, stream, tune
-from smsmovie.arguments import AUTO
 
 LOG: Final = logging.getLogger(__name__)
 

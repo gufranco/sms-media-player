@@ -10,10 +10,10 @@ from typing import Final
 
 import numpy as np
 import numpy.typing as npt
-from fmvcore import ffmpeg
+from fmvcore import arguments, ffmpeg
+from fmvcore.arguments import AUTO
 
 from smsmovie import (
-    arguments,
     bake,
     dials,
     frames,
@@ -24,7 +24,6 @@ from smsmovie import (
     schedule,
     stream,
 )
-from smsmovie.arguments import AUTO
 
 P90: Final = 0.9
 MOST_MERGED_SHOWN: Final = 3

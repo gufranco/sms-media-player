@@ -8,14 +8,6 @@ Why each part of the baker, its scripts and its tests is shaped as it is, with t
 
 Offline baker that turns a video file into a Sega Master System movie ROM.
 
-### [`smsmovie/arguments.py`](smsmovie/arguments.py)
-
-Command-line values checked where they enter, so a bad one never bakes.
-
-A rate of zero divided by zero deep inside pacing, a negative one paced every
-frame to a single field, and a reuse threshold of NaN baked a ROM. Each of
-those is refused here with the range it had to lie in.
-
 ### [`smsmovie/bake.py`](smsmovie/bake.py)
 
 Turn decoded frames into the command stream the on-cart player replays.
@@ -1047,10 +1039,6 @@ Run it from the repository root:
     uv --project tools run python tools/scripts/make_fixture.py
 
 ## The tests
-
-### [`tests/test_arguments.py`](tests/test_arguments.py)
-
-Command-line values are refused where they enter, with the range they missed.
 
 ### [`tests/test_capture.py`](tests/test_capture.py)
 

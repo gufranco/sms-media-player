@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Final
 
 import numpy as np
-from fmvcore import ffmpeg
+from fmvcore import arguments, ffmpeg
 
-from smsmovie import arguments, bake, cartridge, limits, tune
+from smsmovie import bake, cartridge, limits, tune
 
 SCOUT_DENOISE: Final = 4.0
 DEFAULT_SCOUT_SECONDS: Final = 40.0
