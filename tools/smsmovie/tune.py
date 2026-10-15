@@ -7,6 +7,7 @@ from typing import Final
 
 import numpy as np
 import numpy.typing as npt
+from fmvcore import colour
 
 from smsmovie import bake, capture, frames, limits, pattern, stream
 
@@ -241,7 +242,7 @@ def replayed_error(
         width=geometry.width,
         left=geometry.left_column * pattern.TILE_PX,
     )
-    return capture.blurred_error(shown[: len(wanted)], np.stack(wanted))
+    return colour.blurred_error(shown[: len(wanted)], np.stack(wanted))
 
 
 def decide(

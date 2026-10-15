@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
+from fmvcore import colour
 
-from smsmovie import bake, console, limits, palettes, replay, smscolor, stream
+from smsmovie import bake, console, limits, palettes, replay, stream
 
 
 def gradient_frame(height: int, width: int, shift: int = 0) -> np.ndarray:
@@ -588,8 +589,8 @@ def replayed_working_set(
         )
         kept = fitted.cram
         floor = fitted.render()
-        a = smscolor.srgb_to_oklab(shown.astype(np.float32) / 255.0)
-        b = smscolor.srgb_to_oklab(floor.astype(np.float32) / 255.0)
+        a = colour.srgb_to_oklab(shown.astype(np.float32) / 255.0)
+        b = colour.srgb_to_oklab(floor.astype(np.float32) / 255.0)
         measured.append(float(((a - b) ** 2).sum(axis=-1).mean()))
     return float(np.mean(measured))
 

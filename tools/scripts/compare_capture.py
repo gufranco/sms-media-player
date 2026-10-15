@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Final
 
 import numpy as np
+from fmvcore import colour
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -46,17 +47,17 @@ def measure(played: capture.Played, source: np.ndarray) -> dict[str, float]:
     )
     pairs = list(zip(played.completes, lags, strict=False))
     matched = [
-        capture.oklab_error(played.fields[field], source[field - lag]) for field, lag in pairs
+        colour.oklab_error(played.fields[field], source[field - lag]) for field, lag in pairs
     ]
     blurred = [
-        capture.blurred_error(played.fields[[field]], source[[field - lag]]) for field, lag in pairs
+        colour.blurred_error(played.fields[[field]], source[[field - lag]]) for field, lag in pairs
     ]
     rate = console.NTSC_FIELD_HZ
     return {
         "fields": int(played.fields.shape[0]),
         "frames": len(played.completes),
         "on_screen_error": float(
-            np.mean([capture.oklab_error(played.fields[i], source[i]) for i in sampled])
+            np.mean([colour.oklab_error(played.fields[i], source[i]) for i in sampled])
         ),
         "frame_error": float(np.mean(matched)),
         "blurred_frame_error": float(np.mean(blurred)),
@@ -80,7 +81,7 @@ def worst_mixed(played: capture.Played) -> tuple[int, int, int]:
 
 def worst_frame(played: capture.Played, source: np.ndarray) -> tuple[int, int, int]:
     usable = [field for field in played.completes if field < source.shape[0]]
-    errors = [capture.oklab_error(played.fields[field], source[field]) for field in usable]
+    errors = [colour.oklab_error(played.fields[field], source[field]) for field in usable]
     position = played.completes.index(usable[int(np.argmax(errors))])
     previous = played.completes[max(position - 1, 0)]
     following = played.completes[min(position + 1, len(played.completes) - 1)]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import numpy.typing as npt
+from fmvcore import colour
 
 from smsmovie import palettes, pattern, smscolor, workingset
 
@@ -35,7 +36,7 @@ def displayed_error(
 
 
 def source_cells(frame: npt.NDArray[np.uint8], chroma_weight: float) -> npt.NDArray[np.float32]:
-    source = smscolor.srgb_to_oklab(frame.astype(np.float32) / 255.0)
+    source = colour.srgb_to_oklab(frame.astype(np.float32) / 255.0)
     source[..., 1] *= chroma_weight
     source[..., 2] *= chroma_weight
     source_cells = pattern.tile_frame(

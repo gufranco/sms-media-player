@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from fmvcore import colour
 
 from smsmovie import smscolor
 
@@ -234,41 +235,6 @@ class TestColourToRgb:
         assert result.tolist() == [[0, 0, 0], [255, 255, 255]]
 
 
-class TestSrgbToOklab:
-    def test_black_sits_at_the_origin(self):
-        # Arrange
-        rgb = np.zeros((1, 3), dtype=np.float32)
-
-        # Act
-        result = smscolor.srgb_to_oklab(rgb)
-
-        # Assert
-        assert result[0, 0] == pytest.approx(0.0, abs=1e-6)
-
-    def test_white_has_unit_lightness_and_no_chroma(self):
-        # Arrange
-        rgb = np.ones((1, 3), dtype=np.float32)
-
-        # Act
-        result = smscolor.srgb_to_oklab(rgb)
-
-        # Assert
-        assert result[0, 0] == pytest.approx(1.0, abs=1e-3)
-        assert result[0, 1] == pytest.approx(0.0, abs=1e-3)
-        assert result[0, 2] == pytest.approx(0.0, abs=1e-3)
-
-    def test_an_array_without_an_rgb_axis_is_refused(self):
-        # Arrange
-        rgb = np.zeros((4, 2), dtype=np.float32)
-
-        # Act
-        with pytest.raises(ValueError) as refused:
-            smscolor.srgb_to_oklab(rgb)
-
-        # Assert
-        assert str(refused.value) == "expected a trailing RGB axis, got shape (4, 2)"
-
-
 class TestOklabPalette:
     def test_every_console_colour_has_a_coordinate(self):
         # Arrange
@@ -354,7 +320,7 @@ class TestNearestColour:
         rng = np.random.default_rng(42)
         rgb = rng.integers(0, 256, size=(16, 16, 3), dtype=np.uint8)
         lab = smscolor.oklab_palette()
-        source = smscolor.srgb_to_oklab(rgb.astype(np.float32) / 255.0).reshape(-1, 3)
+        source = colour.srgb_to_oklab(rgb.astype(np.float32) / 255.0).reshape(-1, 3)
         rounded = smscolor.pack_colour(smscolor.quantise_levels(rgb)).reshape(-1)
         rounded_error = source - lab[rounded]
 

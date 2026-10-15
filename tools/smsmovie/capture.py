@@ -6,14 +6,13 @@ from typing import Final
 
 import numpy as np
 import numpy.typing as npt
+from fmvcore import colour
 
 from smsmovie import replay, smscolor
 
 ALIGN_SAMPLES: Final = 48
 ALIGN_SEARCH: Final = 64
 THUMB: Final = 8
-BLUR_TAPS: Final = (1.0, 4.0, 6.0, 4.0, 1.0)
-FRAMES_NDIM: Final = 4
 
 Frames = npt.NDArray[np.uint8]
 
@@ -69,36 +68,12 @@ def align(recorded: Frames, fields: Frames) -> Alignment:
     return best
 
 
-def oklab_error(shown: Frames, wanted: Frames) -> float:
-    a = smscolor.srgb_to_oklab(shown.astype(np.float32) / 255.0)
-    b = smscolor.srgb_to_oklab(wanted.astype(np.float32) / 255.0)
-    return float(np.sqrt(((a - b) ** 2).sum(-1)).mean())
-
-
 def picture_frames(played: Played, *, top: int, height: int, width: int, left: int = 0) -> Frames:
     return played.fields[played.completes, top : top + height, left : left + width]
 
 
-def blurred_error(shown: Frames, wanted: Frames) -> float:
-    if shown.shape != wanted.shape or shown.ndim != FRAMES_NDIM:
-        msg = f"cannot compare frames shaped {shown.shape} and {wanted.shape}"
-        raise ValueError(msg)
-    a = _blurred(smscolor.srgb_to_oklab(shown.astype(np.float32) / 255.0))
-    b = _blurred(smscolor.srgb_to_oklab(wanted.astype(np.float32) / 255.0))
-    return float(np.sqrt(((a - b) ** 2).sum(-1)).mean())
-
-
-def _blurred(lab: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
-    taps = np.array(BLUR_TAPS, dtype=np.float32) / sum(BLUR_TAPS)
-    reach = len(BLUR_TAPS) // 2
-    height, width = lab.shape[1], lab.shape[2]
-    padded = np.pad(lab, ((0, 0), (reach, reach), (reach, reach), (0, 0)), mode="edge")
-    rows = sum(tap * padded[:, i : i + height] for i, tap in enumerate(taps))
-    return np.asarray(sum(tap * rows[:, :, i : i + width] for i, tap in enumerate(taps)))
-
-
 def lattice_floor(wanted: Frames) -> float:
-    lab = smscolor.srgb_to_oklab(wanted.astype(np.float32) / 255.0).reshape(-1, 3)
+    lab = colour.srgb_to_oklab(wanted.astype(np.float32) / 255.0).reshape(-1, 3)
     palette = smscolor.oklab_palette(1.0)
     return float(np.sqrt(((lab[:, None, :] - palette[None, :, :]) ** 2).sum(-1)).min(1).mean())
 

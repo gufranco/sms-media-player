@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from fmvcore import colour
 
 from smsmovie import bake, capture, limits, stream
 
@@ -39,7 +40,7 @@ def measured(frames: list[np.ndarray]) -> tuple[int, int, int, float]:
     blob, banks = stream.pack_banks(fields, bank_size=limits.BANK_BYTES)
     played = capture.replay_fields(blob)
     shown = capture.picture_frames(played, top=0, height=GEOMETRY.height, width=GEOMETRY.width)
-    error = capture.blurred_error(shown[: len(frames)], np.stack(frames))
+    error = colour.blurred_error(shown[: len(frames)], np.stack(frames))
     size = sum(len(chunk) for frame in fields for chunk in frame)
     return size, banks, len(played.completes), error
 

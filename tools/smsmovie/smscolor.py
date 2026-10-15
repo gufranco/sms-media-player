@@ -4,11 +4,11 @@ from typing import Final
 
 import numpy as np
 import numpy.typing as npt
+from fmvcore import colour
 
 LEVELS: Final = 4
 RGB_CHANNELS: Final = 3
 IMAGE_RANK: Final = 3
-SRGB_LINEAR_LIMIT: Final = 0.04045
 CHANNEL_MAX: Final = LEVELS - 1
 PALETTE_ENTRIES: Final = 16
 PALETTE_COUNT: Final = 2
@@ -81,36 +81,6 @@ def colour_to_rgb(byte: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:
     return level_to_byte(unpack_colour(byte))
 
 
-def srgb_to_oklab(rgb: npt.NDArray[np.floating]) -> npt.NDArray[np.float32]:
-    if rgb.shape[-1] != RGB_CHANNELS:
-        msg = f"expected a trailing RGB axis, got shape {rgb.shape}"
-        raise ValueError(msg)
-    value = np.asarray(rgb, dtype=np.float32)
-    linear = np.where(
-        value <= SRGB_LINEAR_LIMIT,
-        value / 12.92,
-        np.power((value + 0.055) / 1.055, 2.4),
-    ).astype(np.float32)
-
-    red = linear[..., 0]
-    green = linear[..., 1]
-    blue = linear[..., 2]
-
-    long_cone = 0.4122214708 * red + 0.5363325363 * green + 0.0514459929 * blue
-    medium_cone = 0.2119034982 * red + 0.6806995451 * green + 0.1073969566 * blue
-    short_cone = 0.0883024619 * red + 0.2817188376 * green + 0.6299787005 * blue
-
-    long_root = np.cbrt(long_cone)
-    medium_root = np.cbrt(medium_cone)
-    short_root = np.cbrt(short_cone)
-
-    lightness = 0.2104542553 * long_root + 0.7936177850 * medium_root - 0.0040720468 * short_root
-    green_red = 1.9779984951 * long_root - 2.4285922050 * medium_root + 0.4505937099 * short_root
-    blue_yellow = 0.0259040371 * long_root + 0.7827717662 * medium_root - 0.8086757660 * short_root
-
-    return np.stack([lightness, green_red, blue_yellow], axis=-1).astype(np.float32)
-
-
 def oklab_palette(chroma_weight: float = 1.0) -> npt.NDArray[np.float32]:
     if chroma_weight < 0.0:
         msg = "chroma weight must not be negative"
@@ -118,7 +88,7 @@ def oklab_palette(chroma_weight: float = 1.0) -> npt.NDArray[np.float32]:
 
     index = np.arange(COLOUR_COUNT, dtype=np.uint8)
     rgb = colour_to_rgb(index).astype(np.float32) / 255.0
-    lab = srgb_to_oklab(rgb)
+    lab = colour.srgb_to_oklab(rgb)
     lab[..., 1] *= chroma_weight
     lab[..., 2] *= chroma_weight
     return lab
@@ -134,7 +104,7 @@ def nearest_colour(
         raise ValueError(msg)
 
     lab = oklab_palette(chroma_weight)
-    source = srgb_to_oklab(rgb.astype(np.float32) / 255.0)
+    source = colour.srgb_to_oklab(rgb.astype(np.float32) / 255.0)
     flat = source.reshape(-1, 3).astype(np.float32)
 
     best = np.zeros(flat.shape[0], dtype=np.uint8)

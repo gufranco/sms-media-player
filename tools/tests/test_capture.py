@@ -5,9 +5,6 @@ import pytest
 
 from smsmovie import bake, capture, stream
 
-OKLAB_MIDPOINT_GREY = 100
-GREY_40_TO_200_OKLAB = 0.5559456
-
 GEOMETRY = bake.Geometry(columns=32, rows=24, top_row=0)
 
 
@@ -112,26 +109,6 @@ class TestMixing:
 
 
 class TestError:
-    def test_identical_pictures_have_no_error(self):
-        # Arrange
-        shown, wanted = picture(120), picture(120)
-
-        # Act
-        error = capture.oklab_error(shown, wanted)
-
-        # Assert
-        assert error == 0.0
-
-    def test_different_pictures_have_some(self):
-        # Arrange
-        shown, wanted = picture(0), picture(255)
-
-        # Act
-        error = capture.oklab_error(shown, wanted)
-
-        # Assert
-        assert error > 0.5
-
     def test_the_floor_of_a_console_colour_is_zero(self):
         # Arrange
         frame = picture(170)
@@ -219,92 +196,3 @@ class TestFlips:
 
         # Assert
         assert played.completes == [end + 1 for end in ends[:-1]]
-
-
-class TestBlurredError:
-    def test_identical_frames_have_no_blurred_error(self):
-        # Arrange
-        frames = np.random.default_rng(7).integers(0, 256, (2, 16, 16, 3), dtype=np.uint8)
-
-        # Act
-        error = capture.blurred_error(frames, frames.copy())
-
-        # Assert
-        assert error == 0.0
-
-    def test_flat_frames_score_the_same_blurred_or_not(self):
-        # Arrange
-        shown = np.full((1, 16, 16, 3), 40, dtype=np.uint8)
-        wanted = np.full((1, 16, 16, 3), 200, dtype=np.uint8)
-
-        # Act
-        error = capture.blurred_error(shown, wanted)
-
-        # Assert
-        assert error == pytest.approx(GREY_40_TO_200_OKLAB, rel=1e-4)
-
-    def test_a_fine_checker_matches_the_grey_at_its_oklab_midpoint_once_blurred(self):
-        # Arrange
-        rows, columns = np.mgrid[0:16, 0:16]
-        checker = np.where(((rows + columns) % 2)[..., None] == 0, 255, 0).astype(np.uint8)
-        shown = np.broadcast_to(checker, (1, 16, 16, 3)).copy()
-        wanted = np.full((1, 16, 16, 3), OKLAB_MIDPOINT_GREY, dtype=np.uint8)
-
-        # Act
-        error = capture.blurred_error(shown, wanted)
-
-        # Assert
-        assert error < capture.oklab_error(shown, wanted) / 20
-
-
-class TestBlurredErrorInputs:
-    def test_vertical_stripes_match_the_grey_at_their_midpoint_once_blurred(self):
-        # Arrange
-        columns = np.arange(16) % 2
-        stripes = np.where(columns[None, :, None] == 0, 255, 0).astype(np.uint8)
-        shown = np.broadcast_to(stripes, (1, 16, 16, 3)).copy()
-        wanted = np.full((1, 16, 16, 3), OKLAB_MIDPOINT_GREY, dtype=np.uint8)
-
-        # Act
-        error = capture.blurred_error(shown, wanted)
-
-        # Assert
-        assert error < capture.oklab_error(shown, wanted) / 4
-
-    def test_horizontal_stripes_match_the_grey_at_their_midpoint_once_blurred(self):
-        # Arrange
-        rows = np.arange(16) % 2
-        stripes = np.where(rows[:, None, None] == 0, 255, 0).astype(np.uint8)
-        shown = np.broadcast_to(stripes, (1, 16, 16, 3)).copy()
-        wanted = np.full((1, 16, 16, 3), OKLAB_MIDPOINT_GREY, dtype=np.uint8)
-
-        # Act
-        error = capture.blurred_error(shown, wanted)
-
-        # Assert
-        assert error < capture.oklab_error(shown, wanted) / 4
-
-    def test_frames_of_different_shapes_are_refused(self):
-        # Arrange
-        shown = np.zeros((1, 16, 16, 3), dtype=np.uint8)
-        wanted = np.zeros((2, 16, 16, 3), dtype=np.uint8)
-
-        # Act
-        with pytest.raises(ValueError) as refused:
-            capture.blurred_error(shown, wanted)
-
-        # Assert
-        assert (
-            str(refused.value) == "cannot compare frames shaped (1, 16, 16, 3) and (2, 16, 16, 3)"
-        )
-
-    def test_a_single_frame_without_a_batch_axis_is_refused(self):
-        # Arrange
-        frame = np.zeros((16, 16, 3), dtype=np.uint8)
-
-        # Act
-        with pytest.raises(ValueError) as refused:
-            capture.blurred_error(frame, frame)
-
-        # Assert
-        assert str(refused.value) == "cannot compare frames shaped (16, 16, 3) and (16, 16, 3)"
