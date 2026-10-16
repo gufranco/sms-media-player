@@ -16,9 +16,13 @@ def write_header(
     *,
     banks: int,
     frame_count: int,
+    field_count: int,
     hold_fields: int,
     first_bank_symbol: str,
 ) -> None:
+    if field_count < 1:
+        msg = "a film needs at least one field"
+        raise ValueError(msg)
     if not 1 <= hold_fields <= MAX_HOLD_FIELDS:
         msg = f"the player counts the hold in 16 bits, so {hold_fields} fields cannot be held"
         raise ValueError(msg)
@@ -29,6 +33,7 @@ def write_header(
         "\n"
         f"#define MOVIE_BANKS {banks}u\n"
         f"#define MOVIE_FRAMES {frame_count}u\n"
+        f"#define MOVIE_FIELDS {field_count}ul\n"
         f"#define MOVIE_HOLD_FIELDS {hold_fields}u\n"
         f"#define MOVIE_FIRST_BANK {first_bank_symbol}\n"
         "\n"
@@ -61,6 +66,7 @@ def publish(
     blob: bytes,
     banks: int,
     frame_count: int,
+    field_count: int,
     hold_fields: int,
 ) -> None:
     assets.mkdir(parents=True, exist_ok=True)
@@ -71,6 +77,7 @@ def publish(
         header,
         banks=banks,
         frame_count=frame_count,
+        field_count=field_count,
         hold_fields=hold_fields,
         first_bank_symbol=FIRST_BANK_SYMBOL,
     )

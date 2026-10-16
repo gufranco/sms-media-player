@@ -1,6 +1,7 @@
 #include "SMSlib.h"
 #include "assets.h"
 #include "fmv/mediaplayer.h"
+#include "fmv/osd.h"
 #include "fmv/psg.h"
 #include "fmv/screen.h"
 #include "fmv/types.h"
@@ -15,7 +16,8 @@ typedef enum {
     FMV_OUTCOME_ENDED = 0,
     FMV_OUTCOME_RESTART = 1,
     FMV_OUTCOME_EXIT = 2,
-    FMV_OUTCOME_FAULT = 3
+    FMV_OUTCOME_FAULT = 3,
+    FMV_OUTCOME_PLAYING = 4
 } fmv_outcome;
 
 SMS_EMBED_SEGA_ROM_HEADER(0, 0);
@@ -33,14 +35,19 @@ static void hold_last_frame(void)
     }
 }
 
+static fmv_position position;
+
 static void wait_for_resume(void)
 {
     fmv_psg_silence();
     SMS_resetPauseRequest();
+    SMS_waitForVBlank();
+    fmv_osd_show(&position);
     while (!SMS_queryPauseRequested()) {
         SMS_waitForVBlank();
     }
     SMS_resetPauseRequest();
+    fmv_osd_hide();
 }
 
 static void toggle_sound(void)
@@ -59,33 +66,47 @@ static void boot(void)
     fmv_screen_reset();
 }
 
+static fmv_outcome handle_input(void)
+{
+    u16 pressed;
+
+    if (SMS_queryPauseRequested()) {
+        wait_for_resume();
+    }
+    pressed = (u16)SMS_getKeysPressed();
+    if ((pressed & FMV_MUTE_KEYS) != 0u) {
+        toggle_sound();
+    }
+    if ((pressed & FMV_EXIT_KEYS) != 0u) {
+        return FMV_OUTCOME_EXIT;
+    }
+    if ((pressed & FMV_RESTART_KEYS) != 0u) {
+        return FMV_OUTCOME_RESTART;
+    }
+    return FMV_OUTCOME_PLAYING;
+}
+
 static fmv_outcome play_once(void)
 {
     static_assert(MOVIE_FRAMES > 0u, "a film needs at least one frame");
     static_assert(MOVIE_BANKS > 0u, "a film needs at least one bank");
 
     fmv_movie_start((u8)MOVIE_FIRST_BANK, (u8)MOVIE_BANKS);
+    position.elapsed_fields = 0u;
+    position.total_fields = MOVIE_FIELDS;
 
     while (fmv_movie_frames() < MOVIE_FRAMES) {
-        u16 pressed;
+        fmv_outcome outcome;
 
         SMS_waitForVBlank();
         fmv_movie_chunk();
+        position.elapsed_fields++;
         if (fmv_movie_last_kind() == FMV_CHUNK_BAD) {
             return FMV_OUTCOME_FAULT;
         }
-        if (SMS_queryPauseRequested()) {
-            wait_for_resume();
-        }
-        pressed = (u16)SMS_getKeysPressed();
-        if ((pressed & FMV_MUTE_KEYS) != 0u) {
-            toggle_sound();
-        }
-        if ((pressed & FMV_EXIT_KEYS) != 0u) {
-            return FMV_OUTCOME_EXIT;
-        }
-        if ((pressed & FMV_RESTART_KEYS) != 0u) {
-            return FMV_OUTCOME_RESTART;
+        outcome = handle_input();
+        if (outcome != FMV_OUTCOME_PLAYING) {
+            return outcome;
         }
     }
 

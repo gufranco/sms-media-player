@@ -1,3 +1,4 @@
+---
 name: CI
 
 on:
@@ -50,7 +51,7 @@ jobs:
               bad=1
             fi
             if [ "$author" != "$bot" ] && [ "${#subject}" -gt "$limit" ]; then
-              echo "subject longer than $limit characters (${#subject}): $subject"
+              echo "subject over $limit characters (${#subject}): $subject"
               bad=1
             fi
           done < <(git log --format='%an%x09%s' "$BASE..$HEAD")
@@ -162,6 +163,7 @@ jobs:
         run: >-
           uv --project tools run python -m pytest
           tools/tests/test_replay_on_z80.py
+          tools/tests/test_osd_on_z80.py
 
       - name: The ROM is real
         run: |

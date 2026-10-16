@@ -51,6 +51,7 @@ class TestPublish:
             blob=b"film",
             banks=1,
             frame_count=2,
+            field_count=9,
             hold_fields=6,
         )
 
@@ -69,6 +70,7 @@ class TestPublish:
             blob=b"film",
             banks=3,
             frame_count=2,
+            field_count=9,
             hold_fields=6,
         )
 
@@ -87,11 +89,37 @@ class TestPublish:
             blob=b"film",
             banks=1,
             frame_count=2,
+            field_count=9,
             hold_fields=10,
         )
 
         # Assert
         assert "#define MOVIE_HOLD_FIELDS 10u" in (generated / output.HEADER).read_text()
+
+    def test_the_header_says_how_many_fields_the_film_lasts(self, tmp_path):
+        # Arrange
+        path = tmp_path / "movie.h"
+
+        # Act
+        output.write_header(
+            path, banks=1, frame_count=2, field_count=1234, hold_fields=6, first_bank_symbol="b"
+        )
+
+        # Assert
+        assert "#define MOVIE_FIELDS 1234ul" in path.read_text()
+
+    def test_a_film_with_no_fields_is_refused(self, tmp_path):
+        # Arrange
+        path = tmp_path / "movie.h"
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            output.write_header(
+                path, banks=1, frame_count=1, field_count=0, hold_fields=6, first_bank_symbol="b"
+            )
+
+        # Assert
+        assert str(refused.value) == "a film needs at least one field"
 
     def test_it_leaves_no_staged_file_behind(self, tmp_path):
         # Arrange
@@ -105,6 +133,7 @@ class TestPublish:
             blob=b"film",
             banks=1,
             frame_count=2,
+            field_count=9,
             hold_fields=6,
         )
 
@@ -119,7 +148,13 @@ class TestAnInterruptedPublish:
         assets = tmp_path / "a"
         generated = tmp_path / "g"
         output.publish(
-            assets=assets, generated=generated, blob=b"old", banks=1, frame_count=1, hold_fields=6
+            assets=assets,
+            generated=generated,
+            blob=b"old",
+            banks=1,
+            frame_count=1,
+            field_count=9,
+            hold_fields=6,
         )
         real_replace = output.Path.replace
 
@@ -138,6 +173,7 @@ class TestAnInterruptedPublish:
                 blob=b"new",
                 banks=2,
                 frame_count=9,
+                field_count=9,
                 hold_fields=6,
             )
 
@@ -172,6 +208,7 @@ class TestClear:
             blob=b"old",
             banks=1,
             frame_count=1,
+            field_count=9,
             hold_fields=6,
         )
 
@@ -200,7 +237,9 @@ class TestHoldLimits:
         path = tmp_path / "movie.h"
 
         # Act
-        output.write_header(path, banks=1, frame_count=2, hold_fields=599, first_bank_symbol="bank")
+        output.write_header(
+            path, banks=1, frame_count=2, field_count=9, hold_fields=599, first_bank_symbol="bank"
+        )
 
         # Assert
         assert "#define MOVIE_HOLD_FIELDS 599u\n" in path.read_text()
@@ -213,7 +252,12 @@ class TestHoldLimits:
         # Act
         with pytest.raises(ValueError) as refused:
             output.write_header(
-                path, banks=1, frame_count=2, hold_fields=fields, first_bank_symbol="bank"
+                path,
+                banks=1,
+                frame_count=2,
+                field_count=9,
+                hold_fields=fields,
+                first_bank_symbol="bank",
             )
 
         # Assert

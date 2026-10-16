@@ -181,6 +181,9 @@ Rules that follow:
   inside the guarded block too. Sega's documentation gives the same floor for
   VRAM, CRAM and registers, and the documented figure binds, so every pair in
   `src/replay.s` and `src/vdp.s` is padded with `nop` to 30.
+- `tools/tests/test_osd_on_z80.py` runs the built pause overlay on a Z80 against
+  a VDP model and reads back the palette, the glyph pixels and the sprite
+  table it wrote.
 - `tools/tests/test_replay_on_z80.py` runs the built replay on a Z80 with the
   V counter held at chosen lines. With the guard in place no palette byte and
   no flip reaches the VDP outside the window; with its branches patched out
@@ -516,9 +519,9 @@ reason: the replay refuses run kind `0x03` instead of copying the palettes
 outside the V counter guard, an assertion halt paints the backdrop entry so it
 shows with the display off, the replay cursor is asserted below `0xC000`, the
 replay writes the sound run, kind `0x06`, to the PSG 34 T-states apart, and
-the player pauses on the Pause NMI and skips sound runs while muted.
+the player pauses on the Pause NMI, draws a position bar in sprites while paused, and skips sound runs while muted.
 A fresh ROM carrying them needs one Game Gear run: play through with sound,
-press Start to pause and again to resume, press Up to mute and again to hear
+press Start to pause, check the white elapsed and total time and the bar near the bottom, press it again to resume, press Up to mute and again to hear
 the tones return within a second, press button 1 to restart and button 2 to
 exit, and watch for shredded tiles.
 
@@ -526,6 +529,15 @@ Start pausing on a Game Gear rests on the SMS Power Start Button page, which
 says that in Master System mode the Start button acts identically to the
 Pause button, and on the Mark III software reference, which wires Pause to
 the Z80 NMI. No Sega document in hand states it for the Game Gear.
+
+The pause overlay lives in VRAM no picture reaches. The back name table spans
+0x3000 to 0x36FF for 28 rows, the display shows 24, and nothing writes the
+last four rows, so 0x3600 to 0x37FF holds 16 patterns, sprite tiles 176 to
+191 with the sprite patterns at 0x2000. The overlay sets sprite palette
+entries 30 and 31 to black and white; the next frame's closing run writes
+every palette entry again, so resuming restores the film's colours on the
+first frame. A mednafen run of a probe ROM drew it in place, white on a black
+shadow.
 
 The owner has a Game Gear with an Everdrive, which runs Master System ROMs, and
 that is the hardware path available. What it can and cannot settle is in

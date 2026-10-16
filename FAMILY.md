@@ -282,8 +282,8 @@ in as the film plays, and the binding constraint is the bytes the console
 accepts in a field rather than the size of a cartridge. It decodes, scores,
 verifies films and measures captures through `fmv-core-python`.
 
-Gaps against "What every player does" (as of 2026-10-15):
+Gaps against "What every player does" (as of 2026-10-16):
 
 - The rate, denoise and reuse threshold are measured per bake, but nothing yet
   sizes the film to the cartridge as a whole.
-- The player loops, restarts and exits; it has no position bar, pause or seek.
+- The player loops, restarts, exits, pauses with a position bar and mutes; it has no seek.

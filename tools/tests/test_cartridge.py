@@ -129,7 +129,12 @@ class TestWriteHeader:
 
         # Act
         output.write_header(
-            target, banks=7, frame_count=3, hold_fields=6, first_bank_symbol="movie_bin_PART0_bank"
+            target,
+            banks=7,
+            frame_count=3,
+            field_count=9,
+            hold_fields=6,
+            first_bank_symbol="movie_bin_PART0_bank",
         )
 
         # Assert
@@ -141,7 +146,12 @@ class TestWriteHeader:
 
         # Act
         output.write_header(
-            target, banks=7, frame_count=3, hold_fields=6, first_bank_symbol="movie_bin_PART0_bank"
+            target,
+            banks=7,
+            frame_count=3,
+            field_count=9,
+            hold_fields=6,
+            first_bank_symbol="movie_bin_PART0_bank",
         )
 
         # Assert
@@ -153,7 +163,12 @@ class TestWriteHeader:
 
         # Act
         output.write_header(
-            target, banks=1, frame_count=1, hold_fields=6, first_bank_symbol="movie_bin_PART0_bank"
+            target,
+            banks=1,
+            frame_count=1,
+            field_count=9,
+            hold_fields=6,
+            first_bank_symbol="movie_bin_PART0_bank",
         )
 
         # Assert
@@ -164,7 +179,9 @@ class TestWriteHeader:
         target = tmp_path / "generated" / "movie.h"
 
         # Act
-        output.write_header(target, banks=1, frame_count=1, hold_fields=6, first_bank_symbol="b")
+        output.write_header(
+            target, banks=1, frame_count=1, field_count=9, hold_fields=6, first_bank_symbol="b"
+        )
 
         # Assert
         assert target.is_file() is True

@@ -383,6 +383,7 @@ def _publish(
         blob=blob,
         banks=banks,
         frame_count=len(baked.fields),
+        field_count=sum(len(frame) for frame in baked.fields),
         hold_fields=rate.fields_for(settled.fps),
     )
     if args.preview is not None:
