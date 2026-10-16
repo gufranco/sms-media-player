@@ -16,16 +16,25 @@ TONE_DIVISOR: Final = 32
 TONE_CHANNELS: Final = 3
 NOISE_CHANNEL: Final = 3
 MAX_DIVIDER: Final = 1023
-MIN_HZ: Final = PSG_CLOCK_HZ / (TONE_DIVISOR * MAX_DIVIDER)
+LOWEST_HEARD_HZ: Final = 40.0
 MAX_HZ: Final = 4000.0
 NOISE_LOW_HZ: Final = 4000.0
 NOISE_HIGH_HZ: Final = 10000.0
 WINDOW: Final = 2048
+HANN_GAIN: Final = WINDOW / 4
 PEAK_REACH: Final = 3
 SEMITONE: Final = 2 ** (1 / 12)
+TRACK_REACH: Final = SEMITONE**1.5
+HOLD_RATIO: Final = 0.006
+LOWEST_HARMONIC: Final = 2
+HIGHEST_HARMONIC: Final = 8
+HARMONIC_TOLERANCE: Final = 0.03
 DB_PER_STEP: Final = 2.0
 MUTE: Final = 15
-QUIETEST_DB: Final = -24.0
+LEVEL_SECONDS: Final = 8.0
+LEVEL_FLOOR: Final = 0.05
+VOICE_GAIN: Final = 1.2
+NOISE_GAIN: Final = 2.0
 LATCH: Final = 0x80
 VOLUME: Final = 0x10
 LOW_NIBBLE: Final = 0x0F
@@ -37,6 +46,7 @@ DECODE_RATE: Final = 22050
 REFRESH_FIELDS: Final = 60
 
 Spectrum = npt.NDArray[np.float64]
+Tone = tuple[float, float]
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,52 +85,121 @@ def synthesize(samples: npt.NDArray[np.float32], *, rate: int, fields: int) -> l
     if fields < 1:
         msg = "a film needs at least one field of sound"
         raise ValueError(msg)
-    spectra = [_spectrum(samples, rate, field) for field in range(fields)]
-    reference = max((float(s.max()) for s in spectra), default=0.0) or 1.0
+    wave = samples.astype(np.float64)
+    spectra = [_spectrum(wave, rate, field) for field in range(fields)]
     frequencies = np.fft.rfftfreq(WINDOW, 1.0 / rate)
-    voices = [_voices(s, frequencies, reference) for s in spectra]
-    noise = [_noise(s, frequencies, reference) for s in spectra]
+    levels = _levels(wave, rate, fields)
+    voices = _voices(spectra, frequencies, levels)
+    hiss = (frequencies >= NOISE_LOW_HZ) & (frequencies <= NOISE_HIGH_HZ)
+    noise = [_noise(s, hiss, level) for s, level in zip(spectra, levels, strict=True)]
     return _changes(voices, noise)
 
 
-def _spectrum(samples: npt.NDArray[np.float32], rate: int, field: int) -> Spectrum:
-    start = round(field * rate / console.NTSC_FIELD_HZ)
+def _spectrum(wave: npt.NDArray[np.float64], rate: int, field: int) -> Spectrum:
+    first = round((field + 0.5) * rate / console.NTSC_FIELD_HZ) - WINDOW // 2
+    low, high = max(0, first), min(wave.shape[0], first + WINDOW)
     segment = np.zeros(WINDOW, dtype=np.float64)
-    piece = samples[start : start + WINDOW]
-    segment[: piece.shape[0]] = piece
-    return np.abs(np.fft.rfft(segment * np.hanning(WINDOW)))
+    if high > low:
+        segment[low - first : high - first] = wave[low:high]
+    return np.abs(np.fft.rfft(segment * np.hanning(WINDOW))) / HANN_GAIN
 
 
-def _attenuation(magnitude: float, reference: float) -> int:
-    if magnitude <= 0.0:
+def _levels(wave: npt.NDArray[np.float64], rate: int, fields: int) -> list[float]:
+    step = rate / console.NTSC_FIELD_HZ
+    loudness = [_rms(wave[int(f * step) : int((f + 1) * step)]) for f in range(fields)]
+    peak = max(loudness)
+    if peak == 0.0:
+        return [0.0] * fields
+    reach = round(LEVEL_SECONDS * console.NTSC_FIELD_HZ)
+    near = [max(loudness[max(0, f - reach) : f + reach + 1]) for f in range(fields)]
+    return [loud / max(top, peak * LEVEL_FLOOR) for loud, top in zip(loudness, near, strict=True)]
+
+
+def _rms(piece: npt.NDArray[np.float64]) -> float:
+    return float(np.sqrt(np.mean(piece**2))) if piece.shape[0] else 0.0
+
+
+def _attenuation(amplitude: float) -> int:
+    if amplitude <= 0.0:
         return MUTE
-    level = 20.0 * np.log10(magnitude / reference)
-    if level < QUIETEST_DB:
-        return MUTE
+    level = 20.0 * np.log10(min(1.0, amplitude))
     return int(min(MUTE, max(0, round(-level / DB_PER_STEP))))
 
 
-def _voices(spectrum: Spectrum, frequencies: Spectrum, reference: float) -> list[Voice]:
-    chosen: list[float] = []
-    voices: list[Voice] = []
+def _voices(
+    spectra: list[Spectrum], frequencies: Spectrum, levels: list[float]
+) -> list[list[Voice]]:
+    held: list[float | None] = [None] * TONE_CHANNELS
+    out: list[list[Voice]] = []
+    for spectrum, level in zip(spectra, levels, strict=True):
+        tones = _tones(spectrum, frequencies)
+        total = sum(magnitude for _, magnitude in tones) or 1.0
+        slots = _assign(held, tones)
+        row = [_voice(slot, before, level, total) for slot, before in zip(slots, held, strict=True)]
+        held = [hz for _, hz in row]
+        out = [*out, [voice for voice, _ in row]]
+    return out
+
+
+def _voice(
+    tone: Tone | None, before: float | None, level: float, total: float
+) -> tuple[Voice, float | None]:
+    silent = (Voice(MAX_DIVIDER, MUTE), None)
+    if tone is None:
+        return silent
+    hz, magnitude = tone
+    attenuation = _attenuation(level * float(np.sqrt(magnitude / total)) * VOICE_GAIN)
+    if attenuation == MUTE:
+        return silent
+    kept = before if before is not None and abs(hz / before - 1.0) < HOLD_RATIO else hz
+    divider = int(min(MAX_DIVIDER, max(1, round(PSG_CLOCK_HZ / (TONE_DIVISOR * kept)))))
+    return Voice(divider, attenuation), kept
+
+
+def _tones(spectrum: Spectrum, frequencies: Spectrum) -> list[Tone]:
+    chosen: list[Tone] = []
     for index in _peaks(spectrum, frequencies):
         hz = _refined(spectrum, frequencies, index)
-        attenuation = _attenuation(float(spectrum[index]), reference)
-        if attenuation == MUTE:
-            break
-        if any(max(hz, other) / min(hz, other) < SEMITONE for other in chosen):
+        if any(_interval(hz, other) < SEMITONE or _is_harmonic(hz, other) for other, _ in chosen):
             continue
-        chosen = [*chosen, hz]
-        divider = int(min(MAX_DIVIDER, max(1, round(PSG_CLOCK_HZ / (TONE_DIVISOR * hz)))))
-        voices = [*voices, Voice(divider, attenuation)]
-        if len(voices) == TONE_CHANNELS:
+        chosen = [*chosen, (hz, float(spectrum[index]))]
+        if len(chosen) == TONE_CHANNELS:
             break
-    silent = Voice(MAX_DIVIDER, MUTE)
-    return [*voices, *([silent] * (TONE_CHANNELS - len(voices)))]
+    return chosen
+
+
+def _is_harmonic(hz: float, fundamental: float) -> bool:
+    ratio = hz / fundamental
+    order = round(ratio)
+    return (
+        LOWEST_HARMONIC <= order <= HIGHEST_HARMONIC
+        and abs(ratio - order) < HARMONIC_TOLERANCE * order
+    )
+
+
+def _assign(held: list[float | None], tones: list[Tone]) -> list[Tone | None]:
+    slots: list[Tone | None] = [None] * TONE_CHANNELS
+    left = list(tones)
+    for channel, before in enumerate(held):
+        if before is None:
+            continue
+        near = [tone for tone in left if _interval(tone[0], before) < TRACK_REACH]
+        if near:
+            match = min(near, key=lambda tone: _interval(tone[0], before))
+            slots[channel] = match
+            left = [tone for tone in left if tone is not match]
+    for channel in range(TONE_CHANNELS):
+        if slots[channel] is None and left:
+            slots[channel], left = left[0], left[1:]
+    return slots
+
+
+def _interval(one: float, other: float) -> float:
+    return max(one, other) / min(one, other)
 
 
 def _peaks(spectrum: Spectrum, frequencies: Spectrum) -> list[int]:
-    band = np.flatnonzero((frequencies >= MIN_HZ) & (frequencies <= MAX_HZ))
+    band = np.flatnonzero((frequencies >= LOWEST_HEARD_HZ) & (frequencies <= MAX_HZ))
     found = [
         int(i)
         for i in band
@@ -137,9 +216,12 @@ def _refined(spectrum: Spectrum, frequencies: Spectrum, index: int) -> float:
     return float(frequencies[index] + shift * (frequencies[1] - frequencies[0]))
 
 
-def _noise(spectrum: Spectrum, frequencies: Spectrum, reference: float) -> int:
-    band = (frequencies >= NOISE_LOW_HZ) & (frequencies <= NOISE_HIGH_HZ)
-    return _attenuation(float(spectrum[band].max()) if band.any() else 0.0, reference)
+def _noise(spectrum: Spectrum, hiss: npt.NDArray[np.bool_], level: float) -> int:
+    whole = float(np.sqrt(np.sum(spectrum**2)))
+    if whole == 0.0:
+        return MUTE
+    share = float(np.sqrt(np.sum(spectrum[hiss] ** 2))) / whole
+    return _attenuation(level * share * NOISE_GAIN)
 
 
 def _changes(voices: list[list[Voice]], noise: list[int]) -> list[bytes]:

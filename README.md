@@ -147,14 +147,18 @@ over are held black by the player.
 ### Sound
 
 Sound comes from the PSG by tone synthesis. The baker reads the soundtrack
-once a field, picks its three strongest tones and its high-frequency noise,
-and writes only the registers that changed: about 7 a field, 0.5 KB of ROM a
-second. The player writes them to the PSG before the field's picture, 34
-T-states apart, and the transfer loop is untouched. Speech and dense mixes
-come out as tones; music with a clear melody survives best. `--silent` leaves
-sound out and gives its 16 bytes a field back to the picture. The player never
-enables the line interrupt, so the whole field, active display included, stays
-free for the transfer loop. None of this has run on a console yet.
+once a field and picks its three strongest notes, leaving out the harmonics
+of a note already chosen. Each held note stays on its own channel, and the
+volume follows the scene's loudness over the surrounding 8 seconds, so quiet
+passages stay audible. High-frequency noise rides on the noise channel. Only
+registers that changed are written: 3 to 6 bytes a field on the regression
+films, under 0.4 KB of ROM a second. The player writes them to the PSG before
+the field's picture, 34 T-states apart, and the transfer loop is untouched.
+Speech and dense mixes come out as tones; music with a clear melody survives
+best. `--silent` leaves sound out and gives its 16 bytes a field back to the
+picture. The player never enables the line interrupt, so the whole field,
+active display included, stays free for the transfer loop. None of this has
+run on a console yet.
 
 It still writes the PSG once, at boot: full attenuation on all four channels.
 A console powers up with its tone channels audible, so leaving the chip alone

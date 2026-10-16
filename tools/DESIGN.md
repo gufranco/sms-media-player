@@ -685,11 +685,24 @@ Turn a soundtrack into the PSG register writes the player sends once a field.
 
 The PSG has three square-wave tone channels and a noise channel, each with a
 4-bit attenuator in 2 dB steps. Every field the module takes a 2,048-sample
-Hann window of the soundtrack at 22,050 Hz, finds up to three spectral peaks
-between the lowest tone the 10-bit divider reaches and 4 kHz, a semitone or
-more apart, and refines each peak between bins so a held note keeps one
-divider. The loudest peak of the whole film plays at full volume and anything
-24 dB below it is muted. Noise follows the energy between 4 and 10 kHz.
+Hann window of the soundtrack at 22,050 Hz, centred on the field, and finds
+up to three spectral peaks between 40 Hz and 4 kHz, a semitone or more apart,
+skipping any peak that sits on the 2nd to 8th harmonic of one already chosen.
+Each peak is refined between bins, and a note within 1.5 semitones of a
+channel's last note stays on that channel; within 0.6% it keeps the old
+divider, so a held note costs no writes. A note below the 10-bit divider's
+109 Hz floor plays at the floor.
+
+Volume follows the field's RMS loudness against the loudest field within 8
+seconds either side, floored at 5% of the film's loudest, so a quiet scene is
+lifted rather than muted. Each tone takes the square root of its share of the
+three peaks' magnitude. Noise follows the share of the spectrum between 4 and
+10 kHz at the same level. Against the previous encoder, which scaled every
+peak to the film's single loudest peak, a mel-spectrogram comparison of the
+rendered PSG output against the source raised the loudness-envelope
+correlation from 0.62 to 0.87 on Sintel, 0.44 to 0.77 on Popeye and 0.39 to
+0.81 on Hong Kong Evening. A-weighting the peak choice made every film worse
+and is not used.
 
 Only registers that changed are written, so a held note costs nothing after
 its first field. Every `REFRESH_FIELDS` fields, about once a second, the whole

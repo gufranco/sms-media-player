@@ -109,6 +109,51 @@ class TestSynthesis:
         # Assert
         assert max(len(field) for field in writes) <= psgsound.MAX_FIELD_WRITES
 
+    def test_a_quiet_passage_long_after_a_loud_one_is_still_heard(self):
+        # Arrange
+        samples = np.concatenate(
+            [tone(440.0, 1.0), np.zeros(RATE * 9, dtype=np.float32), tone(440.0, 2.0, level=0.02)]
+        )
+
+        # Act
+        writes = psgsound.synthesize(samples, rate=RATE, fields=int(11.5 * FIELD_HZ))
+
+        # Assert
+        assert registers(writes)["att0"] <= 2
+
+    def test_a_harmonic_of_a_note_gets_no_channel_of_its_own(self):
+        # Arrange
+        samples = tone(220.0, 0.5) + tone(440.0, 0.5, level=0.25)
+
+        # Act
+        writes = psgsound.synthesize(samples, rate=RATE, fields=20)
+
+        # Assert
+        assert registers(writes)["att1"] == 15
+
+    def test_a_held_note_keeps_its_channel_when_another_grows_louder(self):
+        # Arrange
+        times = np.arange(RATE) / RATE
+        rising = (0.1 + 0.4 * times) * np.sin(2 * np.pi * 523.0 * times)
+        samples = (tone(330.0, 1.0, level=0.3) + rising).astype(np.float32)
+        held = round(3_579_545 / (32 * 330.0))
+
+        # Act
+        writes = psgsound.synthesize(samples, rate=RATE, fields=55)
+
+        # Assert
+        assert [divider(registers(writes[:end]), 0) for end in (10, 55)] == [held, held]
+
+    def test_fields_past_the_end_of_the_soundtrack_are_silent(self):
+        # Arrange
+        samples = tone(440.0, 0.1)
+
+        # Act
+        writes = psgsound.synthesize(samples, rate=RATE, fields=60)
+
+        # Assert
+        assert registers(writes)["att0"] == 15
+
     def test_no_fields_is_refused(self):
         # Arrange
         samples = tone(440.0, 0.1)
