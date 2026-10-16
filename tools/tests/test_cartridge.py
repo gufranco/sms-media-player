@@ -310,6 +310,51 @@ class TestBundle:
         assert "a picture of 8 by 6 cells" in (tmp_path / "bundle" / "README.md").read_text()
 
 
+def _tight(clip, tmp_path, *extra: str) -> list[str]:
+    return [
+        str(clip),
+        "--duration",
+        "1",
+        "--max-banks",
+        "1",
+        "--denoise",
+        "0",
+        "--reuse",
+        "0.008",
+        "--assets",
+        str(tmp_path / "assets"),
+        "--generated",
+        str(tmp_path / "generated"),
+        "--report",
+        str(tmp_path / "report.json"),
+        *extra,
+    ]
+
+
+class TestStepDown:
+    def test_a_film_too_big_for_the_cartridge_steps_down_until_it_fits(self, clip, tmp_path):
+        # Arrange
+        argv = _tight(clip, tmp_path)
+
+        # Act
+        code = cartridge.main(argv)
+
+        # Assert
+        report = json.loads((tmp_path / "report.json").read_text())
+        assert (code, report["banks"], report["fps"]) == (0, 1, 3.0)
+
+    def test_a_fixed_frame_rate_is_never_stepped_down(self, clip, tmp_path):
+        # Arrange
+        argv = _tight(clip, tmp_path, "--fps", "12")
+
+        # Act
+        code = cartridge.main(argv)
+
+        # Assert
+        report = json.loads((tmp_path / "report.json").read_text())
+        assert (code, report["fps"]) == (2, 12.0)
+
+
 def _argv(clip, tmp_path) -> list[str]:
     return [
         str(clip),

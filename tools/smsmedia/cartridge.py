@@ -25,6 +25,7 @@ from smsmedia import (
     psgsound,
     rate,
     schedule,
+    stepdown,
     stream,
 )
 
@@ -347,10 +348,7 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as error:
         parser.error(str(error))
     _analyse_source(parser, args, wanted=wanted)
-    settled = dials.settle_dials(args, geometry=geometry, wanted=wanted)
-    baked = bake_film(args, geometry=geometry, settled=settled)
-    _describe_bake(baked, fps=settled.fps)
-    packed = stream.pack_frames(baked.fields, bank_size=limits.BANK_BYTES)
+    settled, baked, packed = bake_to_fit(args, geometry=geometry, wanted=wanted)
     blob, banks = packed.blob, packed.banks
     report = build_report(baked=baked, blob=blob, banks=banks, settled=settled)
     args.report.parent.mkdir(parents=True, exist_ok=True)
@@ -363,6 +361,42 @@ def main(argv: list[str] | None = None) -> int:
     _publish(args, baked=baked, packed=packed, settled=settled, geometry=geometry)
     _summarise(baked.encoded, blob=blob, banks=banks, report=report)
     return 0
+
+
+Attempt = tuple[dials.Dials, Baked, stream.Packed]
+
+
+def bake_to_fit(args: argparse.Namespace, *, geometry: bake.Geometry, wanted: float) -> Attempt:
+    first = _attempt(args, geometry=geometry, wanted=wanted)
+    if _fits_cartridge(args, first) or args.fps != AUTO:
+        return first
+    found = stepdown.search(
+        stepdown.rungs(first[0].fps, sound=not args.silent),
+        lambda rung: _attempt(_on_rung(args, rung), geometry=geometry, wanted=wanted),
+        lambda attempt: _fits_cartridge(args, attempt),
+    )
+    if found is None:
+        return first
+    rung, attempt = found
+    quiet = " without sound" if rung.silent and not args.silent else ""
+    banks = "bank" if args.max_banks == 1 else "banks"
+    print(f"stepped down to {rung.fps:g} fps{quiet} to fit {args.max_banks} {banks}")
+    return attempt
+
+
+def _attempt(args: argparse.Namespace, *, geometry: bake.Geometry, wanted: float) -> Attempt:
+    settled = dials.settle_dials(args, geometry=geometry, wanted=wanted)
+    baked = bake_film(args, geometry=geometry, settled=settled)
+    _describe_bake(baked, fps=settled.fps)
+    return settled, baked, stream.pack_frames(baked.fields, bank_size=limits.BANK_BYTES)
+
+
+def _fits_cartridge(args: argparse.Namespace, attempt: Attempt) -> bool:
+    return fits(banks=attempt[2].banks, max_banks=args.max_banks)
+
+
+def _on_rung(args: argparse.Namespace, rung: stepdown.Rung) -> argparse.Namespace:
+    return argparse.Namespace(**{**vars(args), "fps": str(rung.fps), "silent": rung.silent})
 
 
 def _analyse_source(

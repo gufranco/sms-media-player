@@ -704,6 +704,20 @@ This is tone synthesis, not sample playback: speech and dense mixes come out
 as tones. Sample playback through the attenuators is the alternative the
 sound plan measures, and it would rewrite the replay's timing.
 
+### [`smsmedia/stepdown.py`](smsmedia/stepdown.py)
+
+Step a bake down until it fits the cartridge.
+
+The dials already size each frame to the bank ceiling, so most films fit at
+the rate they settle on. When one does not, `cartridge.bake_to_fit` walks the
+rungs below that rate: every slower candidate rate with sound, then the
+slowest without it, because sound costs the picture only 16 bytes a field and
+so is the last thing worth giving up. Each rung re-settles denoise and reuse
+at its own rate and bakes in full. `fmvcore.ladder.first_fit`, the search the
+Neo Geo player uses for its tiers, finds the best rung that fits while baking
+as few as it can, and each rung is baked at most once. A frame rate given with
+`--fps` is never stepped down: the bake refuses with the shortfall instead.
+
 ### [`smsmedia/stream.py`](smsmedia/stream.py)
 
 The command stream the on-cart player replays.
