@@ -657,3 +657,50 @@ class TestSound:
         # Assert
         report = json.loads((tmp_path / "report.json").read_text())
         assert report["sound_writes"] == 0
+
+
+@pytest.fixture(scope="module")
+def boxed_clip(tmp_path_factory):
+    path = tmp_path_factory.mktemp("boxed") / "source.mp4"
+    chain = "testsrc2=size=320x240:rate=30:duration=2,scale=320:160,pad=320:240:0:40:black"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            chain,
+            "-pix_fmt",
+            "yuv420p",
+            str(path),
+        ],
+        check=True,
+    )
+    return path
+
+
+class TestBars:
+    def test_bars_in_the_source_are_found_and_reported(self, boxed_clip, tmp_path):
+        # Arrange
+        argv = _argv(boxed_clip, tmp_path)
+
+        # Act
+        cartridge.main(argv)
+
+        # Assert
+        report = json.loads((tmp_path / "report.json").read_text())
+        assert report["bars"] == [320, 160, 0, 40]
+
+    def test_a_source_without_bars_reports_none(self, clip, tmp_path):
+        # Arrange
+        argv = _argv(clip, tmp_path)
+
+        # Act
+        cartridge.main(argv)
+
+        # Assert
+        report = json.loads((tmp_path / "report.json").read_text())
+        assert report["bars"] is None

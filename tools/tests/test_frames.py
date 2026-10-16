@@ -203,3 +203,52 @@ class TestDecodeRefusals:
 
         # Assert
         assert first.shape == (48, 64, 3)
+
+
+BAR = 40
+
+
+@pytest.fixture(scope="module")
+def boxed(tmp_path_factory):
+    path = tmp_path_factory.mktemp("boxed") / "boxed.mp4"
+    picture = f"scale=320:{240 - 2 * BAR},pad=320:240:0:{BAR}:black"
+    chain = f"testsrc2=size=320x240:rate=30:duration=2,{picture}"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            chain,
+            "-pix_fmt",
+            "yuv420p",
+            str(path),
+        ],
+        check=True,
+    )
+    return path
+
+
+class TestBakedInBars:
+    def test_cropping_the_bars_leaves_no_black_row_at_the_top(self, boxed):
+        # Arrange
+        bars = (320, 240 - 2 * BAR, 0, BAR)
+
+        # Act
+        result = list(frames.decode(boxed, width=64, height=48, fps=5, bars=bars))
+
+        # Assert
+        assert int(result[0][0].max()) > 0
+
+    def test_without_the_crop_the_bars_reach_the_picture(self, boxed):
+        # Arrange
+        bars = None
+
+        # Act
+        result = list(frames.decode(boxed, width=64, height=48, fps=5, bars=bars))
+
+        # Assert
+        assert int(result[0][0].max()) < 24

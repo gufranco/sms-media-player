@@ -8,6 +8,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 from fmvcore import ffmpeg
+from fmvcore import source as source_mod
 
 from smsmedia import limits, pattern, smscolor
 
@@ -25,6 +26,7 @@ def decode(
     duration: float | None = None,
     scaler: str = limits.DEFAULT_SCALER,
     denoise: float = 0.0,
+    bars: source_mod.Bars | None = None,
 ) -> Iterator[npt.NDArray[np.uint8]]:
     _check_request(width=width, height=height, fps=fps, scaler=scaler)
     path = Path(source)
@@ -33,7 +35,9 @@ def decode(
         raise FileNotFoundError(msg)
 
     denoising = [f"hqdn3d={denoise}:{denoise}:{denoise * 2}:{denoise * 2}"] if denoise > 0.0 else []
+    cropping = ["crop={}:{}:{}:{}".format(*bars)] if bars is not None else []
     stages = [
+        *cropping,
         f"fps={fps}",
         *denoising,
         f"scale={width}:{height}:flags={scaler}:force_original_aspect_ratio=increase",

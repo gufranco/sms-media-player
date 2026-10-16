@@ -11,6 +11,7 @@ README under "Quality". This file carries the ones that cost time.
 
 ## Contents
 
+- [Bars baked into a source are cropped](#bars-baked-into-a-source-are-cropped)
 - [Sound from the PSG](#sound-from-the-psg)
 - [Paths the timing gate never walked](#paths-the-timing-gate-never-walked)
 - [No cell left badly wrong](#no-cell-left-badly-wrong)
@@ -30,6 +31,15 @@ README under "Quality". This file carries the ones that cost time.
 - [Four parameters checked against the conditions that changed](#four-parameters-checked-against-the-conditions-that-changed)
 - [The film was promising a frame rate it could not hold](#the-film-was-promising-a-frame-rate-it-could-not-hold)
 - [An unrolled loop that every check approved](#an-unrolled-loop-that-every-check-approved)
+
+## Bars baked into a source are cropped
+
+A letterboxed film reached the encoder with its black bars, so they were
+scaled up with the picture, cost patterns and were sent every field. The
+cartridge now runs the core's source analysis over up to eight seconds of the
+window, and when it finds bars every decode crops them first, the dial
+measurement included, so the picture fills the screen from the image alone.
+The report names the crop it used.
 
 ## Sound from the PSG
 

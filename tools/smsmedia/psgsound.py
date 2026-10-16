@@ -44,23 +44,6 @@ class Voice:
     attenuation: int
 
 
-def has_audio(path: Path) -> bool:
-    command = [
-        ffmpeg.require_tool("ffprobe"),
-        "-v",
-        "error",
-        "-select_streams",
-        "a",
-        "-show_entries",
-        "stream=index",
-        "-of",
-        "csv=p=0",
-        str(path),
-    ]
-    done = subprocess.run(command, capture_output=True, text=True, check=True)
-    return bool(done.stdout.strip())
-
-
 def decode(
     path: Path, *, start: float, duration: float | None, rate: int = DECODE_RATE
 ) -> npt.NDArray[np.float32]:

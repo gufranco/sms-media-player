@@ -8,6 +8,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 from fmvcore import colour
+from fmvcore import source as bar_analysis
 
 from smsmedia import bake, capture, frames, limits, pattern, stream
 
@@ -26,6 +27,7 @@ class Footage:
     start: float
     duration: float
     scaler: str = limits.DEFAULT_SCALER
+    bars: bar_analysis.Bars | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -124,6 +126,7 @@ def decode_windows(
                 duration=window_duration,
                 scaler=footage.scaler,
                 denoise=denoise,
+                bars=footage.bars,
             )
         )
         for window_start, window_duration in windows

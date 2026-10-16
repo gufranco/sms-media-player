@@ -287,5 +287,3 @@ Gaps against "What every player does" (as of 2026-10-15):
 - The rate, denoise and reuse threshold are measured per bake, but nothing yet
   sizes the film to the cartridge as a whole.
 - The player loops, restarts and exits; it has no position bar, pause or seek.
-- Black bars baked into a source file are not cropped yet; the Neo Geo
-  player's crop detection is the candidate to move into the core.

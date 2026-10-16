@@ -93,7 +93,9 @@ def room_per_frame(*, max_banks: int, frame_count: float, fields: int) -> float:
 
 
 def settle_dials(args: argparse.Namespace, *, geometry: bake.Geometry, wanted: float) -> Dials:
-    footage = tune.Footage(args.source, start=args.start, duration=wanted, scaler=args.scaler)
+    footage = tune.Footage(
+        args.source, start=args.start, duration=wanted, scaler=args.scaler, bars=args.bars
+    )
     settings = tune.EncodeSettings(
         geometry,
         budget=int(args.budget),

@@ -10,7 +10,7 @@ from typing import Final
 
 import numpy as np
 import numpy.typing as npt
-from fmvcore import arguments, ffmpeg
+from fmvcore import arguments, ffmpeg, source
 from fmvcore.arguments import AUTO
 
 from smsmedia import (
@@ -28,6 +28,7 @@ from smsmedia import (
 
 P90: Final = 0.9
 MOST_MERGED_SHOWN: Final = 3
+BAR_ANALYSIS_SECONDS: Final = 8.0
 
 
 def fits(*, banks: int, max_banks: int) -> bool:
@@ -156,6 +157,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="a .mp4 for every field the console draws, or a .png for four frames",
     )
+    parser.set_defaults(bars=None)
     return parser
 
 
@@ -170,6 +172,7 @@ class Baked:
     dither: float
     sources: list[npt.NDArray[np.uint8]]
     sound_writes: int = 0
+    bars: source.Bars | None = None
 
 
 def most_merged(per_frame: list[int]) -> list[int]:
@@ -179,7 +182,7 @@ def most_merged(per_frame: list[int]) -> list[int]:
 
 def build_report(
     *, baked: Baked, blob: bytes, banks: int, settled: dials.Dials
-) -> dict[str, float | list[int]]:
+) -> dict[str, float | list[int] | None]:
     return {
         **_timing_report(baked, blob=blob, banks=banks),
         **_picture_report(baked),
@@ -188,10 +191,11 @@ def build_report(
         "dither": baked.dither,
         "fps": settled.fps,
         "sound_writes": baked.sound_writes,
+        "bars": list(baked.bars) if baked.bars is not None else None,
     }
 
 
-def _timing_report(baked: Baked, *, blob: bytes, banks: int) -> dict[str, float | list[int]]:
+def _timing_report(baked: Baked, *, blob: bytes, banks: int) -> dict[str, float | list[int] | None]:
     frames_shown = len(baked.encoded.frames)
     per_frame = [len(chunks) for chunks in baked.fields]
     chunks = sum(per_frame)
@@ -213,7 +217,7 @@ def _timing_report(baked: Baked, *, blob: bytes, banks: int) -> dict[str, float 
     }
 
 
-def _picture_report(baked: Baked) -> dict[str, float | list[int]]:
+def _picture_report(baked: Baked) -> dict[str, float | list[int] | None]:
     encoded = baked.encoded
     return {
         "patterns_uploaded": encoded.uploaded,
@@ -227,7 +231,7 @@ def _picture_report(baked: Baked) -> dict[str, float | list[int]]:
 
 
 def bake_film(args: argparse.Namespace, *, geometry: bake.Geometry, settled: dials.Dials) -> Baked:
-    sound = not args.silent and psgsound.has_audio(args.source)
+    sound = not args.silent and ffmpeg.has_audio(args.source)
     decoded = _decode(args, geometry=geometry, settled=settled)
     encoder = bake.Encoder(
         geometry=geometry,
@@ -256,6 +260,7 @@ def bake_film(args: argparse.Namespace, *, geometry: bake.Geometry, settled: dia
         sources=[decoded[pick] for pick in timed.picks],
         dither=args.dither,
         sound_writes=sum(len(field) for field in writes),
+        bars=args.bars,
     )
 
 
@@ -278,6 +283,7 @@ def _decode(
             duration=args.duration,
             scaler=args.scaler,
             denoise=settled.denoise,
+            bars=args.bars,
         )
     )
 
@@ -311,6 +317,11 @@ def main(argv: list[str] | None = None) -> int:
         )
     except ValueError as error:
         parser.error(str(error))
+    args.bars = source.analyse(
+        args.source, start=args.start, duration=min(wanted, BAR_ANALYSIS_SECONDS)
+    ).crop
+    if args.bars is not None:
+        print("cropping bars baked into the source: {}x{} at {},{}".format(*args.bars))
     settled = dials.settle_dials(args, geometry=geometry, wanted=wanted)
     baked = bake_film(args, geometry=geometry, settled=settled)
     _describe_bake(baked, fps=settled.fps)
@@ -389,7 +400,7 @@ def _write_preview(
 
 
 def _summarise(
-    encoded: bake.Encoded, *, blob: bytes, banks: int, report: dict[str, float | list[int]]
+    encoded: bake.Encoded, *, blob: bytes, banks: int, report: dict[str, float | list[int] | None]
 ) -> None:
     print(
         f"stream {len(blob)} bytes across {banks} banks, "
