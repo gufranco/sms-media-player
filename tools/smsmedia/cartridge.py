@@ -15,6 +15,7 @@ from fmvcore.arguments import AUTO
 
 from smsmedia import (
     bake,
+    bundle,
     captions,
     dials,
     frames,
@@ -153,6 +154,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--assets", type=Path, default=Path("assets"))
     parser.add_argument("--generated", type=Path, default=Path("build/generated"))
     parser.add_argument("--report", type=Path, default=Path("build/report.json"))
+    parser.add_argument(
+        "--bundle",
+        type=Path,
+        default=None,
+        help="a folder to write a drop-in copy of the player library and this film into",
+    )
     parser.add_argument(
         "--seek-every",
         type=float,
@@ -421,9 +428,31 @@ def _publish(
         hold_fields=rate.fields_for(settled.fps),
         keys=seek_points(baked, packed),
     )
+    if args.bundle is not None:
+        _write_bundle(args, baked=baked, packed=packed, geometry=geometry)
     if args.preview is not None:
         _write_preview(args.preview, blob=packed.blob, sources=baked.sources, geometry=geometry)
         print(f"preview written to {args.preview}")
+
+
+def _write_bundle(
+    args: argparse.Namespace, *, baked: Baked, packed: stream.Packed, geometry: bake.Geometry
+) -> None:
+    fields = sum(len(frame) for frame in baked.fields)
+    figures = bundle.Figures(
+        seconds=fields / limits.NTSC_FIELD_HZ,
+        frames=len(baked.fields),
+        fields=fields,
+        banks=packed.banks,
+        columns=geometry.columns,
+        rows=geometry.rows,
+        keys=len(baked.keys),
+        sound=baked.sound_writes > 0,
+    )
+    guide = bundle.write(
+        target=args.bundle, assets=args.assets, generated=args.generated, figures=figures
+    )
+    print(f"bundle written to {args.bundle}; start with {guide}")
 
 
 def seek_points(baked: Baked, packed: stream.Packed) -> tuple[output.Key, ...]:

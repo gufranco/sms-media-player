@@ -73,9 +73,10 @@ jobs:
             -i "testsrc2=size=320x240:rate=30:duration=3" \
             -pix_fmt yuv420p build/ci-source.mp4
           uv --project tools run python -m smsmedia.cartridge \
-            build/ci-source.mp4 --duration 2 --fps 8
+            build/ci-source.mp4 --duration 2 --fps 8 --bundle build/bundle
           make analyse
           make rom
+          make example
           uv --project tools run python tools/scripts/check_vdp_timing.py
           uv --project tools run python -m pytest \
             tools/tests/test_replay_on_z80.py \

@@ -76,7 +76,7 @@ make rom
 | 无声构建，把声音的空间让给画面 | 部分支持。库包可以去掉声音；声音有独立的 ROM，所以去掉它并不会为画面腾出空间 | 是，`--silent` |
 | 读取 SubRip 文件中的字幕 | 是 | 是，烧录进画面，因此无法关闭 |
 | 播放和暂停 | 是 | 是。主机上的暂停键，Game Gear 上的 Start 键 |
-| 快进和倒退 | 是，快进可选 2x、5x 和 10x | 计划中 |
+| 快进和倒退 | 是，快进可选 2x、5x 和 10x | 不可能：回放已用掉每场约 90% 的时间传输一帧，无法传输两帧；改用左右键在跳转点之间跳转 |
 | 跳转 | 是，后退或前进 10 秒 | 是，左右键在相隔 10 秒的位置之间跳转 |
 | 显示已播放时间和总时长的进度条 | 是 | 是，暂停时显示 |
 | 重新开始和停止 | 是 | 是 |
@@ -84,7 +84,7 @@ make rom
 | 影片播完后循环播放 | 是 | 是 |
 | 诊断信息叠加层 | 是 | 是，暂停时按按钮 1 |
 | 数据流损坏时显示故障画面 | 是 | 是 |
-| 在你自己的游戏中播放影片 | 是，`--bundle` 生成可直接接入的库 | 部分支持。`--rows` 和 `--columns` 可构建较小的画面；目前还没有可直接接入的库包 |
+| 在你自己的游戏中播放影片 | 是，`--bundle` 生成可直接接入的库 | 是，`--bundle` 生成可直接接入的库，`examples/cutscene` 用它构建一个游戏 |
 | 预览主机将要绘制的画面 | 是，一段视频 | 是，视频，或四帧画面与其源帧并排 |
 | 每次构建都检查写入时序 | 是 | 是 |
 | 每次测试运行都烘焙的回归影片集 | 是，六部影片 | 是，六部影片 |
@@ -179,6 +179,8 @@ uv --project tools run python -m smsmedia.cartridge input.mp4 --start 300 --dura
 make rom
 make timing     # VDP write spacing, read out of the assembler's own listing
 ```
+
+`--bundle DIR` 会写出一个可直接接入你自己的 devkitSMS 游戏的文件夹：源代码形式的播放器库、影片、`fmv.mk` 片段，以及按你烘焙的影片写成的指南。[`examples/cutscene/`](examples/cutscene) 是用它构建的游戏，运行 `make example` 即可。
 
 `--preview` 会从影片各处取四帧，按主机将要绘制的样子输出，每帧旁边附上其源画面，因此不用模拟器就能评判一次烘焙。给出 `.mp4` 时，则输出主机绘制的每一场组成的视频。`build/report.json` 中的报告列出 `cells_merged`，即显示合并图块而非自身图块的单元格，以及 `most_merged_frames`，即损失最多的帧，因此结果不佳时可以追溯到导致它的帧。`frames_unshown_at_end` 统计影片末尾那些在有空闲槽位之前就已被时钟越过的已解码帧。
 
@@ -349,6 +351,7 @@ Oklab 在接近黑色处压缩亮度，因此对非常暗的像素，距离主�
 | 路径 | 内容 |
 |---|---|
 | [`src/`](src) 和 [`include/fmv/`](include/fmv) | 用 C 和汇编编写的 Z80 播放器，每个文件一个模块 |
+| [`examples/cutscene/`](examples/cutscene) | 用生成的库包构建的游戏，播放影片后继续运行 |
 | [`tools/smsmedia/`](tools/smsmedia) | 烘焙器，每个阶段一个模块 |
 | [`tools/scripts/`](tools/scripts) | 获取回归影片、重建测试夹具、检查写入时序、比较捕获结果 |
 | [`tools/tests/`](tools/tests) | 编码器测试套件，包括多片段门禁和 Z80 回放 |

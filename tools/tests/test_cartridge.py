@@ -287,6 +287,29 @@ class TestMain:
         assert result == 0
 
 
+class TestBundle:
+    def test_a_bundle_carries_the_film_the_cartridge_baked(self, clip, tmp_path):
+        # Arrange
+        argv = [*_argv(clip, tmp_path), "--bundle", str(tmp_path / "bundle")]
+
+        # Act
+        cartridge.main(argv)
+
+        # Assert
+        baked = (tmp_path / "assets" / "movie.bin").read_bytes()
+        assert (tmp_path / "bundle" / "movie" / "assets" / "movie.bin").read_bytes() == baked
+
+    def test_the_bundle_guide_names_the_picture_it_was_baked_for(self, clip, tmp_path):
+        # Arrange
+        argv = [*_argv(clip, tmp_path), "--bundle", str(tmp_path / "bundle")]
+
+        # Act
+        cartridge.main(argv)
+
+        # Assert
+        assert "a picture of 8 by 6 cells" in (tmp_path / "bundle" / "README.md").read_text()
+
+
 def _argv(clip, tmp_path) -> list[str]:
     return [
         str(clip),

@@ -82,7 +82,7 @@ none does today.
 | A silent build that gives sound's room to the picture | Partly. A library bundle can leave sound out; sound has its own ROM, so leaving it out frees no picture room | Yes, `--silent` |
 | Subtitles from a SubRip file | Yes | Yes, burned into the picture, so they cannot be switched off |
 | Play and pause | Yes | Yes. Pause on the console, Start on a Game Gear |
-| Fast forward and rewind | Yes, forward at 2x, 5x and 10x | Planned |
+| Fast forward and rewind | Yes, forward at 2x, 5x and 10x | Not possible: the replay already spends about 90% of every field moving one frame, so it cannot move two; Left and Right jump between seek points instead |
 | Seek | Yes, 10 seconds back or forward | Yes, Left and Right jump between points 10 seconds apart |
 | A position bar with elapsed and total time | Yes | Yes, while paused |
 | Restart and stop | Yes | Yes |
@@ -90,7 +90,7 @@ none does today.
 | The film loops at the end | Yes | Yes |
 | A diagnostics overlay | Yes | Yes, button 1 while paused |
 | A fault screen for a corrupt stream | Yes | Yes |
-| A film inside your own game | Yes, `--bundle` emits a drop-in library | Partly. `--rows` and `--columns` build a smaller picture; there is no drop-in bundle yet |
+| A film inside your own game | Yes, `--bundle` emits a drop-in library | Yes, `--bundle` emits a drop-in library and `examples/cutscene` builds a game from it |
 | A preview of what the console will draw | Yes, a video | Yes, a video, or four frames beside their source |
 | A write-timing gate on every build | Yes | Yes |
 | A regression set of films baked on every test run | Yes, six films | Yes, six films |
@@ -232,6 +232,8 @@ uv --project tools run python -m smsmedia.cartridge input.mp4 --start 300 --dura
 make rom
 make timing     # VDP write spacing, read out of the assembler's own listing
 ```
+
+`--bundle DIR` writes a drop-in folder for your own devkitSMS game: the player library as source, the film, an `fmv.mk` fragment and a guide written against the film you baked. [`examples/cutscene/`](examples/cutscene) is a game built from one, with `make example`.
 
 `--preview` writes four frames from across the film as the console will draw
 them, each beside its source, so a bake can be judged without an emulator.
@@ -480,6 +482,7 @@ unverified until it has run on hardware, however good the local numbers look.
 | Path | Contents |
 |---|---|
 | [`src/`](src) and [`include/fmv/`](include/fmv) | The Z80 player in C and assembly, one module per file |
+| [`examples/cutscene/`](examples/cutscene) | A game that plays a film and carries on, built from an emitted bundle |
 | [`tools/smsmedia/`](tools/smsmedia) | The baker, one module per stage |
 | [`tools/scripts/`](tools/scripts) | Fetch the regression films, rebuild the fixture, check write timing, compare a capture |
 | [`tools/tests/`](tools/tests) | The encoder suite, including the multi-clip gate and the Z80 replay |

@@ -28,7 +28,7 @@ OBJECTS      := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.rel,$(SOURCES)) \
 
 ifdef DEVKITSMS
 
-.PHONY: all rom assets analyse timing clean
+.PHONY: all rom assets analyse timing example clean
 all: rom
 
 $(BUILD_DIR):
@@ -70,6 +70,9 @@ rom: $(ASSET_HDR) $(OBJECTS)
 timing:
 	@echo "timing runs on the host, not in the image: see the outer target"
 
+example:
+	$(MAKE) --no-print-directory -C examples/cutscene
+
 analyse:
 	cppcheck --std=c23 --enable=warning,style,performance,portability \
 	    --check-level=exhaustive --inline-suppr --error-exitcode=1 --quiet \
@@ -79,11 +82,11 @@ analyse:
 	@echo "static analysis clean"
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) examples/cutscene/build
 
 else
 
-.PHONY: all rom image shell analyse timing hooks clean distclean
+.PHONY: all rom image shell analyse timing example hooks clean distclean
 all: rom
 
 image:
@@ -100,6 +103,10 @@ analyse: image
 timing:
 	uv --project tools run python tools/scripts/check_vdp_timing.py
 
+example: image
+	docker run --rm --user $(DOCKER_USER) -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) \
+	    make --no-print-directory example
+
 hooks:
 	git config core.hooksPath .githooks
 
@@ -107,7 +114,7 @@ shell: image
 	docker run --rm -it --user $(DOCKER_USER) -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) bash
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) examples/cutscene/build
 
 distclean: clean
 	-docker rmi $(DOCKER_IMAGE)

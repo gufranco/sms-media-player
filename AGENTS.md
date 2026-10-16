@@ -475,6 +475,8 @@ from the same command, and look at the sheet before quoting a number.
   are write-only but the last written value reads back out of RAM.
 - Banking slot 0 does not remap the first 1 KB, which is held fixed to preserve
   the interrupt vectors.
+- After the `fmv-core-python` submodule moves, mypy's incremental cache can
+  report a new core module as missing; delete `.mypy_cache` and run it again.
 
 ## The bands framing a smaller picture
 

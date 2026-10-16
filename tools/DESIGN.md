@@ -158,6 +158,17 @@ The check itself, size first and then SHA-256, is
 the Master System's manifest schema, where the films live, and the budgets
 each film is held to.
 
+### [`smsmedia/bundle.py`](smsmedia/bundle.py)
+
+Write a drop-in folder that plays the baked film inside another devkitSMS
+project: the replay and the player library as source, their headers, the
+film and its header, the `fmv.mk` fragment from `smsmedia/templates/`, and a
+guide rendered against the film's own figures. The copying and rendering are
+`fmvcore.bundle`, which the Neo Geo player shares. The fragment links the
+film's bank objects in ascending numeric order, because `ihx2sms` drops banks
+linked alphabetically, and it restores the including Makefile's default goal.
+`examples/cutscene` is a game built from a fresh bundle, and CI builds it.
+
 ### [`smsmedia/captions.py`](smsmedia/captions.py)
 
 Burn subtitles into the decoded picture before it is encoded.
