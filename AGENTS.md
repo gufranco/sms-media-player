@@ -1,7 +1,30 @@
 # AGENTS.md
 
-The engineering contract for this repository. The assistant guide beside this
-one adds what an assistant specifically needs on top of it.
+The engineering contract for this repository, for every person and every agent
+working in it.
+
+## Before changing anything
+
+Run `make rom` and confirm it succeeds. A build that was already broken when you
+arrived is the first thing to report, not something to work around.
+
+`specs/` holds the plan, the decision record and the sourced hardware
+references. It is not committed. Read it before proposing a design change, and
+update it in the same turn as any decision that contradicts it.
+
+## Every gate is a command
+
+Nothing here is verified by compiling. Run the gate.
+
+| Claim | Command |
+|---|---|
+| It builds | `make rom` |
+| The C holds | `make analyse` |
+| No VDP write pair is under its floor, and every blank copy is guarded | `make timing` and `SMSMEDIA_ROM_REQUIRED=1 pytest tools/tests/test_replay_on_z80.py`, after `make rom` |
+| The baker holds | `uv --project tools run ruff format --check tools/`, `ruff check tools/`, `mypy tools/smsmedia tools/scripts` |
+| The behaviour holds | `SMSMEDIA_CLIPS_REQUIRED=1 uv --project tools run python -m pytest tools/tests --cov=smsmedia --cov=tools/scripts --cov-config=tools/pyproject.toml --cov-fail-under=95` |
+| A commit is clean | [`.githooks/pre-commit`](.githooks/pre-commit), installed once by `make hooks` |
+| It runs on a console | the Game Gear, reported by the owner; nothing on this machine settles it |
 
 ## What this project is
 
@@ -20,6 +43,25 @@ the changed tone, noise and attenuation registers once a field, and the replay
 sends them to port `$7F` 34 T-states apart before the field's picture. The
 player never enables the line interrupt, and it still silences the PSG at boot.
 `--silent` leaves sound out. The sound path has not run on a console.
+
+Owner's instruction, 2026-10-15: never describe one member as a port, fork,
+translation or derivative of another, in a README, a commit, a comment or any
+other text, in any language, and never tell which member came first: work
+moves between the members in every direction, and more consoles will join.
+
+Owner's instruction, 2026-10-15, replacing the five-second openings of
+2026-10-08: the player fills the largest cartridge the standard Sega mapper
+addresses, with no added hardware, and the baker sizes picture and sound to the
+film's length. A silent build spends the sound's share on a longer or better
+picture. Perceived image quality outranks frame rate, by the owner's word on
+2026-10-08: when the two compete for bytes or slots, the picture wins, so the
+rate search stays at its current candidates rather than rising to buy motion.
+
+The sound is the owner's instruction of 2026-10-15, replacing the removal of
+2026-10-08. The line interrupt stays off, and the boot still writes full
+attenuation, because a console powers up with its tone channels audible.
+Sample playback through the attenuators is the measured alternative in the PSG
+sound plan, and it would change the transfer loop's cycle budget.
 
 The Neo Geo holds 1,048,576 tiles resident in character ROM, so its player writes
 tile numbers and nothing else. The Master System addresses 512 patterns in 16 KB
@@ -227,7 +269,9 @@ Each of these has been settled on hardware by another project, and each applies 
 
 1. **Every build goes through Docker.** No host toolchain is assumed or
    supported. `make rom` builds the image if needed and compiles inside it. A
-   change that only builds on one machine is a broken change.
+   change that only builds on one machine is a broken change. SDCC is never
+   installed on the host and no host-only build path is added; when Docker is
+   unavailable, say so and stop.
 2. **The C standard is C23**, via `--std-c23`. SDCC does not implement
    `constexpr`; use `static const` or an `enum`.
 3. **NASA Power of 10 applies to all of `src/` and `include/`.** The mapping and
@@ -241,13 +285,20 @@ Each of these has been settled on hardware by another project, and each applies 
 6. **Emulators never take the screen**: headless when scripted, windowed and minimised when watched, and MAME only as a cross-check. See "Running the ROM" below.
 7. **Hardware numbers come from a source.** Every constant tied to the VDP, the
    PSG, the mapper or the raster carries a citation in the design notes. A number
-   with no source is not allowed to reach the code.
+   with no source is not allowed to reach the code. A figure derived by
+   arithmetic is labelled as derived and is not treated as measured until
+   something has measured it.
 8. **Capture and verify rather than ask.** When a defect is visible on screen,
    record the emulator, split the recording into frames and read them. Do not
    describe what to look for and wait for a verdict, and do not ask which of
    two builds looks better when both can be captured and compared. A question
    put to the owner is the last resort after the loop of record, measure, fix
-   and re-measure has been run and cannot settle it.
+   and re-measure has been run and cannot settle it, and it says what the loop
+   showed. Screenshots go to `~/.mednafen/snaps` and the snapshot command is
+   bound to F9, which System Events can drive, so a run can be captured without
+   anyone watching it. A capture answers what happened, never on its own what
+   is better: several metrics here once reported a large improvement on a
+   change that was plainly worse.
 9. **The original hardware is the target, and every change is made with the
    care that demands.** See "Original hardware is the only target" above. A
    documented hardware figure binds over a looser measured one.
@@ -482,6 +533,14 @@ from the same command, and look at the sheet before quoting a number.
   the interrupt vectors.
 - After the `fmv-core-python` submodule moves, mypy's incremental cache can
   report a new core module as missing; delete `.mypy_cache` and run it again.
+- Running mypy on [`tools/scripts`](tools/scripts) alone poisons `.mypy_cache`:
+  the next full run reports `Module "smsmedia" has no attribute ...` for
+  imports that are fine. Always pass both `tools/smsmedia tools/scripts`, and
+  if the error appears, delete `.mypy_cache` rather than chasing it.
+- mednafen refuses to start while another instance holds its lockfile, and the
+  message names the base directory rather than the lock. Kill the stale process
+  before recording. A run killed with SIGTERM leaves the `.mov` unfinalised at
+  32 bytes, which reads as a failed emulator rather than a truncated capture.
 
 ## The bands framing a smaller picture
 
@@ -652,7 +711,8 @@ The films themselves are never committed. `tools/clips.manifest.json` carries
 their identity, `tools/scripts/fetch_clips.py` downloads and verifies them
 against it, and one synthetic clip is committed so the gate runs on a clean
 clone with no network. A copy that does not match its digest is refused with a
-diagnosis rather than used.
+diagnosis rather than used. Fetch the films before trusting the gate: without
+them only the committed synthetic clip runs, and the gate is much weaker.
 
 ## Verification discipline
 
