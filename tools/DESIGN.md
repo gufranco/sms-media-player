@@ -401,8 +401,8 @@ per-field budget in the hundreds is cheap enough to refit every frame, but a
 refit re-colours every tile already on the console, so `fit_or_keep` keeps the
 previous palettes until a fresh fit is clearly better. Cheap uploads are the
 one place this hardware is kinder than the Neo Geo, where a full
-palette upload costs more than a blanking interval affords and the source
-project needs an epoch scheduler to spread it out.
+palette upload costs more than a blanking interval affords and the player
+needs an epoch scheduler to spread it out.
 
 The fit runs in three steps: split the frame's cells into two groups by mean
 colour, choose 16 entries for each group from the colours its pixels
@@ -452,8 +452,8 @@ VRAM, which is the constraint the whole project is built around.
 A name table entry is `---pcvhnnnnnnnnn`: nine bits of pattern index, then
 horizontal flip, vertical flip, palette select and priority. Both flips are
 free here, unlike on the Neo Geo where the equivalent lever measured as
-worthless, so flip canonicalisation is worth re-measuring rather than
-inheriting that verdict.
+worthless, so flip canonicalisation is worth measuring here rather than
+taking that verdict as given.
 
 The bit order within a plane byte is the one place a wrong reading would not
 raise. It shows instead as every 8-pixel cell being mirrored left to right,
@@ -676,7 +676,7 @@ Oklab coordinates of all 64 console colours, indexed by CRAM byte.
 
 The chroma weight scales the two colour axes so error on them is charged
 at a fraction of the rate luma error is, which is the lever the Neo Geo
-baker uses and the one that survives the port unchanged.
+baker uses too, unchanged.
 
 #### `nearest_colour`
 
@@ -977,7 +977,7 @@ measuring it would pass code that is not the code being shipped.
 What lives in VRAM right now, and what it costs to change that.
 
 This module has no counterpart in the Neo Geo baker, and it exists because
-of the one difference that reshapes the whole port. That machine holds every
+of the one difference between the two machines that shapes this player. That machine holds every
 tile the film needs resident in character ROM, so its player writes tile
 numbers and never moves a tile. Here, 512 patterns of 32 bytes is exactly
 the 16 KB of VRAM, so the dictionary cannot be resident and has to be paged

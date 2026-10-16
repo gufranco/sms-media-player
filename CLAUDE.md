@@ -146,8 +146,8 @@ verified by compiling. Build the ROM and run it.
 The transfer loop carries an obligation on top of that, and no emulator reports
 it: consecutive VDP writes must be at least 16 cycles apart inside blanking and
 at least 29 apart during active display. Writing faster during display drops
-data on real hardware while working in emulation, which is a defect the prior art
-on this platform hit and diagnosed. C cannot express instruction spacing, so a
+data on real hardware while working in emulation, which is a defect this project
+has already shipped once. C cannot express instruction spacing, so a
 build gate walks the compiled objects instead.
 
 ## Hardware numbers carry a source

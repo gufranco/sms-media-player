@@ -292,5 +292,16 @@ verifies films and measures captures through `fmv-core-python`.
 
 Gaps against "What every player does" (as of 2026-10-16):
 
-- Subtitles are burned into the picture, so unlike the Neo Geo player's they cannot be switched off.
-- Fast forward and rewind are not possible: the replay already spends about 90% of every field moving one frame's data.
+- `--dither` is on by default here and off on the Neo Geo. The default waits
+  on the owner's dither verdict.
+
+Differences the hardware forces:
+
+- Subtitles are burned into the picture, so they cannot be switched off. The
+  Master System has no text layer to draw them on separately.
+- Fast forward and rewind are not possible: moving one frame already takes up
+  to 54,000 of a field's 59,736 T-states. Left and Right jump between seek
+  points instead.
+- Down toggles the diagnostics, where the Neo Geo uses Select: the pad has two
+  buttons and no Select, and burned subtitles leave Down free.
+- Pause is the console's Pause button, an NMI, or Start on a Game Gear.

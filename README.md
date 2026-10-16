@@ -46,6 +46,23 @@ A baker that turns any video file into a Master System cartridge, and a Z80
 player that shows it full screen on a stock console. The baker runs on the
 host; the player and every ROM build run in a pinned Docker image.
 
+### The problem
+
+The Master System has no video hardware beyond its tile display. It draws
+8x8 patterns from 16 KB of VRAM, which holds 512 of them, and a film needs
+thousands. The Z80 runs at 3.58 MHz, and the VDP takes a byte no faster than
+one every 29 T-states while the picture is being drawn. There is no time to
+decode anything on the console, and barely time to move the data.
+
+### The solution
+
+Nothing decodes on the console. The baker turns the film into a stream of
+pattern uploads and name table writes, ordered so each field's share fits the
+time the VDP allows. The player copies one chunk a field and switches the
+picture whole at the vertical blank, so a frame never shows half drawn.
+
+### Where it stands
+
 The whole path runs: preprocessing, the encoder, bank packing, the Z80 player
 and the controls.
 
@@ -65,32 +82,31 @@ and the controls.
 
 Both players are built to the same feature list, set in [FAMILY.md](FAMILY.md),
 and this table is the same in both READMEs. "Planned" is work not done yet. A
-feature a console cannot carry would say "Not possible" with the hardware reason;
-none does today.
+feature a console cannot carry says "Not possible" with the hardware reason.
 
 | Feature | Neo Geo | Master System |
 |---|---|---|
 | One command from a video file to a cartridge | Yes | Yes |
-| The picture fills the screen, scaled to cover and cropped | Yes. `--fit letterbox` still exists and is due to go | Yes |
+| The picture fills the screen, scaled to cover and cropped | Yes | Yes |
 | Black bars baked into a source are found and cropped | Yes | Yes |
 | Picture and sound step down from the best until the film fits | Yes. `--quality search` bakes down a 35-rung ladder, and sound takes the highest rate that still fits | Yes. A bake that overruns the cartridge steps the frame rate down through the same search, and sound goes last |
 | The largest standard cartridge, no added hardware | Yes, 128 MiB of character ROM | Yes, 1 MB, the most any Sega mapper revision decodes |
-| Ordered dithering | Yes, `--dither` | Yes, on by default |
+| Ordered dithering | Yes, `--dither`, off by default | Yes, `--dither`, on by default |
 | Palettes refit as the film changes | Yes, per scene | Yes, per frame, kept while they still fit |
 | Sound with no added hardware | Yes, ADPCM-B on the YM2610 | Yes, tone synthesis on the PSG |
-| A silent build that gives sound's room to the picture | Partly. A library bundle can leave sound out; sound has its own ROM, so leaving it out frees no picture room | Yes, `--silent` |
+| A silent build that gives sound's room to the picture | Yes, `--silent`. Sound has its own ROM, so leaving it out frees no picture room | Yes, `--silent` |
 | Subtitles from a SubRip file | Yes | Yes, burned into the picture, so they cannot be switched off |
 | Play and pause | Yes | Yes. Pause on the console, Start on a Game Gear |
-| Fast forward and rewind | Yes, forward at 2x, 5x and 10x | Not possible: the replay already spends about 90% of every field moving one frame, so it cannot move two; Left and Right jump between seek points instead |
-| Seek | Yes, 10 seconds back or forward | Yes, Left and Right jump between points 10 seconds apart |
-| A position bar with elapsed and total time | Yes | Yes, while paused |
+| Fast forward and rewind | Yes, forward at 2x, 5x and 10x | Not possible: moving one frame already takes up to 54,000 of a field's 59,736 T-states, so the replay cannot move two; Left and Right jump between seek points instead |
+| Seek | Yes, C and D jump between points 10 seconds apart, `--seek-every` to change | Yes, Left and Right jump between points 10 seconds apart, `--seek-every` to change |
+| A position bar with elapsed and total time | Yes, for three seconds after any press | Yes, for three seconds after any press, and while paused |
 | Restart and stop | Yes | Yes |
 | Sound on and off | Yes | Yes, Up |
 | The film loops at the end | Yes | Yes |
-| A diagnostics overlay | Yes | Yes, button 1 while paused |
+| A diagnostics overlay | Yes, Select | Yes, Down |
 | A fault screen for a corrupt stream | Yes | Yes |
 | A film inside your own game | Yes, `--bundle` emits a drop-in library | Yes, `--bundle` emits a drop-in library and `examples/cutscene` builds a game from it |
-| A preview of what the console will draw | Yes, a video | Yes, a video, or four frames beside their source |
+| A preview of what the console will draw | Yes, a video, or four frames beside their source | Yes, a video, or four frames beside their source |
 | A write-timing gate on every build | Yes | Yes |
 | A regression set of films baked on every test run | Yes, six films | Yes, six films |
 | Run on the original hardware | Yes, AES and MVS | Not yet. A Game Gear run is pending |
@@ -154,7 +170,7 @@ registers that changed are written: 3 to 6 bytes a field on the regression
 films, under 0.4 KB of ROM a second. The player writes them to the PSG before
 the field's picture, 34 T-states apart, and the transfer loop is untouched.
 Speech and dense mixes come out as tones; music with a clear melody survives
-best. `--silent` leaves sound out and gives its 16 bytes a field back to the
+best. `--silent` leaves sound out and gives its 15 bytes a field back to the
 picture. The player never enables the line interrupt, so the whole field,
 active display included, stays free for the transfer loop. None of this has
 run on a console yet.
@@ -236,8 +252,6 @@ uv --project tools run python -m smsmedia.cartridge input.mp4 --start 300 --dura
 make timing     # VDP write spacing, read out of the assembler's own listing
 ```
 
-`--bundle DIR` writes a drop-in folder for your own devkitSMS game: the player library as source, the film, an `fmv.mk` fragment and a guide written against the film you baked. [`examples/cutscene/`](examples/cutscene) is a game built from one, with `make example`.
-
 `--preview` writes four frames from across the film as the console will draw
 them, each beside its source, so a bake can be judged without an emulator.
 Given a `.mp4`, it writes a video of every field the console draws instead.
@@ -270,6 +284,18 @@ make shell      # a shell inside the toolchain image
 make clean
 ```
 
+### A film inside your own game
+
+`--bundle DIR` writes a drop-in folder for your own devkitSMS game: the
+player library as source, the film, an `fmv.mk` fragment and a guide written
+against the film you baked. [`examples/cutscene/`](examples/cutscene) is a game
+built from one, with `make example`.
+
+```bash
+uv --project tools run python -m smsmedia.cartridge my-film.mp4 --bundle build/bundle
+make example
+```
+
 ## Quality
 
 **The per-field transfer is the binding constraint, not ROM.** Five seconds
@@ -300,7 +326,9 @@ eight partitions buys nothing, and 96% of cells already choose one palette
 because 16 colours cover this material. Nothing that reallocates palettes can
 help, because no palette arrangement gives a single cell a 17th colour.
 
-### The metric lies about dark colours
+### How the picture is judged
+
+#### The metric lies about dark colours
 
 Oklab compresses lightness near black, so for a very dark pixel the distance
 is dominated by the two chroma axes. A faintly tinted dark entry then scores
@@ -318,7 +346,7 @@ Routing through the 64-colour lattice guards the first two and does not guard
 the third, because diffused error pushes a dark neutral off-neutral before it
 ever reaches the lattice.
 
-### Banding is cheap to the metric and expensive to look at
+#### Banding is cheap to the metric and expensive to look at
 
 Every pixel in a band sits close to the colour it was assigned, so banding
 costs almost nothing in squared error while being the most visible defect on
@@ -346,9 +374,9 @@ same blur on both sides, and by eye on a rendered sheet:
 
 Undithered, a pale sky rounds to flat blocks of grey and pink; dithered, the
 city behind it comes back. It costs bytes: 36 banks against 29 for the same
-twelve seconds of cartoon, which a five-second opening does not notice.
+twelve seconds of cartoon.
 
-### The reuse threshold is measured, not set
+#### The reuse threshold is measured, not set
 
 It decides how close a resident pattern must be before a cell draws it instead
 of minting a new one, and it trades error against cartridge bytes and therefore
@@ -454,12 +482,28 @@ strength, two-second windows, so a bank either way moves the figure by half:
 | Cute Colorful Bird | animals | 5.0 | 12s |
 | Bhagoria dance | people | 6.0 | 10s |
 
-Every one holds a five-second opening with room to spare.
-
 Cost varies with the footage far more than with any setting, so compare two
 cartridges only when they came from the same source window. Nothing here
-shortens a film to make it fit: the baker reports the running time that would
-fit and stops.
+shortens a film to make it fit: with `--fps auto` the baker steps the frame
+rate down until the film fits, and with a fixed rate it reports the running
+time that would fit and stops.
+
+### The reference cartridge
+
+Thirty seconds of the Sintel trailer from 0:10, baked with the defaults:
+
+| Quantity | Value |
+|---|---|
+| Frame rate | 5 fps, stepped down from 12 so the film fits 62 banks |
+| Frames | 149 |
+| Stream | 933,888 bytes across 57 banks |
+| Cartridge | 966,656 bytes |
+| Patterns uploaded | 19,340, with no cell left stale and no slot collision |
+| Lag behind the source | 0.003 s median, 0.022 s worst |
+| Sound | 8,931 PSG writes |
+| Displayed error | 0.02072 |
+
+It plays in mednafen. It has not run on a console.
 
 ## Verification
 
@@ -477,7 +521,19 @@ listing or the replay oracle, and the owner's Game Gear is the hardware check.
 | `test_transport_on_z80.py` | The built transport decides on a Z80 which press does what, how long the overlay stays up, and what wakes a stopped player |
 | `test_replay_on_z80.py` | The built replay runs on a Z80 with the V counter held at chosen lines, and no palette byte or flip reaches the VDP outside the window |
 | Regression set | Six films of different kinds bake on every test run, each held to a measured error and bank budget |
-| Game Gear with an Everdrive | Write timing on the same VDP core at the same clock. It remaps colour and shows only the centre 160x144, so it settles neither colour nor the screen edges |
+
+### On real hardware
+
+Nothing here has run on a console yet. The owner's Game Gear with an Everdrive
+is the check, and it settles less than a Master System would:
+
+| Claim | What a Game Gear run settles |
+|---|---|
+| VDP write spacing in the transfer loop | Yes: the same VDP core at the same clock |
+| The overlay and diagnostics drawn during play | Yes: their writes go through the same paced paths |
+| Sound from the PSG | Yes: the same chip |
+| Colour | No: the Game Gear remaps the palette onto its own |
+| The screen edges | No: in Master System mode it shows only the centre 160x144 |
 
 No emulator enforces the VDP write spacing, so a change to the transfer loop is
 unverified until it has run on hardware, however good the local numbers look.
@@ -547,6 +603,38 @@ credit and licence is in [`tools/clips.manifest.json`](tools/clips.manifest.json
 | [`Dockerfile`](Dockerfile) | The toolchain image, with devkitSMS pinned by commit and archive SHA-256 |
 | [`tools/clips.manifest.json`](tools/clips.manifest.json) | The regression films: identity, credit and licence, never the films |
 
+### Conventions
+
+| Convention | Source |
+|------------|--------|
+| Commit format | [Conventional Commits](https://www.conventionalcommits.org/), enforced on every pull request |
+| Versioning | [python-semantic-release](https://python-semantic-release.readthedocs.io/), driven by commit subjects |
+| Lint and format | [ruff](https://docs.astral.sh/ruff/), configured in [`tools/pyproject.toml`](tools/pyproject.toml) |
+| Types | [mypy](https://mypy-lang.org/) in strict mode |
+| Dependency updates | [Dependabot](.github/dependabot.yml), weekly |
+
+### Stability
+
+Before 1.0 nothing is promised, and a minor version may break any of these.
+They are the surfaces that will be promised from 1.0:
+
+| Surface | Promise |
+|:--------|:--------|
+| `python -m smsmedia.cartridge <source>` | The one command. Its flags keep their names and meanings |
+| `--bundle DIR` | Emits a drop-in folder whose shape keeps its names: `DIR/src/`, `DIR/include/fmv/`, `DIR/movie/`, `DIR/fmv.mk`, `DIR/README.md` |
+| `build/smsmedia.sms` | Where the cartridge lands, and what it is called |
+| Exit codes | 0 on success, and non-zero on failure |
+
+The C library surface is the headers in [`include/fmv/`](include/fmv).
+Everything under [`src/`](src) is internal and moves without notice.
+
+### Versioning
+
+This project follows [Semantic Versioning](https://semver.org/). A release is
+cut by hand from the release workflow, and its version is derived from commit
+subjects. None has been published yet, so [`RELEASES.md`](RELEASES.md) is
+empty.
+
 ## FAQ
 
 <details>
@@ -581,12 +669,14 @@ intended speed. Nothing here has been checked on a PAL console.
 </details>
 
 <details>
-<summary><strong>Why is it silent?</strong></summary>
+<summary><strong>What does the sound sound like?</strong></summary>
 <br>
 
-The transfer loop owns every cycle of the field today, and the PSG has no
-sample channel, so sound costs Z80 time the picture now uses. Sound is a
-requirement the family sets, and it is planned.
+The PSG has three square-wave tone channels and a noise channel, and no
+sample channel. The baker follows the soundtrack's three strongest notes and
+its loudness, so a clear melody comes through and speech comes out as tones.
+Sample playback through the volume registers would sound closer, and it would
+take time from the transfer loop that the picture uses now.
 
 </details>
 

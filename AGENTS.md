@@ -204,7 +204,7 @@ Rules that follow:
 
 ### The rest of the port contract
 
-Taken from the hardware-tested sibling project, and each one applies here.
+Each of these has been settled on hardware by another project, and each applies here.
 
 - **The control port is a two-byte latch.** Both bytes are written before the
   data port is touched, with nothing between them that could also reach the
@@ -523,7 +523,7 @@ still matters, because the library half places a smaller picture.
 `roms/downloads-30s-hwsafe.sms` is built and waiting for a console test. Every
 figure in this repository comes from an emulator, a model, or static analysis.
 
-Four player changes since that ROM are unverified on hardware for the same
+These player changes since that ROM are unverified on hardware for the same
 reason: the replay refuses run kind `0x03` instead of copying the palettes
 outside the V counter guard, an assertion halt paints the backdrop entry so it
 shows with the display off, the replay cursor is asserted below `0xC000`, the
@@ -570,7 +570,7 @@ shadow.
 
 The owner has a Game Gear with an Everdrive, which runs Master System ROMs, and
 that is the hardware path available. What it can and cannot settle is in
-"Verifying on the Game Gear" below.
+"Verifying on the Game Gear" above.
 
 ## Three dials are measured per bake
 
