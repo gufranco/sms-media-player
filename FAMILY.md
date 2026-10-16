@@ -288,9 +288,6 @@ Gaps against "What every player does" (as of 2026-10-15):
   replaced by the sound requirement. Sound has to come from the PSG alone, so
   its cost in Z80 cycles against the transfer loop is the open design
   question.
-- Cartridge ceiling: the baker stops at 64 banks of 16 KB, 1 MB. The largest
-  size the standard Sega mapper addresses is still to be taken from Sega's
-  documentation.
 - The rate, denoise and reuse threshold are measured per bake, but nothing yet
   sizes the film to the cartridge as a whole.
 - The player loops, restarts and exits; it has no position bar, pause or seek.

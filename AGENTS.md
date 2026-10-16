@@ -132,6 +132,7 @@ write spacing at all, and every check in this repository runs against one.
 | NTSC field rate | 59.9227 Hz, derived: the clock over 262 lines of 228 T-states. `console.NTSC_FIELD_HZ` computes it rather than storing it | derived from the three rows above |
 | Line interrupt | counter reloaded on lines 193 to 261, so it never fires in the vertical blank | same |
 | Safe start window for a blank copy | V counter at or above `C0` and below `E0` | settled on hardware by a sibling project's vertical-blank copy |
+| Cartridge ceiling | 64 banks of 16 KB, 1 MB: Sega's mapper revisions decode 3, 5 or 6 bank bits, and 6 is the most any known revision decodes. 4 MB needs a cartridge that decodes all 8 bits, which no Sega mapper does | [SMS Power, Mappers](https://www.smspower.org/Development/Mappers); no Sega datasheet states it |
 
 Pattern and name table runs are copied with `outi`, `nop`, `jp nz`: 30
 T-states a byte, legal at any time, and they only touch slots and a name table
