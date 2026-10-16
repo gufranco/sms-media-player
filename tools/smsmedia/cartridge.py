@@ -223,6 +223,7 @@ def main(argv: list[str] | None = None) -> int:
     info = ffmpeg.probe(args.source)
     geometry = geometry_for(args.columns, args.rows)
     _describe_source(args.source, info=info, geometry=geometry)
+    _announce_silence(args)
 
     try:
         wanted = window_seconds(
@@ -302,6 +303,15 @@ def _describe_bake(baked: Baked, *, fps: float) -> None:
     print(f"decoded {baked.decoded} frames at {fps} fps")
     if baked.unshown_tail:
         print(f"the clock passed the last {baked.unshown_tail} decoded frames before they fit")
+
+
+def _announce_silence(args: argparse.Namespace) -> None:
+    if not args.silent and not ffmpeg.has_audio(args.source):
+        print(
+            f"{args.source} carries no audio track, so the cartridge will be silent. "
+            "Nothing is wrong with the video; there is simply no soundtrack to encode.",
+            file=sys.stderr,
+        )
 
 
 def _describe_source(source: Path, *, info: ffmpeg.SourceInfo, geometry: bake.Geometry) -> None:

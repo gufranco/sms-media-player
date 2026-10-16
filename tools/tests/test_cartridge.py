@@ -760,6 +760,58 @@ class TestSound:
         assert report["sound_writes"] == 0
 
 
+SILENCE = "carries no audio track, so the cartridge will be silent"
+
+
+class TestASourceWithoutSound:
+    def test_the_bake_says_why_the_cartridge_will_be_silent(self, clip, tmp_path, capsys):
+        # Arrange
+        argv = _argv(clip, tmp_path)
+
+        # Act
+        cartridge.main(argv)
+
+        # Assert
+        assert (
+            f"{clip} carries no audio track, so the cartridge will be silent. "
+            "Nothing is wrong with the video; there is simply no soundtrack to encode."
+        ) in capsys.readouterr().err
+
+    def test_a_source_with_sound_raises_no_notice(self, sounded_clip, tmp_path, capsys):
+        # Arrange
+        argv = _argv(sounded_clip, tmp_path)
+
+        # Act
+        cartridge.main(argv)
+
+        # Assert
+        assert SILENCE not in capsys.readouterr().err
+
+    def test_a_silent_build_raises_no_notice(self, clip, tmp_path, capsys):
+        # Arrange
+        argv = [*_argv(clip, tmp_path), "--silent"]
+
+        # Act
+        cartridge.main(argv)
+
+        # Assert
+        assert SILENCE not in capsys.readouterr().err
+
+
+class TestTheWindowOnTheCommand:
+    def test_a_start_past_the_end_of_the_source_stops_the_bake(self, clip, tmp_path, capsys):
+        # Arrange
+        argv = [*_argv(clip, tmp_path), "--start", "5"]
+
+        # Act
+        with pytest.raises(SystemExit) as stopped:
+            cartridge.main(argv)
+
+        # Assert
+        assert stopped.value.code == 2
+        assert "is past the end of a 2.0 s source" in capsys.readouterr().err
+
+
 @pytest.fixture(scope="module")
 def boxed_clip(tmp_path_factory):
     path = tmp_path_factory.mktemp("boxed") / "source.mp4"

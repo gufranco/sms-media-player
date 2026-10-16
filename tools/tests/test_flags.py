@@ -157,3 +157,70 @@ class TestTheSourceCeiling:
 
         # Assert
         assert seconds == hours * 3600
+
+
+class TestTheSeekEveryFlag:
+    @pytest.mark.parametrize("value", ["0", "-10", "nan", "inf", "14401"])
+    def test_an_interval_the_film_cannot_use_is_refused(self, value):
+        # Arrange
+        parser = flags.build_parser()
+
+        # Act
+        code = refusal_code(parser, [FILM, "--seek-every", value])
+
+        # Assert
+        assert code == 2
+
+    def test_the_refusal_names_the_flag_and_its_range(self, capsys):
+        # Arrange
+        parser = flags.build_parser()
+
+        # Act
+        refusal_code(parser, [FILM, "--seek-every", "0"])
+
+        # Assert
+        assert "--seek-every must lie between" in capsys.readouterr().err
+
+    def test_the_longest_film_is_accepted(self):
+        # Arrange
+        parser = flags.build_parser()
+
+        # Act
+        args = parser.parse_args([FILM, "--seek-every", "14400"])
+
+        # Assert
+        assert args.seek_every == 14400.0
+
+
+class TestTheHelp:
+    def test_every_flag_explains_itself(self):
+        # Arrange
+        parser = flags.build_parser()
+
+        # Act
+        bare = [action.dest for action in parser._actions if not action.help]
+
+        # Assert
+        assert bare == []
+
+    @pytest.mark.parametrize(
+        ("flag", "text"),
+        [
+            ("source", "the video file to put on the cartridge"),
+            ("--start", "seconds to skip at the front"),
+            ("--duration", "seconds to take; defaults to the whole film"),
+            ("--subtitles", "a SubRip .srt file; defaults to one sitting beside the source"),
+            ("--denoise", "a strength, or auto to measure it on the film. Default: auto"),
+        ],
+    )
+    def test_a_flag_shared_with_the_neo_geo_baker_reads_the_same(self, flag, text):
+        # Arrange
+        parser = flags.build_parser()
+
+        # Act
+        helps = {
+            (action.option_strings or [action.dest])[0]: action.help for action in parser._actions
+        }
+
+        # Assert
+        assert helps[flag] == text
