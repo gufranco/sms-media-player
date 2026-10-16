@@ -260,8 +260,9 @@ mednafen -video.fs 0 -sound 0 build/sms-media-player.sms
 ### Toolchain
 
 Every ROM build goes through Docker, and there is no host toolchain path. The
-[`Dockerfile`](Dockerfile) pins SDCC by package version, devkitSMS by commit and
-the base image by digest, and the build runs as the calling user.
+[`Dockerfile`](Dockerfile) pins SDCC by package version, devkitSMS by commit
+and archive SHA-256, and the base image by digest. The build runs as the
+calling user.
 
 ```bash
 make rom        # build/sms-media-player.sms
@@ -543,7 +544,7 @@ credit and licence is in [`tools/clips.manifest.json`](tools/clips.manifest.json
 | [`tools/DESIGN.md`](tools/DESIGN.md) | Why each baker module, script and test is shaped as it is, with the measurements behind it |
 | [`CHANGELOG.md`](CHANGELOG.md) | What was tried, measured and rejected, and what each failure cost |
 | [`RELEASES.md`](RELEASES.md) | Version history, generated from commit subjects |
-| [`Dockerfile`](Dockerfile) | The toolchain image, with devkitSMS pinned by commit |
+| [`Dockerfile`](Dockerfile) | The toolchain image, with devkitSMS pinned by commit and archive SHA-256 |
 | [`tools/clips.manifest.json`](tools/clips.manifest.json) | The regression films: identity, credit and licence, never the films |
 
 ## FAQ

@@ -309,7 +309,7 @@ blank.
 ## Layout
 
 ```
-Dockerfile          toolchain image: SDCC, devkitSMS built from a pinned commit
+Dockerfile          toolchain image: SDCC, devkitSMS built from a pinned commit, SHA-256 checked
 Makefile            host target delegates to Docker; in-container target does the real build
 include/fmv/        public headers, one per module
 src/                implementation, one file per module

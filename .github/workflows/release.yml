@@ -15,6 +15,9 @@ on:
 permissions:
   contents: read
 
+env:
+  UV_FROZEN: "1"
+
 jobs:
   gates:
     name: Gates
@@ -31,6 +34,7 @@ jobs:
         with:
           version: "0.12.23"
           enable-cache: true
+          cache-suffix: release
 
       - name: Install ffmpeg, which the decode path shells out to
         run: |

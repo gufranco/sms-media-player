@@ -195,7 +195,7 @@ mednafen -video.fs 0 -sound 0 build/sms-media-player.sms
 
 ### ツールチェーン
 
-すべてのROMビルドはDockerを通り、ホストのツールチェーンを使う経路はありません。[`Dockerfile`](Dockerfile)はSDCCをパッケージのバージョンで、devkitSMSをコミットで、ベースイメージをダイジェストで固定しており、ビルドは呼び出したユーザーとして実行されます。
+すべてのROMビルドはDockerを通り、ホストのツールチェーンを使う経路はありません。[`Dockerfile`](Dockerfile)はSDCCをパッケージのバージョンで、devkitSMSをコミットとアーカイブのSHA-256で、ベースイメージをダイジェストで固定しており、ビルドは呼び出したユーザーとして実行されます。
 
 ```bash
 make rom        # build/sms-media-player.sms
@@ -400,7 +400,7 @@ make rom`、`make analyse`、`make timing
 | [`tools/DESIGN.md`](tools/DESIGN.md) | ベイカーの各モジュール、スクリプト、テストがなぜその形なのかと、その裏付けとなる測定 |
 | [`CHANGELOG.md`](CHANGELOG.md) | 試したこと、測定したこと、却下したことと、それぞれの失敗のコスト |
 | [`RELEASES.md`](RELEASES.md) | コミットの件名から生成したバージョン履歴 |
-| [`Dockerfile`](Dockerfile) | ツールチェーンのイメージ。devkitSMSはコミットで固定 |
+| [`Dockerfile`](Dockerfile) | ツールチェーンのイメージ。devkitSMSはコミットとアーカイブのSHA-256で固定 |
 | [`tools/clips.manifest.json`](tools/clips.manifest.json) | 回帰用の映像の識別情報、クレジット、ライセンス。映像そのものは含みません |
 
 ## よくある質問

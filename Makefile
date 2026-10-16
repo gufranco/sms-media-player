@@ -93,25 +93,25 @@ image:
 	docker build --target toolchain -t $(DOCKER_IMAGE) .
 
 rom: image
-	docker run --rm --user $(DOCKER_USER) -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) \
+	docker run --rm --user $(DOCKER_USER) -e HOME=/tmp -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) \
 	    make --no-print-directory rom
 
 analyse: image
-	docker run --rm --user $(DOCKER_USER) -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) \
+	docker run --rm --user $(DOCKER_USER) -e HOME=/tmp -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) \
 	    make --no-print-directory analyse
 
 timing:
 	uv --project tools run python tools/scripts/check_vdp_timing.py
 
 example: image
-	docker run --rm --user $(DOCKER_USER) -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) \
+	docker run --rm --user $(DOCKER_USER) -e HOME=/tmp -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) \
 	    make --no-print-directory example
 
 hooks:
 	git config core.hooksPath .githooks
 
 shell: image
-	docker run --rm -it --user $(DOCKER_USER) -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) bash
+	docker run --rm -it --user $(DOCKER_USER) -e HOME=/tmp -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) bash
 
 clean:
 	rm -rf $(BUILD_DIR) examples/cutscene/build

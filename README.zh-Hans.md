@@ -194,7 +194,7 @@ mednafen -video.fs 0 -sound 0 build/sms-media-player.sms
 
 ### 工具链
 
-每次 ROM 构建都通过 Docker 进行，没有宿主机工具链路径。[`Dockerfile`](Dockerfile) 按软件包版本固定 SDCC，按提交固定 devkitSMS，按摘要固定基础镜像，构建以调用者的用户身份运行。
+每次 ROM 构建都通过 Docker 进行，没有宿主机工具链路径。[`Dockerfile`](Dockerfile) 按软件包版本固定 SDCC，按提交和归档文件的 SHA-256 固定 devkitSMS，按摘要固定基础镜像，构建以调用者的用户身份运行。
 
 ```bash
 make rom        # build/sms-media-player.sms
@@ -399,7 +399,7 @@ make rom`、`make analyse`、`make timing
 | [`tools/DESIGN.md`](tools/DESIGN.md) | 每个烘焙器模块、脚本和测试为何如此设计，以及背后的测量数据 |
 | [`CHANGELOG.md`](CHANGELOG.md) | 尝试过、测量过和否决过什么，以及每次失败的代价 |
 | [`RELEASES.md`](RELEASES.md) | 版本历史，由提交标题生成 |
-| [`Dockerfile`](Dockerfile) | 工具链镜像，devkitSMS 按提交固定 |
+| [`Dockerfile`](Dockerfile) | 工具链镜像，devkitSMS 按提交和归档文件的 SHA-256 固定 |
 | [`tools/clips.manifest.json`](tools/clips.manifest.json) | 回归影片：身份、署名和许可证，从不包含影片本身 |
 
 ## 常见问题
