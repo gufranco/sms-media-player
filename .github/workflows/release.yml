@@ -79,7 +79,6 @@ jobs:
           uv --project tools run python -m smsmedia.cartridge \
             build/ci-source.mp4 --duration 2 --fps 8 --bundle build/bundle
           make analyse
-          make rom
           make example
           uv --project tools run python tools/scripts/check_vdp_timing.py
           uv --project tools run python -m pytest \

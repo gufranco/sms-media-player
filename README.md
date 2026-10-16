@@ -35,7 +35,6 @@ its tiles paged through VRAM while the film plays.</strong>
 
 ```bash
 uv --project tools run python -m smsmedia.cartridge ~/Movies/my-film.mkv --duration 5
-make rom
 # build/smsmedia.sms
 ```
 
@@ -228,12 +227,12 @@ git submodule update --init   # in a clone made without the flag
 
 ### Make a cartridge
 
-Bake a cartridge from any video file, then build:
+Bake a film from any video file and build the ROM in one command.
+`--bake-only` stops after the bake, before the ROM build:
 
 ```bash
 uv --project tools run python -m smsmedia.cartridge input.mp4 --start 300 --duration 5 \
     --preview build/preview.png
-make rom
 make timing     # VDP write spacing, read out of the assembler's own listing
 ```
 

@@ -35,7 +35,6 @@
 
 ```bash
 uv --project tools run python -m smsmedia.cartridge ~/Movies/my-film.mkv --duration 5
-make rom
 # build/smsmedia.sms
 ```
 
@@ -171,12 +170,11 @@ git submodule update --init   # in a clone made without the flag
 
 ### 製作卡帶
 
-從任何影片檔案烘焙卡帶，然後建置：
+一個指令便可從任何影片檔案烘焙影片並建置 ROM。`--bake-only` 會在烘焙之後、建置 ROM 之前停止：
 
 ```bash
 uv --project tools run python -m smsmedia.cartridge input.mp4 --start 300 --duration 5 \
     --preview build/preview.png
-make rom
 make timing     # VDP write spacing, read out of the assembler's own listing
 ```
 

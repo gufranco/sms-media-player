@@ -106,7 +106,11 @@ moment the frame shows.
 
 ### [`smsmedia/cartridge.py`](smsmedia/cartridge.py)
 
-One command: point it at a video file and get the ROM assets.
+One command: point it at a video file and get the ROM. It bakes the film,
+then builds through `make rom`, the same Docker path a manual build takes,
+and names the ROM after the package, `build/smsmedia.sms`. `--bake-only`
+stops after the bake. A source with no audio track is announced, so a
+silent cartridge never comes as a surprise.
 
 The picture is 32 by 24 cells, which is 256 by 192: the whole raster, edge to
 edge, with nothing framing it. A source of another shape is scaled until it

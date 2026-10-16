@@ -343,6 +343,7 @@ def _tight(clip, tmp_path, *extra: str) -> list[str]:
         str(tmp_path / "generated"),
         "--report",
         str(tmp_path / "report.json"),
+        "--bake-only",
         *extra,
     ]
 
@@ -390,6 +391,7 @@ def _argv(clip, tmp_path) -> list[str]:
         str(tmp_path / "generated"),
         "--report",
         str(tmp_path / "report.json"),
+        "--bake-only",
     ]
 
 

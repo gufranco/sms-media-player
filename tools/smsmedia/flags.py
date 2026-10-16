@@ -165,7 +165,10 @@ def add_output_flags(parser: argparse.ArgumentParser) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="smsmedia")
+    parser = argparse.ArgumentParser(
+        prog="smsmedia",
+        description="Bake a movie and build the cartridge that plays it.",
+    )
     parser.add_argument("source", type=Path, help="the video file to put on the cartridge")
     parser.add_argument(
         "--subtitles",
@@ -178,5 +181,8 @@ def build_parser() -> argparse.ArgumentParser:
     add_stream_flags(parser)
     add_picture_flags(parser)
     add_output_flags(parser)
+    parser.add_argument(
+        "--bake-only", action="store_true", help="stop after the bake, before the ROM build"
+    )
     parser.set_defaults(bars=None, cues=[])
     return parser

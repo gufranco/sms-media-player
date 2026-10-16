@@ -35,7 +35,6 @@
 
 ```bash
 uv --project tools run python -m smsmedia.cartridge ~/Movies/my-film.mkv --duration 5
-make rom
 # build/smsmedia.sms
 ```
 
@@ -172,12 +171,11 @@ git submodule update --init   # in a clone made without the flag
 
 ### カートリッジの作成
 
-任意の動画ファイルからカートリッジをベイクし、続けてビルドします。
+任意の動画ファイルから映像をベイクし、同じコマンドでROMまでビルドします。`--bake-only`を付けると、ベイクの後、ROMのビルドの前で停止します。
 
 ```bash
 uv --project tools run python -m smsmedia.cartridge input.mp4 --start 300 --duration 5 \
     --preview build/preview.png
-make rom
 make timing     # VDP write spacing, read out of the assembler's own listing
 ```
 

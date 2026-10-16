@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,6 +34,7 @@ from smsmedia import (
 P90: Final = 0.9
 MOST_MERGED_SHOWN: Final = 3
 BAR_ANALYSIS_SECONDS: Final = 8.0
+ROM: Final = Path("build") / "smsmedia.sms"
 
 
 def fits(*, banks: int, max_banks: int) -> bool:
@@ -219,6 +221,27 @@ def window_seconds(*, start: float, duration: float | None, source_seconds: floa
 def main(argv: list[str] | None = None) -> int:
     parser = flags.build_parser()
     args = parser.parse_args(argv)
+    print(f"baking {args.source}", file=sys.stderr)
+    status = bake_cartridge(parser, args)
+    if status != 0:
+        return status
+    if args.bake_only:
+        print(f"baked into {args.assets}", file=sys.stderr)
+        return 0
+    return _build_cartridge()
+
+
+def _build_cartridge() -> int:
+    print("building the cartridge", file=sys.stderr)
+    completed = subprocess.run(["make", "--no-print-directory", "rom"], check=False)
+    if completed.returncode != 0:
+        return completed.returncode
+    if ROM.exists():
+        print(f"{ROM}  {ROM.stat().st_size} bytes")
+    return 0
+
+
+def bake_cartridge(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
     show_dial_reports()
     info = ffmpeg.probe(args.source)
     geometry = geometry_for(args.columns, args.rows)
