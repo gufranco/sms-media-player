@@ -107,3 +107,60 @@ class TestPreview:
         assert str(refused.value) == (
             "a preview needs at least one frame shown and one source frame"
         )
+
+
+def video_shape(path: Path) -> tuple[int, int, int]:
+    probed = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-count_frames",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height,nb_read_frames",
+            "-of",
+            "csv=p=0",
+            str(path),
+        ],
+        capture_output=True,
+        check=True,
+        text=True,
+    ).stdout.strip()
+    width, height, count = (int(value) for value in probed.split(","))
+    return width, height, count
+
+
+class TestPreviewVideo:
+    def test_the_video_holds_one_frame_per_replayed_field(self, tmp_path):
+        # Arrange
+        blob, _ = baked_film(4)
+        path = tmp_path / "preview.mp4"
+        fields = preview.field_count(blob)
+
+        # Act
+        preview.write_video(path, blob=blob, geometry=GEOMETRY)
+
+        # Assert
+        assert video_shape(path) == (GEOMETRY.width, GEOMETRY.height, fields)
+
+    def test_a_video_suffix_chooses_the_video(self):
+        # Arrange
+        path = Path("out.mp4")
+
+        # Act
+        wanted = preview.wants_video(path)
+
+        # Assert
+        assert wanted is True
+
+    def test_an_image_suffix_chooses_the_sheet(self):
+        # Arrange
+        path = Path("out.png")
+
+        # Act
+        wanted = preview.wants_video(path)
+
+        # Assert
+        assert wanted is False

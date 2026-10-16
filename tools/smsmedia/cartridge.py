@@ -144,7 +144,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--assets", type=Path, default=Path("assets"))
     parser.add_argument("--generated", type=Path, default=Path("build/generated"))
     parser.add_argument("--report", type=Path, default=Path("build/report.json"))
-    parser.add_argument("--preview", type=Path, default=None)
+    parser.add_argument(
+        "--preview",
+        type=Path,
+        default=None,
+        help="a .mp4 for every field the console draws, or a .png for four frames",
+    )
     return parser
 
 
@@ -352,8 +357,17 @@ def _publish(
         hold_fields=rate.fields_for(settled.fps),
     )
     if args.preview is not None:
-        preview.write(args.preview, blob=blob, sources=baked.sources, geometry=geometry)
+        _write_preview(args.preview, blob=blob, sources=baked.sources, geometry=geometry)
         print(f"preview written to {args.preview}")
+
+
+def _write_preview(
+    path: Path, *, blob: bytes, sources: list[np.ndarray], geometry: bake.Geometry
+) -> None:
+    if preview.wants_video(path):
+        preview.write_video(path, blob=blob, geometry=geometry)
+        return
+    preview.write(path, blob=blob, sources=sources, geometry=geometry)
 
 
 def _summarise(

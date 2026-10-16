@@ -90,7 +90,7 @@ none does today.
 | A diagnostics overlay | Yes | Planned |
 | A fault screen for a corrupt stream | Yes | Yes |
 | A film inside your own game | Yes, `--bundle` emits a drop-in library | Partly. `--rows` and `--columns` build a smaller picture; there is no drop-in bundle yet |
-| A preview of what the console will draw | Yes, a video | Yes, four frames beside their source |
+| A preview of what the console will draw | Yes, a video | Yes, a video, or four frames beside their source |
 | A write-timing gate on every build | Yes | Yes |
 | A regression set of films baked on every test run | Yes, six films | Yes, six films |
 | Run on the original hardware | Yes, AES and MVS | Not yet. A Game Gear run is pending |
@@ -228,6 +228,7 @@ make timing     # VDP write spacing, read out of the assembler's own listing
 
 `--preview` writes four frames from across the film as the console will draw
 them, each beside its source, so a bake can be judged without an emulator.
+Given a `.mp4`, it writes a video of every field the console draws instead.
 The report in `build/report.json` names `cells_merged`, the cells that showed
 a merged tile instead of their own, and `most_merged_frames`, the frames that
 lost the most, so a poor result can be traced to the frames that caused it.
