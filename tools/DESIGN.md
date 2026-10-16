@@ -149,8 +149,9 @@ mirror, and the files themselves never enter the repository.
 
 One clip is the exception and is committed, because a gate that needs a
 download is a gate that does not run on a clean clone. It is generated from
-arithmetic by `tools/scripts/make_fixture.py`, so it is the project's own
-work rather than somebody else's film.
+arithmetic by the core's `fmvcore.fixture` and committed there as
+`fixtures/synthetic.mp4`, so it is the family's own work rather than somebody
+else's film.
 
 The check itself, size first and then SHA-256, is
 [`fmvcore/clips.py`](../fmv-core-python/fmvcore/clips.py); this module holds
@@ -991,25 +992,6 @@ deleted rather than kept. A
 half-right file left on disk is worse than an absent one, because the next
 run reports it as present and the gate then measures a film nobody chose.
 
-### [`scripts/make_fixture.py`](scripts/make_fixture.py)
-
-Regenerate the committed synthetic clip the multi-clip gate always runs.
-
-A film cannot be committed, and a gate that needs a download is a gate that
-does not run on a clean clone. This builds one small clip from arithmetic, so
-the bytes in the repository can be reproduced rather than trusted.
-
-Every term earns its place. The block field gives large areas of one colour
-so the encoder can reuse patterns, which is what real footage does. The ramp
-varies within every eight by eight cell, so no cell is flat and the working
-set has to hold real detail. The sweep and the moving bar change between
-frames, so the reuse threshold and the slot allocator both do work rather
-than idling on a still.
-
-Run it from the repository root:
-
-    uv --project tools run python tools/scripts/make_fixture.py
-
 ## The tests
 
 ### [`tests/test_capture.py`](tests/test_capture.py)
@@ -1095,15 +1077,6 @@ A check that has only ever seen good input cannot show it would reject bad
 input. Every case here is therefore run twice, once against the shipping
 configuration and once against the configuration that shipped broken, and
 the test fails if the broken one is judged acceptable.
-
-### [`tests/test_make_fixture.py`](tests/test_make_fixture.py)
-
-The committed clip is reproducible, not merely present.
-
-A binary in a repository nobody can regenerate is a binary nobody can
-change. These pin the shape of the generator so the file in
-`tools/tests/fixtures` stays something the project owns rather than
-something it inherited.
 
 ### [`tests/test_multiclip.py`](tests/test_multiclip.py)
 

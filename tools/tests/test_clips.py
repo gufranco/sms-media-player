@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import dataclasses
+import os
+import subprocess
 
 import pytest
 
@@ -257,3 +259,29 @@ class TestResolution:
 
         # Assert
         assert any(clip.key == wanted for clip, _ in available)
+
+
+GIT_HOOK_VARIABLES = frozenset({"GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE", "GIT_PREFIX"})
+
+
+class TestCommittedFilms:
+    def test_every_committed_film_is_tracked_by_git(self):
+        # Arrange
+        committed = [clip for clip in clips.load() if clip.committed]
+
+        # Act
+        untracked = [clip.key for clip in committed if not tracked(clips.path_of(clip))]
+
+        # Assert
+        assert untracked == []
+
+
+def tracked(path) -> bool:
+    outside_a_hook = {k: v for k, v in os.environ.items() if k not in GIT_HOOK_VARIABLES}
+    done = subprocess.run(
+        ("git", "-C", str(path.parent), "ls-files", "--error-unmatch", path.name),
+        capture_output=True,
+        check=False,
+        env=outside_a_hook,
+    )
+    return done.returncode == 0

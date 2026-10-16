@@ -341,7 +341,7 @@ uv --project tools run python -m pytest tools/tests --cov=smsmedia --cov=tools/s
     --cov-config=tools/pyproject.toml --cov-fail-under=95
 
 uv --project tools run python tools/scripts/fetch_clips.py     # the regression films
-uv --project tools run python tools/scripts/make_fixture.py    # the committed clip
+uv --project fmv-core-python run python -m fmvcore.fixture     # the committed clip, in the core
 ```
 
 ## Running the ROM
