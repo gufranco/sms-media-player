@@ -83,12 +83,12 @@ none does today.
 | Play and pause | Yes | Planned |
 | Fast forward and rewind | Yes, forward at 2x, 5x and 10x | Planned |
 | Seek | Yes, 10 seconds back or forward | Planned |
-| A position bar with elapsed and total time | Yes. The total reads one second short | Planned |
-| Restart and stop | Planned | Yes |
-| Sound on and off | Planned | Planned |
+| A position bar with elapsed and total time | Yes | Planned |
+| Restart and stop | Yes | Yes |
+| Sound on and off | Yes | Planned |
 | The film loops at the end | Yes | Yes |
 | A diagnostics overlay | Yes | Planned |
-| A fault screen for a corrupt stream | Planned | Yes |
+| A fault screen for a corrupt stream | Yes | Yes |
 | A film inside your own game | Yes, `--bundle` emits a drop-in library | Partly. `--rows` and `--columns` build a smaller picture; there is no drop-in bundle yet |
 | A preview of what the console will draw | Yes, a video | Yes, four frames beside their source |
 | A write-timing gate on every build | Yes | Yes |

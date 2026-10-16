@@ -276,7 +276,7 @@ the others do not also get.*
 
 ## The state of this repository
 
-sms-media-player is the second member. The Master System addresses 512
+sms-media-player is the Master System member. The Master System addresses 512
 patterns in 16 KB of VRAM, so the dictionary cannot be resident: it is paged
 in as the film plays, and the binding constraint is the bytes the console
 accepts in a field rather than the size of a cartridge. It decodes, scores,
