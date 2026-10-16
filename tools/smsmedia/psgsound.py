@@ -34,6 +34,7 @@ CHANNEL_SHIFT: Final = 5
 NOISE_WHITE_FAST: Final = 0xE4
 MAX_FIELD_WRITES: Final = 1 + (TONE_CHANNELS * 3) + 1
 DECODE_RATE: Final = 22050
+REFRESH_FIELDS: Final = 60
 
 Spectrum = npt.NDArray[np.float64]
 
@@ -146,7 +147,11 @@ def _changes(voices: list[list[Voice]], noise: list[int]) -> list[bytes]:
     previous_noise: int | None = None
     out: list[bytes] = []
     for field, (current, hiss) in enumerate(zip(voices, noise, strict=True)):
-        written = bytearray([NOISE_WHITE_FAST]) if field == 0 else bytearray()
+        refresh = field % REFRESH_FIELDS == 0
+        if refresh:
+            previous = [None] * TONE_CHANNELS
+            previous_noise = None
+        written = bytearray([NOISE_WHITE_FAST]) if refresh else bytearray()
         for channel, voice in enumerate(current):
             written += _voice_bytes(channel, voice, previous[channel])
         if hiss != previous_noise:

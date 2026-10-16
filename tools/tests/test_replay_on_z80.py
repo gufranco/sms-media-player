@@ -105,7 +105,7 @@ def film() -> bytes:
 
 
 def replay(
-    built, lines: list[int], *, data: bytes | None = None, banks: int = 1
+    built, lines: list[int], *, data: bytes | None = None, banks: int = 1, muted: bool = False
 ) -> tuple[Ports, Memory, dict[str, int]]:
     rom, names = built
     chunk = film() if data is None else data
@@ -114,6 +114,7 @@ def replay(
     image[WINDOW : WINDOW + len(chunk)] = chunk
     image[names["_movie_bank"]] = FIRST_BANK
     image[names["_movie_last_bank"]] = FIRST_BANK + banks - 1
+    image[names["_movie_muted"]] = int(muted)
     image[RETURN] = HALT
     cursor = names["_movie_cursor"]
     image[cursor] = WINDOW & 0xFF
@@ -492,3 +493,25 @@ class TestASoundRun:
 
         # Assert
         assert ports.data()[: len(PAYLOAD)] == list(PAYLOAD)
+
+
+class TestAMutedSoundRun:
+    def test_nothing_reaches_the_sound_port(self, built):
+        # Arrange
+        lines = [INSIDE]
+
+        # Act
+        ports, _, _ = replay(built, lines, data=sounded_film(), muted=True)
+
+        # Assert
+        assert ports.sound() == []
+
+    def test_the_picture_after_the_skipped_run_still_arrives(self, built):
+        # Arrange
+        lines = [INSIDE]
+
+        # Act
+        ports, _, _ = replay(built, lines, data=sounded_film(), muted=True)
+
+        # Assert
+        assert ports.data() == list(PAYLOAD) + list(PALETTE)

@@ -653,8 +653,11 @@ divider. The loudest peak of the whole film plays at full volume and anything
 24 dB below it is muted. Noise follows the energy between 4 and 10 kHz.
 
 Only registers that changed are written, so a held note costs nothing after
-its first field. A field writes at most 11 bytes: the noise mode on the first
-field, two bytes a tone, one attenuator a channel. The cartridge takes
+its first field. Every `REFRESH_FIELDS` fields, about once a second, the whole
+register state is written again, because the player silences the PSG on pause
+and skips sound runs while muted, and a held note would otherwise stay silent
+after either ends. A field writes at most 11 bytes: the noise mode on a
+refresh field, two bytes a tone, one attenuator a channel. The cartridge takes
 `limits.SOUND_RESERVE` from the field budget for them, the run's 13 bytes at
 34 T-states each, measured in 30 T-state transfer bytes.
 

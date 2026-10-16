@@ -10,6 +10,7 @@ volatile u16 movie_cursor;
 volatile u8 movie_bank;
 volatile u8 movie_kind;
 volatile u8 movie_last_bank;
+volatile u8 movie_muted;
 static volatile u16 movie_frames;
 
 void movie_replay(void);
@@ -47,4 +48,14 @@ u8 fmv_movie_last_kind(void)
 u16 fmv_movie_frames(void)
 {
     return movie_frames;
+}
+
+void fmv_movie_set_muted(u8 muted)
+{
+    movie_muted = muted;
+}
+
+u8 fmv_movie_muted(void)
+{
+    return movie_muted;
 }

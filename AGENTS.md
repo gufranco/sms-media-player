@@ -514,11 +514,18 @@ figure in this repository comes from an emulator, a model, or static analysis.
 Four player changes since that ROM are unverified on hardware for the same
 reason: the replay refuses run kind `0x03` instead of copying the palettes
 outside the V counter guard, an assertion halt paints the backdrop entry so it
-shows with the display off, the replay cursor is asserted below `0xC000`, and
-the replay writes the sound run, kind `0x06`, to the PSG 34 T-states apart.
+shows with the display off, the replay cursor is asserted below `0xC000`, the
+replay writes the sound run, kind `0x06`, to the PSG 34 T-states apart, and
+the player pauses on the Pause NMI and skips sound runs while muted.
 A fresh ROM carrying them needs one Game Gear run: play through with sound,
-press button 1 to restart and button 2 to exit, listen for the tones, and
-watch for shredded tiles.
+press Start to pause and again to resume, press Up to mute and again to hear
+the tones return within a second, press button 1 to restart and button 2 to
+exit, and watch for shredded tiles.
+
+Start pausing on a Game Gear rests on the SMS Power Start Button page, which
+says that in Master System mode the Start button acts identically to the
+Pause button, and on the Mark III software reference, which wires Pause to
+the Z80 NMI. No Sega document in hand states it for the Game Gear.
 
 The owner has a Game Gear with an Everdrive, which runs Master System ROMs, and
 that is the hardware path available. What it can and cannot settle is in

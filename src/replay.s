@@ -5,6 +5,7 @@
         .globl _movie_bank
         .globl _movie_kind
         .globl _movie_last_bank
+        .globl _movie_muted
 
         CHUNK_BAD = 0x80
 
@@ -70,12 +71,21 @@ mvpsg:
         inc hl
         ld  b, (hl)
         inc hl
+        ld  a, (_movie_muted)
+        or  a, a
+        jr  nz, mvpsgskip
         ld  c, #0x7F
 mvpsgpaced:
         outi
         nop
         nop
         jp  nz, mvpsgpaced
+        jp  mvloop
+
+mvpsgskip:
+        ld  e, b
+        ld  d, #0x00
+        add hl, de
         jp  mvloop
 
 mvclose:

@@ -9,6 +9,7 @@
 
 #define FMV_RESTART_KEYS PORT_A_KEY_1
 #define FMV_EXIT_KEYS    PORT_A_KEY_2
+#define FMV_MUTE_KEYS    PORT_A_KEY_UP
 
 typedef enum {
     FMV_OUTCOME_ENDED = 0,
@@ -21,7 +22,7 @@ SMS_EMBED_SEGA_ROM_HEADER(0, 0);
 SMS_EMBED_SDSC_HEADER(FMV_VERSION_MAJOR, FMV_VERSION_MINOR, 2026, 9, 4,
                       "gufranco",
                       "SMS Media Player",
-                      "Loops until stopped. Button 1 restarts, button 2 exits");
+                      "Button 1 restarts, 2 exits, Pause pauses, Up mutes");
 
 static void hold_last_frame(void)
 {
@@ -29,6 +30,26 @@ static void hold_last_frame(void)
 
     for (field = 0u; field < (u16)MOVIE_HOLD_FIELDS; field++) {
         SMS_waitForVBlank();
+    }
+}
+
+static void wait_for_resume(void)
+{
+    fmv_psg_silence();
+    SMS_resetPauseRequest();
+    while (!SMS_queryPauseRequested()) {
+        SMS_waitForVBlank();
+    }
+    SMS_resetPauseRequest();
+}
+
+static void toggle_sound(void)
+{
+    const u8 muted = (u8)(fmv_movie_muted() ^ 1u);
+
+    fmv_movie_set_muted(muted);
+    if (muted != 0u) {
+        fmv_psg_silence();
     }
 }
 
@@ -53,7 +74,13 @@ static fmv_outcome play_once(void)
         if (fmv_movie_last_kind() == FMV_CHUNK_BAD) {
             return FMV_OUTCOME_FAULT;
         }
+        if (SMS_queryPauseRequested()) {
+            wait_for_resume();
+        }
         pressed = (u16)SMS_getKeysPressed();
+        if ((pressed & FMV_MUTE_KEYS) != 0u) {
+            toggle_sound();
+        }
         if ((pressed & FMV_EXIT_KEYS) != 0u) {
             return FMV_OUTCOME_EXIT;
         }

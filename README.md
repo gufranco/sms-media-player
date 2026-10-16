@@ -56,7 +56,7 @@ and the controls.
 | Picture | 256x192, the whole raster. A source of another shape is cropped to fill it |
 | Z80 replay loop | Working. Pattern and name runs at 30 cycles a byte against Sega's documented floor of 29; the palette and name table flip at 16 inside a V counter guard in the vertical blank. Held by a build gate and by running the built replay on a Z80 |
 | Sound | Tone synthesis on the PSG, written once a field before the picture. `--silent` leaves it out. Not yet run on a console |
-| Controls | Plays on a loop. Button 1 restarts, button 2 exits to a black screen. A corrupt stream stops on a red one |
+| Controls | Plays on a loop. Button 1 restarts, button 2 exits to a black screen. Pause, or Start on a Game Gear, pauses and resumes. Up turns sound off and on; sound returns within a second. A corrupt stream stops on a red one |
 | Field rate | Paced for NTSC, 59.92 fields a second, which the Game Gear also runs at. The player draws one chunk a field, so a 50 Hz PAL console plays the same stream at about five sixths of its intended speed. Nothing here has been checked on a PAL console |
 | Regression set | Six clips of different kinds baked on every test run |
 | Hardware run | Not done. Every figure here comes from an emulator or a listing |
@@ -80,12 +80,12 @@ none does today.
 | Sound with no added hardware | Yes, ADPCM-B on the YM2610 | Yes, tone synthesis on the PSG |
 | A silent build that gives sound's room to the picture | Partly. A library bundle can leave sound out; sound has its own ROM, so leaving it out frees no picture room | Yes, `--silent` |
 | Subtitles from a SubRip file | Yes | Planned |
-| Play and pause | Yes | Planned |
+| Play and pause | Yes | Yes. Pause on the console, Start on a Game Gear |
 | Fast forward and rewind | Yes, forward at 2x, 5x and 10x | Planned |
 | Seek | Yes, 10 seconds back or forward | Planned |
 | A position bar with elapsed and total time | Yes | Planned |
 | Restart and stop | Yes | Yes |
-| Sound on and off | Yes | Planned |
+| Sound on and off | Yes | Yes, Up |
 | The film loops at the end | Yes | Yes |
 | A diagnostics overlay | Yes | Planned |
 | A fault screen for a corrupt stream | Yes | Yes |

@@ -88,6 +88,16 @@ class TestSynthesis:
         # Assert
         assert writes[20] == b""
 
+    def test_a_held_tone_is_written_again_once_a_second(self):
+        # Arrange
+        samples = tone(330.0, 2.0)
+
+        # Act
+        writes = psgsound.synthesize(samples, rate=RATE, fields=90)
+
+        # Assert
+        assert writes[60] == writes[0]
+
     def test_a_field_never_writes_more_than_the_reserve_allows(self):
         # Arrange
         rng = np.random.default_rng(3)
