@@ -7,8 +7,8 @@ import pytest
 from z80 import Cpu, Memory, core
 
 ROOT = Path(__file__).resolve().parents[2]
-ROM = ROOT / "build" / "sms-media-player.sms"
-SYMBOLS = ROOT / "build" / "sms-media-player.noi"
+ROM = ROOT / "build" / "smsmedia.sms"
+SYMBOLS = ROOT / "build" / "smsmedia.noi"
 ROM_REQUIRED_ENV = "SMSMEDIA_ROM_REQUIRED"
 CODE_WINDOW = 0x8000
 RETURN = 0xFFF0

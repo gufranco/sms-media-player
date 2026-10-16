@@ -332,7 +332,7 @@ specs/              design notes, not committed
 ## Build commands
 
 ```
-make rom        build the ROM at build/sms-media-player.sms
+make rom        build the ROM at build/smsmedia.sms
 make analyse    static analysis, must exit 0
 make timing     VDP write spacing in the built listings, after make rom
 make hooks      install the pre-commit hook: format, lint, types and tests, plus
@@ -369,14 +369,14 @@ evidence comes from mednafen or Emulicious, and the [family standard](FAMILY.md)
 says the same for every member.
 
 ```
-mednafen -video.fs 0 -sound 0 build/sms-media-player.sms
+mednafen -video.fs 0 -sound 0 build/smsmedia.sms
 ```
 
 For an unattended capture, record and pull the frame out afterwards rather than
 watching it:
 
 ```
-mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/sms-media-player.sms
+mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/smsmedia.sms
 ffmpeg -i /tmp/run.mov -vf "select=eq(n\,90)" -vframes 1 /tmp/frame.png
 ```
 
@@ -421,7 +421,7 @@ A change to what the picture looks like is judged frame by frame against the
 source, with one command:
 
 ```
-mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/sms-media-player.sms
+mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/smsmedia.sms
 uv --project tools run python tools/scripts/compare_capture.py \
     --capture /tmp/run.mov --source <film> --start <seconds> --sheet /tmp/worst.png
 ```

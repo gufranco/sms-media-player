@@ -1049,7 +1049,7 @@ Compare an emulator capture with the film it was baked from, field by field.
 Record the ROM first, windowed and without sound, then run from the repository
 root:
 
-    mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/sms-media-player.sms
+    mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/smsmedia.sms
     uv --project tools run python tools/scripts/compare_capture.py \
         --capture /tmp/run.mov --source film.mp4 --start 60 --json /tmp/report.json
 

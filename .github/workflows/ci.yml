@@ -173,7 +173,7 @@ jobs:
       - name: The ROM is real
         run: |
           set -euo pipefail
-          rom=build/sms-media-player.sms
+          rom=build/smsmedia.sms
           test -s "$rom"
           size=$(wc -c < "$rom")
           echo "$rom is $size bytes"
@@ -189,7 +189,7 @@ jobs:
           from pathlib import Path
           import sys
 
-          rom = Path("build/sms-media-player.sms").read_bytes()
+          rom = Path("build/smsmedia.sms").read_bytes()
           if rom[0x7FF0:0x7FF8] != b"TMR SEGA":
               sys.exit("no SEGA header at 0x7FF0")
 
@@ -214,5 +214,5 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: rom
-          path: build/sms-media-player.sms
+          path: build/smsmedia.sms
           retention-days: 14

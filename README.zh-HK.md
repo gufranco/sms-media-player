@@ -36,7 +36,7 @@
 ```bash
 uv --project tools run python -m smsmedia.cartridge ~/Movies/my-film.mkv --duration 5
 make rom
-# build/sms-media-player.sms
+# build/smsmedia.sms
 ```
 
 ---
@@ -186,10 +186,10 @@ make timing     # VDP write spacing, read out of the assembler's own listing
 
 ### 執行
 
-在硬件上，把 `build/sms-media-player.sms` 複製到快閃卡帶。在模擬器下，以視窗模式執行，切勿全螢幕：
+在硬件上，把 `build/smsmedia.sms` 複製到快閃卡帶。在模擬器下，以視窗模式執行，切勿全螢幕：
 
 ```bash
-mednafen -video.fs 0 -sound 0 build/sms-media-player.sms
+mednafen -video.fs 0 -sound 0 build/smsmedia.sms
 ```
 
 ### 工具鏈
@@ -197,7 +197,7 @@ mednafen -video.fs 0 -sound 0 build/sms-media-player.sms
 每次 ROM 建置都經由 Docker，沒有宿主電腦工具鏈路徑。[`Dockerfile`](Dockerfile) 以套件版本固定 SDCC、以 commit 及封存檔的 SHA-256 固定 devkitSMS、以 digest 固定基礎映像，而建置以呼叫者的使用者身分執行。
 
 ```bash
-make rom        # build/sms-media-player.sms
+make rom        # build/smsmedia.sms
 make analyse    # cppcheck at exhaustive level, must exit 0
 make shell      # a shell inside the toolchain image
 make clean

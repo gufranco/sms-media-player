@@ -36,7 +36,7 @@ its tiles paged through VRAM while the film plays.</strong>
 ```bash
 uv --project tools run python -m smsmedia.cartridge ~/Movies/my-film.mkv --duration 5
 make rom
-# build/sms-media-player.sms
+# build/smsmedia.sms
 ```
 
 ---
@@ -250,11 +250,11 @@ the clock passed before a slot was free for them.
 
 ### Running it
 
-On hardware, copy `build/sms-media-player.sms` to a flash cartridge. Under an
+On hardware, copy `build/smsmedia.sms` to a flash cartridge. Under an
 emulator, run it windowed, never fullscreen:
 
 ```bash
-mednafen -video.fs 0 -sound 0 build/sms-media-player.sms
+mednafen -video.fs 0 -sound 0 build/smsmedia.sms
 ```
 
 ### Toolchain
@@ -265,7 +265,7 @@ and archive SHA-256, and the base image by digest. The build runs as the
 calling user.
 
 ```bash
-make rom        # build/sms-media-player.sms
+make rom        # build/smsmedia.sms
 make analyse    # cppcheck at exhaustive level, must exit 0
 make shell      # a shell inside the toolchain image
 make clean

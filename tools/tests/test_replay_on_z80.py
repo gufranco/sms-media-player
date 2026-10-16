@@ -11,8 +11,8 @@ from z80 import Cpu, Memory
 from smsmedia import console, stream
 
 ROOT = Path(__file__).resolve().parents[2]
-ROM = ROOT / "build" / "sms-media-player.sms"
-SYMBOLS = ROOT / "build" / "sms-media-player.noi"
+ROM = ROOT / "build" / "smsmedia.sms"
+SYMBOLS = ROOT / "build" / "smsmedia.noi"
 WINDOW = 0x8000
 RETURN = 0xFFF0
 STACK = 0xDFF0

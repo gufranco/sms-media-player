@@ -1,5 +1,6 @@
 PROJECT      := sms-media-player
-ROM          := build/$(PROJECT).sms
+ROM_NAME     := smsmedia
+ROM          := build/$(ROM_NAME).sms
 DOCKER_IMAGE := $(PROJECT)-toolchain
 DOCKER_USER  := $(shell id -u):$(shell id -g)
 
@@ -60,11 +61,11 @@ BANK_FLAGS = $(foreach n,$(BANK_NUMS),-Wl-b_BANK$(n)=0x8000)
 
 rom: $(ASSET_HDR) $(OBJECTS)
 	$(SDCC) $(SDCC_ARCH) $(SDCC_STD) $(BANK_FLAGS) \
-	    -o $(BUILD_DIR)/$(PROJECT).ihx \
+	    -o $(BUILD_DIR)/$(ROM_NAME).ihx \
 	    $(CRT0)/crt0_sms.rel \
 	    $(OBJECTS) $(BANK_RELS) \
 	    $(SMSLIB)/SMSlib.lib
-	ihx2sms $(BUILD_DIR)/$(PROJECT).ihx $(ROM)
+	ihx2sms $(BUILD_DIR)/$(ROM_NAME).ihx $(ROM)
 	@echo "built $(ROM) ($$(stat -c %s $(ROM)) bytes)"
 
 timing:

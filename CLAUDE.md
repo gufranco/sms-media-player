@@ -127,14 +127,14 @@ evidence comes from mednafen or Emulicious, and the [family standard](FAMILY.md)
 says the same for every member.
 
 ```
-mednafen -video.fs 0 -sound 0 build/sms-media-player.sms
+mednafen -video.fs 0 -sound 0 build/smsmedia.sms
 ```
 
 For an unattended check, record and extract the frame afterwards rather than
 sitting in front of it:
 
 ```
-mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/sms-media-player.sms
+mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/smsmedia.sms
 ffmpeg -i /tmp/run.mov -vf "select=eq(n\,90)" -vframes 1 /tmp/frame.png
 ```
 
