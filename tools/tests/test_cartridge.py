@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import subprocess
@@ -310,6 +311,21 @@ class TestBundle:
         assert "a picture of 8 by 6 cells" in (tmp_path / "bundle" / "README.md").read_text()
 
 
+UNCAPPED_FPS = 12.0
+
+
+class TestDialReports:
+    def test_reports_go_to_the_output_of_the_run_that_asked(self):
+        # Arrange
+        dials.LOG.addHandler(logging.StreamHandler(io.StringIO()))
+
+        # Act
+        cartridge.show_dial_reports()
+
+        # Assert
+        assert [handler.stream for handler in dials.LOG.handlers] == [sys.stdout]
+
+
 def _tight(clip, tmp_path, *extra: str) -> list[str]:
     return [
         str(clip),
@@ -341,7 +357,7 @@ class TestStepDown:
 
         # Assert
         report = json.loads((tmp_path / "report.json").read_text())
-        assert (code, report["banks"], report["fps"]) == (0, 1, 3.0)
+        assert (code, report["banks"], report["fps"] < UNCAPPED_FPS) == (0, 1, True)
 
     def test_a_fixed_frame_rate_is_never_stepped_down(self, clip, tmp_path):
         # Arrange

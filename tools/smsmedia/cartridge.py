@@ -318,11 +318,12 @@ def _decode(
     )
 
 
-def _show_dial_reports() -> None:
-    if not dials.LOG.handlers:
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(logging.Formatter("%(message)s"))
-        dials.LOG.addHandler(handler)
+def show_dial_reports() -> None:
+    for stale in tuple(dials.LOG.handlers):
+        dials.LOG.removeHandler(stale)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    dials.LOG.addHandler(handler)
     dials.LOG.setLevel(logging.INFO)
 
 
@@ -336,7 +337,7 @@ def window_seconds(*, start: float, duration: float | None, source_seconds: floa
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    _show_dial_reports()
+    show_dial_reports()
     info = ffmpeg.probe(args.source)
     geometry = geometry_for(args.columns, args.rows)
     _describe_source(args.source, info=info, geometry=geometry)
