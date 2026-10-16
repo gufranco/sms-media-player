@@ -56,7 +56,7 @@ and the controls.
 | Picture | 256x192, the whole raster. A source of another shape is cropped to fill it |
 | Z80 replay loop | Working. Pattern and name runs at 30 cycles a byte against Sega's documented floor of 29; the palette and name table flip at 16 inside a V counter guard in the vertical blank. Held by a build gate and by running the built replay on a Z80 |
 | Sound | Tone synthesis on the PSG, written once a field before the picture. `--silent` leaves it out. Not yet run on a console |
-| Controls | Plays on a loop. Button 1 restarts, button 2 exits to a black screen. Pause, or Start on a Game Gear, pauses and resumes, and shows a position bar with the elapsed and total time while paused. Up turns sound off and on; sound returns within a second. A corrupt stream stops on a red one |
+| Controls | Plays on a loop. Button 1 restarts, button 2 exits to a black screen. Pause, or Start on a Game Gear, pauses and resumes, and shows a position bar with the elapsed and total time while paused. Button 1 while paused shows the diagnostics: frame over total frames, the cartridge bank, and how many fields were deferred because the vertical blank was missed. Up turns sound off and on; sound returns within a second. A corrupt stream stops on a red one |
 | Field rate | Paced for NTSC, 59.92 fields a second, which the Game Gear also runs at. The player draws one chunk a field, so a 50 Hz PAL console plays the same stream at about five sixths of its intended speed. Nothing here has been checked on a PAL console |
 | Regression set | Six clips of different kinds baked on every test run |
 | Hardware run | Not done. Every figure here comes from an emulator or a listing |
@@ -87,7 +87,7 @@ none does today.
 | Restart and stop | Yes | Yes |
 | Sound on and off | Yes | Yes, Up |
 | The film loops at the end | Yes | Yes |
-| A diagnostics overlay | Yes | Planned |
+| A diagnostics overlay | Yes | Yes, button 1 while paused |
 | A fault screen for a corrupt stream | Yes | Yes |
 | A film inside your own game | Yes, `--bundle` emits a drop-in library | Partly. `--rows` and `--columns` build a smaller picture; there is no drop-in bundle yet |
 | A preview of what the console will draw | Yes, a video | Yes, a video, or four frames beside their source |
@@ -464,6 +464,7 @@ listing or the replay oracle, and the owner's Game Gear is the hardware check.
 | Replay oracle | The baker's model of the stream replays to the picture the encoder meant, to five decimals |
 | mednafen capture | A frame captured from mednafen matches the replay oracle pixel for pixel, so the oracle stands for the screen |
 | `make timing` | Every VDP write pair in the compiled player clears 29 T-states, or 16 inside the guarded vertical-blank copy, walking every listing as one program |
+| `test_diag_on_z80.py` | The built diagnostics run on a Z80 against a VDP model, and write the frame, bank and deferred-field rows after the position overlay's sprites |
 | `test_osd_on_z80.py` | The built pause overlay runs on a Z80 against a VDP model, and writes the elapsed and total time, the bar and its palette where the sprites read them |
 | `test_replay_on_z80.py` | The built replay runs on a Z80 with the V counter held at chosen lines, and no palette byte or flip reaches the VDP outside the window |
 | Regression set | Six films of different kinds bake on every test run, each held to a measured error and bank budget |

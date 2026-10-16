@@ -3,6 +3,8 @@
 
 #include "fmv/types.h"
 
+#define FMV_OSD_SPRITES 14u
+
 typedef struct {
     u32 elapsed_fields;
     u32 total_fields;

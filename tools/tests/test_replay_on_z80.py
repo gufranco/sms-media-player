@@ -137,6 +137,10 @@ def replay(
     return ports, memory, names
 
 
+def word_at(memory: Memory, address: int) -> int:
+    return memory.read8(address) | (memory.read8(address + 1) << 8)
+
+
 def cursor_of(memory: Memory, names: dict[str, int]) -> int:
     address = names["_movie_cursor"]
     return memory.read8(address) | (memory.read8(address + 1) << 8)
@@ -271,6 +275,26 @@ class TestOutsideTheWindow:
 
         # Assert
         assert memory.read8(names["_movie_kind"]) == stream.END_CHUNK
+
+    def test_a_deferred_field_is_counted(self, built):
+        # Arrange
+        lines = [ACTIVE]
+
+        # Act
+        _, memory, names = replay(built, lines)
+
+        # Assert
+        assert word_at(memory, names["_movie_defers"]) == 1
+
+    def test_a_field_inside_the_window_is_not_counted(self, built):
+        # Arrange
+        lines = [INSIDE]
+
+        # Act
+        _, memory, names = replay(built, lines)
+
+        # Assert
+        assert word_at(memory, names["_movie_defers"]) == 0
 
 
 class TestACorruptStream:

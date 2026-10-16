@@ -1,5 +1,6 @@
 #include "SMSlib.h"
 #include "assets.h"
+#include "fmv/diag.h"
 #include "fmv/mediaplayer.h"
 #include "fmv/osd.h"
 #include "fmv/psg.h"
@@ -11,6 +12,7 @@
 #define FMV_RESTART_KEYS PORT_A_KEY_1
 #define FMV_EXIT_KEYS    PORT_A_KEY_2
 #define FMV_MUTE_KEYS    PORT_A_KEY_UP
+#define FMV_DIAG_KEYS    PORT_A_KEY_1
 
 typedef enum {
     FMV_OUTCOME_ENDED = 0,
@@ -37,14 +39,36 @@ static void hold_last_frame(void)
 
 static fmv_position position;
 
+static bool toggle_diagnostics(bool shown)
+{
+    fmv_diagnostics seen;
+
+    if ((SMS_getKeysPressed() & FMV_DIAG_KEYS) == 0u) {
+        return shown;
+    }
+    if (shown) {
+        fmv_diag_hide();
+        return false;
+    }
+    seen.frame = fmv_movie_frames();
+    seen.total_frames = MOVIE_FRAMES;
+    seen.bank = fmv_movie_bank();
+    seen.defers = fmv_movie_defers();
+    fmv_diag_show(&seen);
+    return true;
+}
+
 static void wait_for_resume(void)
 {
+    bool shown = false;
+
     fmv_psg_silence();
     SMS_resetPauseRequest();
     SMS_waitForVBlank();
     fmv_osd_show(&position);
     while (!SMS_queryPauseRequested()) {
         SMS_waitForVBlank();
+        shown = toggle_diagnostics(shown);
     }
     SMS_resetPauseRequest();
     fmv_osd_hide();

@@ -13,5 +13,7 @@ u8 fmv_movie_last_kind(void);
 u16 fmv_movie_frames(void);
 void fmv_movie_set_muted(u8 muted);
 u8 fmv_movie_muted(void);
+u8 fmv_movie_bank(void);
+u16 fmv_movie_defers(void);
 
 #endif

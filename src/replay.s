@@ -6,6 +6,7 @@
         .globl _movie_kind
         .globl _movie_last_bank
         .globl _movie_muted
+        .globl _movie_defers
 
         CHUNK_BAD = 0x80
 
@@ -34,6 +35,9 @@ mvloop:
 
 mvdefer:
         ld  (_movie_cursor), hl
+        ld  hl, (_movie_defers)
+        inc hl
+        ld  (_movie_defers), hl
         xor a, a
         ld  (_movie_kind), a
         ret

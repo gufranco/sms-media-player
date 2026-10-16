@@ -11,6 +11,7 @@ volatile u8 movie_bank;
 volatile u8 movie_kind;
 volatile u8 movie_last_bank;
 volatile u8 movie_muted;
+volatile u16 movie_defers;
 static volatile u16 movie_frames;
 
 void movie_replay(void);
@@ -26,6 +27,7 @@ void fmv_movie_start(u8 first_bank, u8 bank_count)
     movie_cursor = BANK_WINDOW;
     movie_kind = FMV_CHUNK_MORE;
     movie_frames = 0u;
+    movie_defers = 0u;
 }
 
 void fmv_movie_chunk(void)
@@ -58,4 +60,14 @@ void fmv_movie_set_muted(u8 muted)
 u8 fmv_movie_muted(void)
 {
     return movie_muted;
+}
+
+u8 fmv_movie_bank(void)
+{
+    return movie_bank;
+}
+
+u16 fmv_movie_defers(void)
+{
+    return movie_defers;
 }
