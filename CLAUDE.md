@@ -81,8 +81,8 @@ much code as possible.
 
 Owner's instruction, the same day: never describe one member as a port, fork,
 translation or derivative of another, in a README, a commit, a comment or any
-other text, in any language. The Neo Geo player came first, but work has moved
-between the members in both directions since, and more consoles will join.
+other text, in any language, and never tell which member came first: work
+moves between the members in every direction, and more consoles will join.
 
 ## The film fills the cartridge
 
