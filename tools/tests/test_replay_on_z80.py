@@ -105,7 +105,13 @@ def film() -> bytes:
 
 
 def replay(
-    built, lines: list[int], *, data: bytes | None = None, banks: int = 1, muted: bool = False
+    built,
+    lines: list[int],
+    *,
+    data: bytes | None = None,
+    banks: int = 1,
+    muted: bool = False,
+    inks: bool = False,
 ) -> tuple[Ports, Memory, dict[str, int]]:
     rom, names = built
     chunk = film() if data is None else data
@@ -115,6 +121,7 @@ def replay(
     image[names["_movie_bank"]] = FIRST_BANK
     image[names["_movie_last_bank"]] = FIRST_BANK + banks - 1
     image[names["_movie_muted"]] = int(muted)
+    image[names["_movie_inks"]] = int(inks)
     image[RETURN] = HALT
     cursor = names["_movie_cursor"]
     image[cursor] = WINDOW & 0xFF
@@ -353,6 +360,75 @@ class TestACorruptStream:
 
         # Assert
         assert memory.read8(names["_movie_bank"]) == FIRST_BANK + 1
+
+
+OVERLAY_INKS = [0x00, 0x3F]
+INK_ADDRESS = [0x1E, 0xC0]
+
+
+class TestTheOverlayInks:
+    def test_with_the_overlay_up_black_and_white_follow_the_palette(self, built):
+        # Arrange
+        lines = [INSIDE]
+
+        # Act
+        ports, _, _ = replay(built, lines, inks=True)
+
+        # Assert
+        assert ports.data() == list(PAYLOAD) + list(PALETTE) + OVERLAY_INKS
+
+    def test_they_land_on_the_last_two_sprite_palette_entries(self, built):
+        # Arrange
+        lines = [INSIDE]
+
+        # Act
+        ports, _, _ = replay(built, lines, inks=True)
+
+        # Assert
+        control = [value for _, port, value in ports.writes if port == CONTROL_PORT]
+        assert control[-2:] == INK_ADDRESS
+
+    def test_without_the_overlay_nothing_follows_the_palette(self, built):
+        # Arrange
+        lines = [INSIDE]
+
+        # Act
+        ports, _, _ = replay(built, lines, inks=False)
+
+        # Assert
+        assert ports.data() == list(PAYLOAD) + list(PALETTE)
+
+    def test_a_deferred_field_writes_no_inks(self, built):
+        # Arrange
+        lines = [ACTIVE]
+
+        # Act
+        ports, _, _ = replay(built, lines, inks=True)
+
+        # Assert
+        assert ports.data() == list(PAYLOAD)
+
+    def test_every_write_after_the_palette_keeps_the_active_display_floor(self, built):
+        # Arrange
+        lines = [INSIDE]
+
+        # Act
+        ports, _, _ = replay(built, lines, inks=True)
+
+        # Assert
+        stamps = [cycle for cycle, port, _ in ports.writes if port in (DATA_PORT, CONTROL_PORT)]
+        after = stamps[len(stamps) - len(OVERLAY_INKS) - len(INK_ADDRESS) - 1 :]
+        assert min(later - earlier for earlier, later in pairwise(after)) >= ACTIVE_FLOOR
+
+    def test_the_frame_still_completes(self, built):
+        # Arrange
+        lines = [INSIDE]
+
+        # Act
+        _, memory, names = replay(built, lines, inks=True)
+
+        # Assert
+        assert memory.read8(names["_movie_kind"]) == stream.END_FRAME
 
 
 PSG_ATTENUATE_ALL = [0x9F, 0xBF, 0xDF, 0xFF]

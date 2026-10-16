@@ -7,7 +7,7 @@
 #define GLYPH_PLANES          4u
 #define GLYPH_ROWS            5u
 #define GLYPH_TOP             1u
-#define GLYPH_COUNT           16u
+#define GLYPH_COUNT           19u
 #define GLYPH_LEFT_SHIFT      5u
 #define GLYPH_RIGHT_SHIFT     1u
 
@@ -16,6 +16,7 @@ static const u8 glyph_font[GLYPH_COUNT][GLYPH_ROWS] = {
     {5u, 5u, 7u, 1u, 1u}, {7u, 4u, 7u, 1u, 7u}, {7u, 4u, 7u, 5u, 7u}, {7u, 1u, 1u, 2u, 2u},
     {7u, 5u, 7u, 5u, 7u}, {7u, 5u, 7u, 1u, 7u}, {0u, 2u, 0u, 2u, 0u}, {1u, 1u, 2u, 4u, 4u},
     {0u, 0u, 0u, 0u, 0u}, {6u, 5u, 6u, 5u, 6u}, {6u, 5u, 5u, 5u, 6u}, {7u, 4u, 6u, 4u, 4u},
+    {4u, 6u, 7u, 6u, 4u}, {5u, 5u, 5u, 5u, 5u}, {0u, 5u, 2u, 5u, 0u},
 };
 
 static u8 glyph_pixels(u8 glyph, u8 row)
@@ -28,12 +29,13 @@ static u8 glyph_pixels(u8 glyph, u8 row)
 
 void fmv_glyph_row(u8 *tile, u8 row, u8 ink, u8 shade)
 {
-    u8 plane;
+    u8 *const planes = &tile[(u8)(row * GLYPH_PLANES)];
+    const u8 lit = (u8)(ink | shade);
 
-    tile[row * GLYPH_PLANES] = ink;
-    for (plane = 1u; plane < GLYPH_PLANES; plane++) {
-        tile[row * GLYPH_PLANES + plane] = (u8)(ink | shade);
-    }
+    planes[0] = ink;
+    planes[1] = lit;
+    planes[2] = lit;
+    planes[3] = lit;
 }
 
 void fmv_glyph_text(u8 *tile, u8 left, u8 right)

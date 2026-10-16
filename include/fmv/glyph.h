@@ -10,6 +10,9 @@
 #define FMV_GLYPH_B          13u
 #define FMV_GLYPH_D          14u
 #define FMV_GLYPH_F          15u
+#define FMV_GLYPH_PLAY       16u
+#define FMV_GLYPH_PAUSE      17u
+#define FMV_GLYPH_MUTE       18u
 #define FMV_GLYPH_TENS       10u
 
 void fmv_glyph_row(u8 *tile, u8 row, u8 ink, u8 shade);

@@ -26,6 +26,49 @@ UNROLLED = """
     0000003E C9               [10]  107 \tret
 """
 
+INK_REWRITE = (
+    ("ED A3", 16, "outi"),
+    ("ED A3", 16, "outi"),
+    None,
+    ("3A 00 00", 13, "ld\ta, (_movie_inks)"),
+    ("B7", 4, "or\ta, a"),
+    ("E5", 11, "push\thl"),
+    ("F3", 4, "di"),
+    ("3E 1E", 7, "ld\ta, #0x1E"),
+    ("D3 BF", 11, "out\t(#0xBF), a"),
+    ("3E C0", 7, "ld\ta, #0xC0"),
+    ("00", 4, "nop"),
+    ("00", 4, "nop"),
+    ("00", 4, "nop"),
+    ("D3 BF", 11, "out\t(#0xBF), a"),
+    ("FB", 4, "ei"),
+    ("C9", 10, "ret"),
+)
+
+UNPADDED_INK_REWRITE = (
+    ("ED A3", 16, "outi"),
+    ("ED A3", 16, "outi"),
+    None,
+    ("3E 1E", 7, "ld\ta, #0x1E"),
+    ("D3 BF", 11, "out\t(#0xBF), a"),
+    ("3E C0", 7, "ld\ta, #0xC0"),
+    ("D3 BF", 11, "out\t(#0xBF), a"),
+    ("C9", 10, "ret"),
+)
+
+
+def after_the_blank_copy(rows: tuple[tuple[str, int, str] | None, ...]) -> str:
+    lines = [f"    {0:08X}{1:>27} fmvcopy:"]
+    address = 0
+    for number, row in enumerate(rows, start=2):
+        if row is None:
+            lines.append(f"    {address:08X}{number:>27} fmvdone:")
+            continue
+        code, cycles, text = row
+        lines.append(f"    {address:08X} {code:<17}[{cycles:>2}]{number:>5} \t{text}")
+        address += len(code.split())
+    return "\n".join(lines) + "\n"
+
 
 def load():
     spec = importlib.util.spec_from_file_location("check_vdp_timing", SCRIPT)
@@ -186,3 +229,23 @@ class TestTheGate:
         # Assert
         assert result == 1
         assert "UNGUARDED" in capsys.readouterr().err
+
+    def test_an_ink_rewrite_after_the_blank_copy_padded_to_the_floor_passes(self, gate, tmp_path):
+        # Arrange
+        path = listing(tmp_path, "replay.lst", after_the_blank_copy(INK_REWRITE))
+
+        # Act
+        result = gate.main([str(path)])
+
+        # Assert
+        assert result == 0
+
+    def test_an_ink_rewrite_after_the_blank_copy_without_padding_fails(self, gate, tmp_path):
+        # Arrange
+        path = listing(tmp_path, "replay.lst", after_the_blank_copy(UNPADDED_INK_REWRITE))
+
+        # Act
+        result = gate.main([str(path)])
+
+        # Assert
+        assert result == 1

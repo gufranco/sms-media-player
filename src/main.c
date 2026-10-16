@@ -5,21 +5,15 @@
 #include "fmv/osd.h"
 #include "fmv/psg.h"
 #include "fmv/screen.h"
+#include "fmv/transport.h"
 #include "fmv/types.h"
 #include "movie.h"
 #include "version_numbers.h"
 
-#define FMV_RESTART_KEYS PORT_A_KEY_1
-#define FMV_EXIT_KEYS    PORT_A_KEY_2
-#define FMV_MUTE_KEYS    PORT_A_KEY_UP
-#define FMV_DIAG_KEYS    PORT_A_KEY_1
-#define FMV_BACK_KEYS    PORT_A_KEY_LEFT
-#define FMV_AHEAD_KEYS   PORT_A_KEY_RIGHT
-
 typedef enum {
     FMV_OUTCOME_ENDED = 0,
     FMV_OUTCOME_RESTART = 1,
-    FMV_OUTCOME_EXIT = 2,
+    FMV_OUTCOME_STOP = 2,
     FMV_OUTCOME_FAULT = 3,
     FMV_OUTCOME_PLAYING = 4
 } fmv_outcome;
@@ -28,7 +22,12 @@ SMS_EMBED_SEGA_ROM_HEADER(0, 0);
 SMS_EMBED_SDSC_HEADER(FMV_VERSION_MAJOR, FMV_VERSION_MINOR, 2026, 9, 4,
                       "gufranco",
                       "SMS Media Player",
-                      "1 restarts 2 exits Pause pauses Up mutes Left/Right seek");
+                      "1 restarts 2 stops Pause pauses Up mutes Down diag Left/Right seek");
+
+static fmv_osd_view view;
+static fmv_transport transport;
+static bool diag_shown;
+static const fmv_key movie_keys[MOVIE_KEYS] = MOVIE_KEY_TABLE;
 
 static void hold_last_frame(void)
 {
@@ -39,12 +38,29 @@ static void hold_last_frame(void)
     }
 }
 
-static fmv_position position;
-static const fmv_key movie_keys[MOVIE_KEYS] = MOVIE_KEY_TABLE;
+static void read_input(void)
+{
+    transport.pressed = (u16)SMS_getKeysPressed();
+    transport.pause = (u8)SMS_queryPauseRequested();
+}
+
+static fmv_diagnostics diagnostics(void)
+{
+    const fmv_diagnostics seen = {
+        fmv_movie_frames(), MOVIE_FRAMES, fmv_movie_bank(), fmv_movie_defers(),
+    };
+
+    return seen;
+}
+
+static void show_inks(void)
+{
+    fmv_movie_set_inks((u8)(transport.overlay_fields != 0u || diag_shown));
+}
 
 static void seek(s8 direction)
 {
-    const fmv_seek_query query = {movie_keys, (u8)MOVIE_KEYS, position.elapsed_fields, direction};
+    const fmv_seek_query query = {movie_keys, (u8)MOVIE_KEYS, view.where.elapsed_fields, direction};
     const u8 target = fmv_seek_target(&query);
 
     static_assert(MOVIE_KEYS >= 1u && MOVIE_KEYS <= FMV_SEEK_MAX, "seek points fit one byte");
@@ -54,42 +70,66 @@ static void seek(s8 direction)
     fmv_psg_silence();
     fmv_screen_reset();
     fmv_movie_seek(&movie_keys[target]);
-    position.elapsed_fields = movie_keys[target].field;
+    view.where.elapsed_fields = movie_keys[target].field;
+    fmv_osd_open();
+    if (diag_shown) {
+        fmv_diag_open();
+    }
 }
 
-static bool toggle_diagnostics(bool shown)
+static void show_diagnostics_now(void)
 {
-    fmv_diagnostics seen;
+    const fmv_diagnostics seen = diagnostics();
 
-    if ((SMS_getKeysPressed() & FMV_DIAG_KEYS) == 0u) {
-        return shown;
-    }
-    if (shown) {
-        fmv_diag_hide();
-        return false;
-    }
-    seen.frame = fmv_movie_frames();
-    seen.total_frames = MOVIE_FRAMES;
-    seen.bank = fmv_movie_bank();
-    seen.defers = fmv_movie_defers();
     fmv_diag_show(&seen);
-    return true;
+}
+
+static void toggle_diagnostics(bool paced)
+{
+    diag_shown = !diag_shown;
+    if (!diag_shown) {
+        fmv_diag_hide();
+    } else if (paced) {
+        fmv_diag_open();
+    } else {
+        show_diagnostics_now();
+    }
 }
 
 static void wait_for_resume(void)
 {
-    bool shown = false;
+    u16 actions;
 
     fmv_psg_silence();
     SMS_resetPauseRequest();
     SMS_waitForVBlank();
-    fmv_osd_show(&position);
-    while (!SMS_queryPauseRequested()) {
-        SMS_waitForVBlank();
-        shown = toggle_diagnostics(shown);
+    view.paused = 1u;
+    fmv_osd_show(&view);
+    if (diag_shown) {
+        show_diagnostics_now();
     }
+    do {
+        SMS_waitForVBlank();
+        read_input();
+        actions = fmv_transport_paused(&transport);
+        if ((actions & FMV_ACT_DIAG) != 0u) {
+            toggle_diagnostics(false);
+        }
+    } while ((actions & FMV_ACT_RESUME) == 0u);
     SMS_resetPauseRequest();
-    fmv_osd_hide();
+    view.paused = 0u;
+    fmv_osd_state();
+    show_inks();
+}
+
+static void wait_for_wake(void)
+{
+    SMS_resetPauseRequest();
+    do {
+        SMS_waitForVBlank();
+        read_input();
+    } while (!fmv_transport_wakes(&transport));
+    SMS_resetPauseRequest();
 }
 
 static void toggle_sound(void)
@@ -97,6 +137,7 @@ static void toggle_sound(void)
     const u8 muted = (u8)(fmv_movie_muted() ^ 1u);
 
     fmv_movie_set_muted(muted);
+    view.muted = muted;
     if (muted != 0u) {
         fmv_psg_silence();
     }
@@ -108,30 +149,77 @@ static void boot(void)
     fmv_screen_reset();
 }
 
+static void apply_overlay(u16 actions)
+{
+    if ((actions & FMV_ACT_SHOW) != 0u) {
+        fmv_osd_open();
+    }
+    if ((actions & FMV_ACT_REFRESH) != 0u) {
+        fmv_osd_state();
+    }
+    if ((actions & FMV_ACT_HIDE) != 0u) {
+        fmv_osd_close();
+    }
+    if ((actions & FMV_ACT_TICK) != 0u) {
+        fmv_osd_tick();
+    }
+    if ((actions & FMV_ACT_TICK) != 0u && diag_shown) {
+        fmv_diag_open();
+    }
+    show_inks();
+}
+
 static fmv_outcome handle_input(void)
 {
-    u16 pressed;
+    u16 actions;
 
     if (SMS_queryPauseRequested()) {
         wait_for_resume();
     }
-    pressed = (u16)SMS_getKeysPressed();
-    if ((pressed & FMV_MUTE_KEYS) != 0u) {
+    read_input();
+    actions = fmv_transport_playing(&transport);
+    if ((actions & FMV_ACT_MUTE) != 0u) {
         toggle_sound();
     }
-    if ((pressed & FMV_BACK_KEYS) != 0u) {
+    if ((actions & FMV_ACT_BACK) != 0u) {
         seek(FMV_SEEK_BACK);
     }
-    if ((pressed & FMV_AHEAD_KEYS) != 0u) {
+    if ((actions & FMV_ACT_AHEAD) != 0u) {
         seek(FMV_SEEK_AHEAD);
     }
-    if ((pressed & FMV_EXIT_KEYS) != 0u) {
-        return FMV_OUTCOME_EXIT;
+    if ((actions & FMV_ACT_DIAG) != 0u) {
+        toggle_diagnostics(true);
     }
-    if ((pressed & FMV_RESTART_KEYS) != 0u) {
-        return FMV_OUTCOME_RESTART;
+    apply_overlay(actions);
+    if ((actions & FMV_ACT_STOP) != 0u) {
+        return FMV_OUTCOME_STOP;
     }
-    return FMV_OUTCOME_PLAYING;
+    return (actions & FMV_ACT_RESTART) != 0u ? FMV_OUTCOME_RESTART : FMV_OUTCOME_PLAYING;
+}
+
+static void draw_overlays(void)
+{
+    fmv_osd_work(&view);
+    if (diag_shown) {
+        const fmv_diagnostics seen = diagnostics();
+
+        fmv_diag_work(&seen);
+    }
+}
+
+static void begin(void)
+{
+    fmv_movie_start((u8)MOVIE_FIRST_BANK, (u8)MOVIE_BANKS);
+    view.where.elapsed_fields = 0u;
+    view.where.total_fields = MOVIE_FIELDS;
+    view.paused = 0u;
+    view.muted = fmv_movie_muted();
+    fmv_transport_begin(&transport);
+    fmv_osd_open();
+    if (diag_shown) {
+        fmv_diag_open();
+    }
+    show_inks();
 }
 
 static fmv_outcome play_once(void)
@@ -139,16 +227,13 @@ static fmv_outcome play_once(void)
     static_assert(MOVIE_FRAMES > 0u, "a film needs at least one frame");
     static_assert(MOVIE_BANKS > 0u, "a film needs at least one bank");
 
-    fmv_movie_start((u8)MOVIE_FIRST_BANK, (u8)MOVIE_BANKS);
-    position.elapsed_fields = 0u;
-    position.total_fields = MOVIE_FIELDS;
-
+    begin();
     while (fmv_movie_frames() < MOVIE_FRAMES) {
         fmv_outcome outcome;
 
         SMS_waitForVBlank();
         fmv_movie_chunk();
-        position.elapsed_fields++;
+        view.where.elapsed_fields++;
         if (fmv_movie_last_kind() == FMV_CHUNK_BAD) {
             return FMV_OUTCOME_FAULT;
         }
@@ -156,6 +241,7 @@ static fmv_outcome play_once(void)
         if (outcome != FMV_OUTCOME_PLAYING) {
             return outcome;
         }
+        draw_overlays();
     }
 
     return FMV_OUTCOME_ENDED;
@@ -174,12 +260,12 @@ void main(void)
         fmv_screen_reset();
         if (outcome == FMV_OUTCOME_FAULT) {
             fmv_screen_fault();
-        }
-
-        if (outcome == FMV_OUTCOME_EXIT || outcome == FMV_OUTCOME_FAULT) {
             for (;;) {
                 SMS_waitForVBlank();
             }
+        }
+        if (outcome == FMV_OUTCOME_STOP) {
+            wait_for_wake();
         }
     }
 }

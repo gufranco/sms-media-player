@@ -1,13 +1,17 @@
 #include "fmv/osd.h"
 
+#include "fmv/budget.h"
 #include "fmv/glyph.h"
 #include "fmv/vdpcopy.h"
 
 #define OSD_FIRST_TILE     176u
 #define OSD_TEXT_TILES     6u
+#define OSD_ELAPSED_TILES  3u
 #define OSD_TILE_FULL      (OSD_FIRST_TILE + OSD_TEXT_TILES)
 #define OSD_TILE_EMPTY     (OSD_TILE_FULL + 1u)
 #define OSD_TILE_PARTIAL   (OSD_TILE_FULL + 2u)
+#define OSD_TILE_STATE     243u
+#define OSD_TILE_BLANK     244u
 #define OSD_TILE_ROWS      8u
 #define OSD_SPRITE_PIXELS  8u
 #define OSD_CELLS          11u
@@ -18,23 +22,59 @@
 #define OSD_TRACK_TOP      3u
 #define OSD_TRACK_BOTTOM   4u
 #define OSD_SPRITES        FMV_OSD_SPRITES
+#define OSD_STATE_SPRITE   (OSD_TEXT_TILES + OSD_BAR_SPRITES)
 #define OSD_SAT_Y          0x3F00u
 #define OSD_SAT_XN         0x3F80u
-#define OSD_SPRITE_END     0xD0u
 #define OSD_TEXT_Y         167u
 #define OSD_BAR_Y          179u
-#define OSD_TEXT_X         104u
+#define OSD_TEXT_X         112u
 #define OSD_BAR_X          96u
+#define OSD_STATE_X        96u
 #define OSD_INK_ENTRY      30u
 #define OSD_INK_BLACK      0x00u
 #define OSD_INK_WHITE      0x3Fu
 #define OSD_FIELD_HZ_MILLI 59923ul
+#define OSD_INK_LINES      10u
+#define OSD_CLOCK_LINES    98u
+#define OSD_TEXT_LINES     49u
+#define OSD_STRIP_LINES    38u
+#define OSD_BAR_LINES      88u
+#define OSD_PLACE_LINES    58u
 #define OSD_MILLI          1000ul
-#define OSD_MAX_MINUTES    99ul
-#define OSD_SECONDS        60ul
+#define OSD_MAX_MINUTES    99u
+#define OSD_SECONDS        60u
+#define OSD_MAX_SECONDS    (OSD_MAX_MINUTES * OSD_SECONDS + OSD_SECONDS - 1u)
+
+typedef enum {
+    OSD_STEP_INKS = 0,
+    OSD_STEP_TOTAL = 1,
+    OSD_STEP_TEXT3 = 2,
+    OSD_STEP_TEXT4 = 3,
+    OSD_STEP_TEXT5 = 4,
+    OSD_STEP_BAR_FULL = 5,
+    OSD_STEP_BAR_EMPTY = 6,
+    OSD_STEP_CLOCK = 7,
+    OSD_STEP_TEXT0 = 8,
+    OSD_STEP_TEXT1 = 9,
+    OSD_STEP_TEXT2 = 10,
+    OSD_STEP_BAR = 11,
+    OSD_STEP_STATE = 12,
+    OSD_STEP_BLANK = 13,
+    OSD_STEP_PLACE = 14,
+    OSD_STEP_DONE = 15
+} osd_step;
+
+static const u8 osd_lines[OSD_STEP_DONE] = {
+    OSD_INK_LINES,  OSD_CLOCK_LINES, OSD_TEXT_LINES, OSD_TEXT_LINES, OSD_TEXT_LINES,
+    OSD_STRIP_LINES, OSD_STRIP_LINES, OSD_CLOCK_LINES, OSD_TEXT_LINES, OSD_TEXT_LINES,
+    OSD_TEXT_LINES, OSD_BAR_LINES,  OSD_TEXT_LINES, OSD_INK_LINES,  OSD_PLACE_LINES,
+};
 
 static u8 osd_tile[FMV_GLYPH_TILE_BYTES];
 static u8 osd_cells[OSD_CELLS + 1u];
+static u8 osd_next;
+static u8 osd_fill;
+static bool osd_visible;
 
 static void osd_compose_bar(u8 filled)
 {
@@ -53,9 +93,9 @@ static void osd_compose_bar(u8 filled)
 static void osd_put_clock(u8 at, u32 fields, u32 bias)
 {
     const u32 seconds = (fields * OSD_MILLI + bias) / OSD_FIELD_HZ_MILLI;
-    const u32 minutes = seconds / OSD_SECONDS;
-    const u8 shown = (u8)(minutes > OSD_MAX_MINUTES ? OSD_MAX_MINUTES : minutes);
-    const u8 rest = (u8)(minutes > OSD_MAX_MINUTES ? OSD_SECONDS - 1u : seconds % OSD_SECONDS);
+    const u16 clamped = (u16)(seconds > OSD_MAX_SECONDS ? OSD_MAX_SECONDS : seconds);
+    const u8 shown = (u8)(clamped / OSD_SECONDS);
+    const u8 rest = (u8)(clamped % OSD_SECONDS);
 
     osd_cells[at] = (u8)(shown / FMV_GLYPH_TENS);
     osd_cells[at + 1u] = (u8)(shown % FMV_GLYPH_TENS);
@@ -64,18 +104,23 @@ static void osd_put_clock(u8 at, u32 fields, u32 bias)
     osd_cells[at + 4u] = (u8)(rest % FMV_GLYPH_TENS);
 }
 
-static void osd_upload_text(const fmv_position *where)
+static void osd_put_total(const fmv_position *where)
 {
-    u8 tile;
-
-    osd_put_clock(0u, where->elapsed_fields, 0u);
     osd_cells[5] = FMV_GLYPH_SLASH;
     osd_put_clock(6u, where->total_fields, OSD_FIELD_HZ_MILLI / 2u);
     osd_cells[OSD_CELLS] = FMV_GLYPH_BLANK;
-    for (tile = 0u; tile < OSD_TEXT_TILES; tile++) {
-        fmv_glyph_text(osd_tile, osd_cells[tile * 2u], osd_cells[tile * 2u + 1u]);
-        fmv_glyph_upload((u8)(OSD_FIRST_TILE + tile), osd_tile);
-    }
+}
+
+static void osd_upload_text(u8 tile)
+{
+    fmv_glyph_text(osd_tile, osd_cells[tile * 2u], osd_cells[tile * 2u + 1u]);
+    fmv_glyph_upload((u8)(OSD_FIRST_TILE + tile), osd_tile);
+}
+
+static void osd_upload_bar(u8 number, u8 filled)
+{
+    osd_compose_bar(filled);
+    fmv_glyph_upload(number, osd_tile);
 }
 
 static u8 osd_filled(const fmv_position *where)
@@ -86,65 +131,184 @@ static u8 osd_filled(const fmv_position *where)
     return (u8)(where->elapsed_fields * OSD_BAR_PIXELS / where->total_fields);
 }
 
-static void osd_upload_bar(u8 filled)
+static void osd_upload_state(const fmv_osd_view *view)
 {
-    static const u8 tiles[3] = {OSD_TILE_FULL, OSD_TILE_EMPTY, OSD_TILE_PARTIAL};
-    const u8 widths[3] = {OSD_SPRITE_PIXELS, 0u, (u8)(filled % OSD_SPRITE_PIXELS)};
-    u8 index;
+    const u8 state = view->paused != 0u ? FMV_GLYPH_PAUSE : FMV_GLYPH_PLAY;
+    const u8 sound = view->muted != 0u ? FMV_GLYPH_MUTE : FMV_GLYPH_BLANK;
 
-    for (index = 0u; index < 3u; index++) {
-        osd_compose_bar(widths[index]);
-        fmv_glyph_upload(tiles[index], osd_tile);
-    }
+    fmv_glyph_text(osd_tile, state, sound);
+    fmv_glyph_upload(OSD_TILE_STATE, osd_tile);
 }
 
-static u8 osd_bar_tile(u8 sprite, u8 filled)
+static void osd_upload_blank(void)
 {
-    const u8 start = (u8)(sprite * OSD_SPRITE_PIXELS);
+    static const u8 clear[FMV_GLYPH_TILE_BYTES] = {0u};
 
-    if (filled >= start + OSD_SPRITE_PIXELS) {
+    fmv_glyph_upload(OSD_TILE_BLANK, clear);
+}
+
+static u8 osd_bar_tile(u8 bar)
+{
+    const u8 start = (u8)(bar * OSD_SPRITE_PIXELS);
+
+    if (osd_fill >= start + OSD_SPRITE_PIXELS) {
         return OSD_TILE_FULL;
     }
-    if (filled <= start) {
+    if (osd_fill <= start) {
         return OSD_TILE_EMPTY;
     }
     return OSD_TILE_PARTIAL;
 }
 
-static void osd_place(u8 filled)
+static u8 osd_sprite_tile(u8 sprite)
 {
-    u8 ys[OSD_SPRITES + 1u];
+    if (!osd_visible) {
+        return OSD_TILE_BLANK;
+    }
+    if (sprite < OSD_TEXT_TILES) {
+        return (u8)(OSD_FIRST_TILE + sprite);
+    }
+    if (sprite < OSD_STATE_SPRITE) {
+        return osd_bar_tile((u8)(sprite - OSD_TEXT_TILES));
+    }
+    return OSD_TILE_STATE;
+}
+
+static u8 osd_sprite_x(u8 sprite)
+{
+    if (sprite < OSD_TEXT_TILES) {
+        return (u8)(OSD_TEXT_X + sprite * OSD_SPRITE_PIXELS);
+    }
+    if (sprite < OSD_STATE_SPRITE) {
+        return (u8)(OSD_BAR_X + (sprite - OSD_TEXT_TILES) * OSD_SPRITE_PIXELS);
+    }
+    return OSD_STATE_X;
+}
+
+static void osd_place(void)
+{
+    u8 ys[OSD_SPRITES];
     u8 xn[OSD_SPRITES * 2u];
     u8 sprite;
 
     for (sprite = 0u; sprite < OSD_SPRITES; sprite++) {
-        const bool text = sprite < OSD_TEXT_TILES;
-        const u8 bar = (u8)(sprite - OSD_TEXT_TILES);
+        const bool bar = sprite >= OSD_TEXT_TILES && sprite < OSD_STATE_SPRITE;
 
-        ys[sprite] = text ? OSD_TEXT_Y : OSD_BAR_Y;
-        xn[sprite * 2u] = (u8)(text ? OSD_TEXT_X + sprite * OSD_SPRITE_PIXELS : OSD_BAR_X + bar * OSD_SPRITE_PIXELS);
-        xn[sprite * 2u + 1u] = text ? (u8)(OSD_FIRST_TILE + sprite) : osd_bar_tile(bar, filled);
+        ys[sprite] = bar ? OSD_BAR_Y : OSD_TEXT_Y;
+        xn[sprite * 2u] = osd_sprite_x(sprite);
+        xn[sprite * 2u + 1u] = osd_sprite_tile(sprite);
     }
-    ys[OSD_SPRITES] = OSD_SPRITE_END;
     fmv_vdp_write(OSD_SAT_XN, FMV_VDP_VRAM_WRITE, xn, (u8)sizeof xn);
     fmv_vdp_write(OSD_SAT_Y, FMV_VDP_VRAM_WRITE, ys, (u8)sizeof ys);
 }
 
-void fmv_osd_show(const fmv_position *where)
+static u8 osd_text_tile(u8 step)
 {
-    static_assert(OSD_TEXT_TILES + OSD_BAR_SPRITES == OSD_SPRITES, "the overlay owns the first sprites");
-    static const u8 inks[2] = {OSD_INK_BLACK, OSD_INK_WHITE};
-    const u8 filled = osd_filled(where);
-
-    fmv_vdp_write(OSD_INK_ENTRY, FMV_VDP_CRAM_WRITE, inks, (u8)sizeof inks);
-    osd_upload_text(where);
-    osd_upload_bar(filled);
-    osd_place(filled);
+    if (step >= OSD_STEP_TEXT0) {
+        return (u8)(step - OSD_STEP_TEXT0);
+    }
+    return (u8)(OSD_ELAPSED_TILES + step - OSD_STEP_TEXT3);
 }
 
-void fmv_osd_hide(void)
+static void osd_run(u8 step, const fmv_osd_view *view)
 {
-    static const u8 end[1] = {OSD_SPRITE_END};
+    switch (step) {
+    case OSD_STEP_INKS:
+        fmv_osd_inks();
+        break;
+    case OSD_STEP_TOTAL:
+        osd_put_total(&view->where);
+        break;
+    case OSD_STEP_BAR_FULL:
+        osd_upload_bar(OSD_TILE_FULL, OSD_SPRITE_PIXELS);
+        break;
+    case OSD_STEP_BAR_EMPTY:
+        osd_upload_bar(OSD_TILE_EMPTY, 0u);
+        break;
+    case OSD_STEP_CLOCK:
+        osd_put_clock(0u, view->where.elapsed_fields, 0u);
+        break;
+    case OSD_STEP_BAR:
+        osd_fill = osd_filled(&view->where);
+        osd_upload_bar(OSD_TILE_PARTIAL, (u8)(osd_fill % OSD_SPRITE_PIXELS));
+        break;
+    case OSD_STEP_STATE:
+        osd_upload_state(view);
+        break;
+    case OSD_STEP_BLANK:
+        osd_upload_blank();
+        break;
+    case OSD_STEP_PLACE:
+        osd_place();
+        break;
+    default:
+        osd_upload_text(osd_text_tile(step));
+        break;
+    }
+}
 
-    fmv_vdp_write(OSD_SAT_Y, FMV_VDP_VRAM_WRITE, end, (u8)sizeof end);
+static void osd_request(u8 step)
+{
+    if (step < osd_next) {
+        osd_next = step;
+    }
+}
+
+void fmv_osd_inks(void)
+{
+    static const u8 inks[2] = {OSD_INK_BLACK, OSD_INK_WHITE};
+
+    fmv_vdp_write(OSD_INK_ENTRY, FMV_VDP_CRAM_WRITE, inks, (u8)sizeof inks);
+}
+
+void fmv_osd_open(void)
+{
+    osd_visible = true;
+    osd_next = OSD_STEP_INKS;
+}
+
+void fmv_osd_tick(void)
+{
+    if (osd_visible) {
+        osd_request(OSD_STEP_CLOCK);
+    }
+}
+
+void fmv_osd_state(void)
+{
+    if (osd_visible) {
+        osd_request(OSD_STEP_STATE);
+    }
+}
+
+void fmv_osd_close(void)
+{
+    osd_visible = false;
+    osd_next = OSD_STEP_BLANK;
+}
+
+void fmv_osd_work(const fmv_osd_view *view)
+{
+    u8 count;
+
+    for (count = 0u; count < OSD_STEP_DONE && osd_next < OSD_STEP_DONE; count++) {
+        if (fmv_budget_lines() < osd_lines[osd_next]) {
+            return;
+        }
+        osd_run(osd_next, view);
+        osd_next++;
+    }
+}
+
+void fmv_osd_show(const fmv_osd_view *view)
+{
+    u8 step;
+
+    static_assert(OSD_STATE_SPRITE + 1u == OSD_SPRITES, "the overlay owns the first sprites");
+    static_assert(OSD_TILE_PARTIAL < OSD_FIRST_TILE + 16u, "the bar tiles stay in the hidden rows");
+    fmv_osd_open();
+    for (step = OSD_STEP_INKS; step < OSD_STEP_DONE; step++) {
+        osd_run(step, view);
+    }
+    osd_next = OSD_STEP_DONE;
 }

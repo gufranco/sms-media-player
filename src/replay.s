@@ -6,9 +6,14 @@
         .globl _movie_kind
         .globl _movie_last_bank
         .globl _movie_muted
+        .globl _movie_inks
         .globl _movie_defers
 
         CHUNK_BAD = 0x80
+        INK_ENTRY = 0x1E
+        INK_COUNT = 2
+        INK_BLACK = 0x00
+        INK_WHITE = 0x3F
 
         .area _CODE
 
@@ -125,7 +130,31 @@ fmvcopy:
         outi
         .endm
 fmvdone:
+        ld  a, (_movie_inks)
+        or  a, a
+        jp  z, mvloop
+        push hl
+        di
+        ld  a, #INK_ENTRY
+        out (#0xBF), a
+        ld  a, #0xC0
+        nop
+        nop
+        nop
+        out (#0xBF), a
+        ei
+        ld  hl, #mvinks
+        ld  b, #INK_COUNT
+        ld  c, #0xBE
+mvinkpaced:
+        outi
+        nop
+        jp  nz, mvinkpaced
+        pop hl
         jp  mvloop
+
+mvinks:
+        .db INK_BLACK, INK_WHITE
 
 mvbank:
         ld  a, (_movie_last_bank)

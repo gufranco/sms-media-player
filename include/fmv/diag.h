@@ -10,6 +10,8 @@ typedef struct {
     u16 defers;
 } fmv_diagnostics;
 
+void fmv_diag_open(void);
+void fmv_diag_work(const fmv_diagnostics *seen);
 void fmv_diag_show(const fmv_diagnostics *seen);
 void fmv_diag_hide(void);
 

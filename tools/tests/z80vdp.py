@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 import pytest
-from z80 import Cpu, Memory
+from z80 import Cpu, Memory, core
 
 ROOT = Path(__file__).resolve().parents[2]
 ROM = ROOT / "build" / "sms-media-player.sms"
@@ -18,6 +18,11 @@ HALT = 0x76
 STEP_LIMIT = 2_000_000
 DATA_PORT = 0xBE
 CONTROL_PORT = 0xBF
+V_COUNTER = 0x7E
+CYCLES_PER_LINE = 228
+LINES_PER_FIELD = 262
+LAST_UNREPEATED_LINE = 0xDA
+REPEATED_LINES = 6
 VRAM_WRITE = 1
 CRAM_WRITE = 3
 SPRITE_PATTERNS = 0x2000
@@ -37,6 +42,9 @@ GLYPHS = {
     ":": ("...", ".#.", "...", ".#.", "..."),
     "/": ("..#", "..#", ".#.", "#..", "#.."),
     " ": ("...", "...", "...", "...", "..."),
+    ">": ("#..", "##.", "###", "##.", "#.."),
+    "=": ("#.#", "#.#", "#.#", "#.#", "#.#"),
+    "x": ("...", "#.#", ".#.", "#.#", "..."),
     "B": ("##.", "#.#", "##.", "#.#", "##."),
     "D": ("##.", "#.#", "#.#", "#.#", "##."),
     "F": ("###", "#..", "##.", "#..", "#.."),
@@ -60,6 +68,11 @@ def load() -> tuple[bytes, dict[str, int]]:
     return ROM.read_bytes(), symbols()
 
 
+def counter(line: int) -> int:
+    within = line % LINES_PER_FIELD
+    return within if within <= LAST_UNREPEATED_LINE else within - REPEATED_LINES
+
+
 class Vdp:
     def __init__(self) -> None:
         self.vram = bytearray(0x4000)
@@ -67,9 +80,25 @@ class Vdp:
         self.address = 0
         self.code = 0
         self.latch: int | None = None
+        self.clock: core.Cpu | None = None
+        self.line = 0
+        self.since = 0
+        self.writes = 0
 
-    def read(self, _address: int) -> int:
-        return 0xFF
+    def start_at(self, line: int) -> None:
+        self.line = line
+        self.since = self.cycles()
+
+    def now(self) -> int:
+        return self.line + (self.cycles() - self.since) // CYCLES_PER_LINE
+
+    def cycles(self) -> int:
+        return 0 if self.clock is None else self.clock.cycles
+
+    def read(self, address: int) -> int:
+        if self.clock is None or address & 0xFF != V_COUNTER:
+            return 0xFF
+        return counter(self.now())
 
     def write(self, address: int, value: int) -> None:
         port = address & 0xFF
@@ -87,6 +116,7 @@ class Vdp:
         self.latch = None
 
     def _data(self, value: int) -> None:
+        self.writes += 1
         if self.code == CRAM_WRITE:
             self.cram[self.address & 0x1F] = value
         elif self.code == VRAM_WRITE:
@@ -125,6 +155,40 @@ def call(
 
 def run(built: tuple[bytes, dict[str, int]], routine: str, payload: bytes = b"") -> Vdp:
     return call(built, routine, payload)[0]
+
+
+class Session:
+    def __init__(self, built: tuple[bytes, dict[str, int]], payload: bytes = b"") -> None:
+        rom, names = built
+        image = bytearray(0x10000)
+        image[:CODE_WINDOW] = rom[:CODE_WINDOW]
+        image[WHERE : WHERE + len(payload)] = payload
+        image[RETURN] = HALT
+        self.names = names
+        self.vdp = Vdp()
+        self.memory = Memory(image=bytes(image))
+        self.cpu = Cpu("z80", self.memory, ports=self.vdp)
+        self.cpu.reset()
+        self.vdp.clock = self.cpu
+
+    def poke(self, address: int, data: bytes) -> None:
+        for offset, value in enumerate(data):
+            self.memory.write8(address + offset, value)
+
+    def call(self, routine: str, *, a: int = 0, hl: int = WHERE) -> int:
+        self.poke(STACK, RETURN.to_bytes(2, "little"))
+        self.cpu.halted = False
+        self.cpu.registers.pc = self.names[routine]
+        self.cpu.registers.sp = STACK
+        self.cpu.registers.a = a
+        self.cpu.registers.hl = hl
+        start = self.cpu.cycles
+        for _ in range(STEP_LIMIT):
+            if self.cpu.halted:
+                return self.cpu.cycles - start
+            self.cpu.step()
+        pytest.fail(f"{routine} did not return within {STEP_LIMIT} steps")
+        return 0
 
 
 def tile(vdp: Vdp, number: int) -> bytes:

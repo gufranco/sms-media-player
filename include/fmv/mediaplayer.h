@@ -14,6 +14,7 @@ u8 fmv_movie_last_kind(void);
 u16 fmv_movie_frames(void);
 void fmv_movie_set_muted(u8 muted);
 u8 fmv_movie_muted(void);
+void fmv_movie_set_inks(u8 inks);
 u8 fmv_movie_bank(void);
 u16 fmv_movie_defers(void);
 void fmv_movie_seek(const fmv_key *key);
