@@ -158,6 +158,20 @@ The check itself, size first and then SHA-256, is
 the Master System's manifest schema, where the films live, and the budgets
 each film is held to.
 
+### [`smsmedia/captions.py`](smsmedia/captions.py)
+
+Burn subtitles into the decoded picture before it is encoded.
+
+The picture fills the screen and the player streams every byte it can
+in a field, so drawing text at runtime would take its tiles from the film.
+Burning the text in costs only the tiles it changes, and the baker already
+spends its budget where the picture changes. The cues come from
+`fmvcore.subtitles` and the glyphs from `fmvcore.font`, the same SubRip
+parser and 8x8 art the Neo Geo player uses. The text is white with a
+one-pixel black edge so it stays readable over any picture, at most two
+lines of one column per 8 pixels, centred, 8 pixels above the bottom.
+The price is that burned subtitles cannot be switched off.
+
 ### [`smsmedia/console.py`](smsmedia/console.py)
 
 The console's memory map, and the state the player leaves it in.

@@ -15,6 +15,7 @@ from fmvcore.arguments import AUTO
 
 from smsmedia import (
     bake,
+    captions,
     dials,
     frames,
     limits,
@@ -152,12 +153,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--generated", type=Path, default=Path("build/generated"))
     parser.add_argument("--report", type=Path, default=Path("build/report.json"))
     parser.add_argument(
+        "--subtitles",
+        type=Path,
+        default=None,
+        help="a SubRip .srt burned into the picture; defaults to one beside the source",
+    )
+    parser.add_argument(
         "--preview",
         type=Path,
         default=None,
         help="a .mp4 for every field the console draws, or a .png for four frames",
     )
-    parser.set_defaults(bars=None)
+    parser.set_defaults(bars=None, cues=[])
     return parser
 
 
@@ -232,7 +239,12 @@ def _picture_report(baked: Baked) -> dict[str, float | list[int] | None]:
 
 def bake_film(args: argparse.Namespace, *, geometry: bake.Geometry, settled: dials.Dials) -> Baked:
     sound = not args.silent and ffmpeg.has_audio(args.source)
-    decoded = _decode(args, geometry=geometry, settled=settled)
+    decoded = captions.caption(
+        _decode(args, geometry=geometry, settled=settled),
+        args.cues,
+        start=args.start,
+        fps=settled.fps,
+    )
     encoder = bake.Encoder(
         geometry=geometry,
         budget=args.budget - (limits.SOUND_RESERVE if sound else 0),
@@ -317,11 +329,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     except ValueError as error:
         parser.error(str(error))
-    args.bars = source.analyse(
-        args.source, start=args.start, duration=min(wanted, BAR_ANALYSIS_SECONDS)
-    ).crop
-    if args.bars is not None:
-        print("cropping bars baked into the source: {}x{} at {},{}".format(*args.bars))
+    _analyse_source(parser, args, wanted=wanted)
     settled = dials.settle_dials(args, geometry=geometry, wanted=wanted)
     baked = bake_film(args, geometry=geometry, settled=settled)
     _describe_bake(baked, fps=settled.fps)
@@ -337,6 +345,22 @@ def main(argv: list[str] | None = None) -> int:
     _publish(args, baked=baked, blob=blob, banks=banks, settled=settled, geometry=geometry)
     _summarise(baked.encoded, blob=blob, banks=banks, report=report)
     return 0
+
+
+def _analyse_source(
+    parser: argparse.ArgumentParser, args: argparse.Namespace, *, wanted: float
+) -> None:
+    args.bars = source.analyse(
+        args.source, start=args.start, duration=min(wanted, BAR_ANALYSIS_SECONDS)
+    ).crop
+    if args.bars is not None:
+        print("cropping bars baked into the source: {}x{} at {},{}".format(*args.bars))
+    try:
+        args.cues = captions.load(args.subtitles, args.source)
+    except FileNotFoundError as error:
+        parser.error(str(error))
+    if args.cues:
+        print(f"burning {len(args.cues)} subtitles into the picture")
 
 
 def _describe_bake(baked: Baked, *, fps: float) -> None:
