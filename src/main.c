@@ -13,6 +13,8 @@
 #define FMV_EXIT_KEYS    PORT_A_KEY_2
 #define FMV_MUTE_KEYS    PORT_A_KEY_UP
 #define FMV_DIAG_KEYS    PORT_A_KEY_1
+#define FMV_BACK_KEYS    PORT_A_KEY_LEFT
+#define FMV_AHEAD_KEYS   PORT_A_KEY_RIGHT
 
 typedef enum {
     FMV_OUTCOME_ENDED = 0,
@@ -26,7 +28,7 @@ SMS_EMBED_SEGA_ROM_HEADER(0, 0);
 SMS_EMBED_SDSC_HEADER(FMV_VERSION_MAJOR, FMV_VERSION_MINOR, 2026, 9, 4,
                       "gufranco",
                       "SMS Media Player",
-                      "Button 1 restarts, 2 exits, Pause pauses, Up mutes");
+                      "1 restarts 2 exits Pause pauses Up mutes Left/Right seek");
 
 static void hold_last_frame(void)
 {
@@ -38,6 +40,22 @@ static void hold_last_frame(void)
 }
 
 static fmv_position position;
+static const fmv_key movie_keys[MOVIE_KEYS] = MOVIE_KEY_TABLE;
+
+static void seek(s8 direction)
+{
+    const fmv_seek_query query = {movie_keys, (u8)MOVIE_KEYS, position.elapsed_fields, direction};
+    const u8 target = fmv_seek_target(&query);
+
+    static_assert(MOVIE_KEYS >= 1u && MOVIE_KEYS <= FMV_SEEK_MAX, "seek points fit one byte");
+    if (target == FMV_SEEK_NONE) {
+        return;
+    }
+    fmv_psg_silence();
+    fmv_screen_reset();
+    fmv_movie_seek(&movie_keys[target]);
+    position.elapsed_fields = movie_keys[target].field;
+}
 
 static bool toggle_diagnostics(bool shown)
 {
@@ -100,6 +118,12 @@ static fmv_outcome handle_input(void)
     pressed = (u16)SMS_getKeysPressed();
     if ((pressed & FMV_MUTE_KEYS) != 0u) {
         toggle_sound();
+    }
+    if ((pressed & FMV_BACK_KEYS) != 0u) {
+        seek(FMV_SEEK_BACK);
+    }
+    if ((pressed & FMV_AHEAD_KEYS) != 0u) {
+        seek(FMV_SEEK_AHEAD);
     }
     if ((pressed & FMV_EXIT_KEYS) != 0u) {
         return FMV_OUTCOME_EXIT;

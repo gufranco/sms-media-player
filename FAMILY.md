@@ -286,5 +286,5 @@ Gaps against "What every player does" (as of 2026-10-16):
 
 - The rate, denoise and reuse threshold are measured per bake, but nothing yet
   sizes the film to the cartridge as a whole.
-- The player loops, restarts, exits, pauses with a position bar and diagnostics, and mutes; it has no seek.
+- The player loops, restarts, exits, pauses with a position bar and diagnostics, mutes, and seeks between points 10 seconds apart; it has no fast forward or rewind.
 - Subtitles are burned into the picture, so unlike the Neo Geo player's they cannot be switched off.

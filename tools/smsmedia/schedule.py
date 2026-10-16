@@ -18,6 +18,7 @@ class Schedule:
     lags: list[float] = field(default_factory=list)
     lead: int = 0
     unshown_tail: int = 0
+    keys: list[int] = field(default_factory=list)
 
 
 def field_of(index: int, *, fps: float) -> float:
@@ -35,13 +36,14 @@ def by_clock(
     slot: int,
     encoder: bake.Encoder,
     pace: bool = True,
+    keyframe_every: float = 0.0,
 ) -> Schedule:
     _check(decoded, slot=slot)
     result = Schedule()
     position = 0
     pick = min(due_at(position, fps=fps, slot=slot), len(decoded) - 1)
     for _ in range(len(decoded)):
-        chunks = encoder.add(decoded[pick])
+        chunks = _encode(encoder, result, decoded, pick=pick, fps=fps, every=keyframe_every)
         shown = stream.pace(chunks, fields=slot) if pace else chunks
         if not result.frames:
             result.lead = max(len(shown) - slot, 0)
@@ -55,6 +57,30 @@ def by_clock(
             break
     result.unshown_tail = len(decoded) - 1 - result.picks[-1]
     return result
+
+
+def _encode(
+    encoder: bake.Encoder,
+    result: Schedule,
+    decoded: list[npt.NDArray[np.uint8]],
+    *,
+    pick: int,
+    fps: float,
+    every: float,
+) -> list[bytes]:
+    keyframe = _keyframe_due(result, pick, fps=fps, every=every)
+    if keyframe:
+        result.keys = [*result.keys, len(result.frames)]
+    return encoder.add(decoded[pick], keyframe=keyframe)
+
+
+def _keyframe_due(result: Schedule, pick: int, *, fps: float, every: float) -> bool:
+    if every <= 0.0:
+        return False
+    if not result.keys:
+        return True
+    last = result.picks[result.keys[-1]]
+    return (pick - last) / fps >= every
 
 
 def _check(decoded: list[npt.NDArray[np.uint8]], *, slot: int) -> None:

@@ -561,6 +561,20 @@ A frame is padded before its chunks, so it appears on the last field of
 its slot. Picking the frame for the slot's first field showed every frame
 a slot late, half a second at 3 fps.
 
+
+Seek points. With `keyframe_every` set, the first frame and then one frame
+per interval of film time is a keyframe, and its index goes in `keys`. A
+keyframe must draw correctly after the player has cleared VRAM and both name
+tables, and also when it is reached by ordinary playback, without disturbing
+the frame on screen. The encoder therefore keeps its working set and the
+protection of slots on screen, re-uploads every resident pattern the keyframe
+uses, which rewrites identical bytes during ordinary playback, drops every
+pattern the keyframe does not use, and writes every name table cell for the
+keyframe and the frame after it. A keyframe keeps the per-frame upload cap: lifting it asked for more
+patterns than the slots beside the frame on screen could hold, and left
+cells unplaced on every film in the regression set. The
+oracle test replays from each point after a reset and requires the same
+picture as continuous play from the field the keyframe closes on.
 ### [`smsmedia/scout.py`](smsmedia/scout.py)
 
 Find the passage of a film that encodes best, which is the largest lever.

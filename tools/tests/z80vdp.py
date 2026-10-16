@@ -94,25 +94,37 @@ class Vdp:
         self.address += 1
 
 
-def run(built: tuple[bytes, dict[str, int]], routine: str, payload: bytes = b"") -> Vdp:
+def call(
+    built: tuple[bytes, dict[str, int]],
+    routine: str,
+    payload: bytes = b"",
+    pokes: dict[int, int] | None = None,
+) -> tuple[Vdp, Cpu, Memory]:
     rom, names = built
     image = bytearray(0x10000)
     image[:CODE_WINDOW] = rom[:CODE_WINDOW]
     image[WHERE : WHERE + len(payload)] = payload
+    for address, value in (pokes or {}).items():
+        image[address] = value
     image[RETURN] = HALT
     image[STACK : STACK + 2] = RETURN.to_bytes(2, "little")
     vdp = Vdp()
-    cpu = Cpu("z80", Memory(image=bytes(image)), ports=vdp)
+    memory = Memory(image=bytes(image))
+    cpu = Cpu("z80", memory, ports=vdp)
     cpu.reset()
     cpu.registers.pc = names[routine]
     cpu.registers.sp = STACK
     cpu.registers.hl = WHERE
     for _ in range(STEP_LIMIT):
         if cpu.halted:
-            return vdp
+            return vdp, cpu, memory
         cpu.step()
     pytest.fail(f"{routine} did not return within {STEP_LIMIT} steps")
-    return vdp
+    return vdp, cpu, memory
+
+
+def run(built: tuple[bytes, dict[str, int]], routine: str, payload: bytes = b"") -> Vdp:
+    return call(built, routine, payload)[0]
 
 
 def tile(vdp: Vdp, number: int) -> bytes:

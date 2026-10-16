@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
@@ -9,6 +10,16 @@ HEADER: Final = "movie.h"
 STAGED: Final = ".tmp"
 FIRST_BANK_SYMBOL: Final = "movie_bin_PART0_bank"
 MAX_HOLD_FIELDS: Final = 0xFFFF
+MAX_FRAME_INDEX: Final = 0xFFFF
+MAX_KEYS: Final = 254
+
+
+@dataclass(frozen=True, slots=True)
+class Key:
+    bank: int
+    offset: int
+    frame: int
+    field: int
 
 
 def write_header(
@@ -19,7 +30,9 @@ def write_header(
     field_count: int,
     hold_fields: int,
     first_bank_symbol: str,
+    keys: tuple[Key, ...] = (Key(bank=0, offset=0, frame=0, field=0),),
 ) -> None:
+    _check_keys(keys)
     if field_count < 1:
         msg = "a film needs at least one field"
         raise ValueError(msg)
@@ -36,9 +49,31 @@ def write_header(
         f"#define MOVIE_FIELDS {field_count}ul\n"
         f"#define MOVIE_HOLD_FIELDS {hold_fields}u\n"
         f"#define MOVIE_FIRST_BANK {first_bank_symbol}\n"
+        f"#define MOVIE_KEYS {len(keys)}u\n"
+        f"#define MOVIE_KEY_TABLE {_key_table(keys, first_bank_symbol)}\n"
         "\n"
         "#endif\n"
     )
+
+
+def _check_keys(keys: tuple[Key, ...]) -> None:
+    if not keys:
+        msg = "a film needs at least one seek point, its first frame"
+        raise ValueError(msg)
+    if len(keys) > MAX_KEYS:
+        msg = f"the player indexes seek points in one byte, so {len(keys)} is more than {MAX_KEYS}"
+        raise ValueError(msg)
+    if any(key.frame > MAX_FRAME_INDEX for key in keys):
+        msg = f"the player counts frames in 16 bits, so no seek point can pass {MAX_FRAME_INDEX}"
+        raise ValueError(msg)
+
+
+def _key_table(keys: tuple[Key, ...], first_bank_symbol: str) -> str:
+    rows = ", ".join(
+        f"{{{first_bank_symbol} + {key.bank}u, 0x{key.offset:04X}u, {key.frame}u, {key.field}ul}}"
+        for key in keys
+    )
+    return f"{{{rows}}}"
 
 
 def nearest_rank(values: list[int], share: float) -> int:
@@ -68,6 +103,7 @@ def publish(
     frame_count: int,
     field_count: int,
     hold_fields: int,
+    keys: tuple[Key, ...] = (Key(bank=0, offset=0, frame=0, field=0),),
 ) -> None:
     assets.mkdir(parents=True, exist_ok=True)
     film = assets / (FILM + STAGED)
@@ -80,6 +116,7 @@ def publish(
         field_count=field_count,
         hold_fields=hold_fields,
         first_bank_symbol=FIRST_BANK_SYMBOL,
+        keys=keys,
     )
     (assets / FILM).unlink(missing_ok=True)
     header.replace(generated / HEADER)

@@ -181,8 +181,9 @@ Rules that follow:
   inside the guarded block too. Sega's documentation gives the same floor for
   VRAM, CRAM and registers, and the documented figure binds, so every pair in
   `src/replay.s` and `src/vdp.s` is padded with `nop` to 30.
-- `tools/tests/test_osd_on_z80.py` and `tools/tests/test_diag_on_z80.py` run
-  the built pause overlay and diagnostics on a Z80 against the VDP model in
+- `tools/tests/test_osd_on_z80.py`, `tools/tests/test_diag_on_z80.py` and
+  `tools/tests/test_seek_on_z80.py` run the built pause overlay, diagnostics
+  and seek on a Z80 against the VDP model in
   `tools/tests/z80vdp.py` and read back the palette, the glyph pixels and the
   sprite table they wrote.
 - `tools/tests/test_replay_on_z80.py` runs the built replay on a Z80 with the
@@ -520,10 +521,10 @@ reason: the replay refuses run kind `0x03` instead of copying the palettes
 outside the V counter guard, an assertion halt paints the backdrop entry so it
 shows with the display off, the replay cursor is asserted below `0xC000`, the
 replay writes the sound run, kind `0x06`, to the PSG 34 T-states apart, and
-the player pauses on the Pause NMI, draws a position bar in sprites while paused and the diagnostics on button 1, counts deferred fields in the replay, and skips sound runs while muted.
+the player pauses on the Pause NMI, draws a position bar in sprites while paused and the diagnostics on button 1, counts deferred fields in the replay, seeks on Left and Right through `fmv_movie_seek` after a screen reset, and skips sound runs while muted.
 A fresh ROM carrying them needs one Game Gear run: play through with sound,
 press Start to pause, check the white elapsed and total time and the bar near the bottom, press button 1 for the diagnostics rows above them and again to hide them, press Start again to resume, press Up to mute and again to hear
-the tones return within a second, press button 1 to restart and button 2 to
+the tones return within a second, press Right and Left to seek and check the picture returns whole after a moment of black, press button 1 to restart and button 2 to
 exit, and watch for shredded tiles.
 
 Start pausing on a Game Gear rests on the SMS Power Start Button page, which

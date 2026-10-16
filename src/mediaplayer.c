@@ -1,6 +1,7 @@
 #include "fmv/mediaplayer.h"
 
 #include "fmv/assert.h"
+#include "fmv/seek.h"
 
 #define BANK_WINDOW 0x8000u
 #define BANK_SELECT 0xFFFFu
@@ -70,4 +71,16 @@ u8 fmv_movie_bank(void)
 u16 fmv_movie_defers(void)
 {
     return movie_defers;
+}
+
+void fmv_movie_seek(const fmv_key *key)
+{
+    FMV_ASSERT(key->bank != 0u);
+    FMV_ASSERT(key->bank <= movie_last_bank);
+
+    movie_bank = key->bank;
+    *(volatile u8 *)BANK_SELECT = key->bank;
+    movie_cursor = (u16)(BANK_WINDOW + key->offset);
+    movie_kind = FMV_CHUNK_MORE;
+    movie_frames = key->frame;
 }

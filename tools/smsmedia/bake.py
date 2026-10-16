@@ -19,6 +19,8 @@ from smsmedia import (
 )
 
 NAME_TABLE_BASE: Final = console.NAME_TABLE_BASE
+BOTH_TABLES: Final = 2
+UNKNOWN_ENTRY: Final = -1
 NAME_TABLE_COLUMNS: Final = console.NAME_TABLE_COLUMNS
 NAME_TABLE_ROWS: Final = console.NAME_TABLE_ROWS
 VISIBLE_ROWS: Final = console.VISIBLE_ROWS
@@ -104,6 +106,7 @@ class Encoder:
     committed_slot: npt.NDArray[np.int64] = field(init=False)
     back: npt.NDArray[np.int64] = field(init=False)
     front: int = field(default=NAME_TABLE_BASE, init=False)
+    unknown_tables: int = field(default=0, init=False)
     encoded: Encoded = field(default_factory=Encoded, init=False)
     total_error: float = field(default=0.0, init=False)
     total_working_set: float = field(default=0.0, init=False)
@@ -123,7 +126,7 @@ class Encoder:
         self.committed_slot = np.full(self.geometry.cells, -1, dtype=np.int64)
         self.back = np.full(self.geometry.cells, console.IDLE_CELL, dtype=np.int64)
 
-    def add(self, frame: npt.NDArray[np.uint8]) -> list[bytes]:
+    def add(self, frame: npt.NDArray[np.uint8], *, keyframe: bool = False) -> list[bytes]:
         self._check_shape(frame)
         back_base = _other_table(self.front)
         fitted = palettes.fit_or_keep(
@@ -134,14 +137,21 @@ class Encoder:
             ordered_dither=self.dither,
         )
         self.cram = fitted.cram
-        writes, shown, stats = self._encode(frame, fitted, back_base)
+        self.unknown_tables = BOTH_TABLES if keyframe else self.unknown_tables
+        writes, shown, stats = self._encode(frame, fitted, back_base, keyframe=keyframe)
         self.back, self.committed, self.front = self.committed, shown, back_base
+        self.unknown_tables = max(0, self.unknown_tables - 1)
         chunks = stream.encode_chunks(writes, budget=self.budget, reserve=limits.CLOSE_RESERVE)
         self._record(chunks, stats)
         return chunks
 
     def _encode(
-        self, frame: npt.NDArray[np.uint8], fitted: palettes.FramePalettes, back_base: int
+        self,
+        frame: npt.NDArray[np.uint8],
+        fitted: palettes.FramePalettes,
+        back_base: int,
+        *,
+        keyframe: bool,
     ) -> tuple[list[stream.Write], npt.NDArray[np.int64], tuple[int, int, int, float, float, int]]:
         features = fidelity.cell_colours(fitted.indices, fitted, self.chroma_weight)
         features = features.reshape(self.geometry.cells, -1)
@@ -149,9 +159,10 @@ class Encoder:
         shown, next_slot, unplaced = _commit(
             placed.cell_slot, fitted, self.committed, self.committed_slot
         )
+        uploads = [*placed.uploads, *self._refresh(next_slot, placed.uploads, keyframe=keyframe)]
         writes = [
-            *tablewrites.merge_uploads(placed.uploads),
-            *_entry_writes(shown, self.back, geometry=self.geometry, base=back_base),
+            *tablewrites.merge_uploads(uploads),
+            *_entry_writes(shown, self._known_back(), geometry=self.geometry, base=back_base),
             _closing(fitted, back_base),
         ]
         error, working_set = self._measure(frame, fitted, placed.cell_slot, features)
@@ -165,6 +176,26 @@ class Encoder:
             placed.merged,
         )
         return writes, shown, stats
+
+    def _refresh(
+        self,
+        next_slot: npt.NDArray[np.int64],
+        uploaded: list[tuple[int, bytes]],
+        *,
+        keyframe: bool,
+    ) -> list[tuple[int, bytes]]:
+        if not keyframe:
+            return []
+        used = {int(slot) for slot in next_slot if slot >= 0}
+        written = {slot for slot, _ in uploaded}
+        resent = [(slot, self.cache.payload_of(slot)) for slot in sorted(used - written)]
+        self.cache.keep_only(used)
+        return [(slot, payload) for slot, payload in resent if payload is not None]
+
+    def _known_back(self) -> npt.NDArray[np.int64]:
+        if self.unknown_tables > 0:
+            return np.full(self.geometry.cells, UNKNOWN_ENTRY, dtype=np.int64)
+        return self.back
 
     def _place(
         self,

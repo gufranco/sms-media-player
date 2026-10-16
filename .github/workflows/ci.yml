@@ -165,6 +165,7 @@ jobs:
           tools/tests/test_replay_on_z80.py
           tools/tests/test_osd_on_z80.py
           tools/tests/test_diag_on_z80.py
+          tools/tests/test_seek_on_z80.py
 
       - name: The ROM is real
         run: |

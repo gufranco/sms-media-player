@@ -1,6 +1,7 @@
 #ifndef FMV_MEDIAPLAYER_H
 #define FMV_MEDIAPLAYER_H
 
+#include "fmv/seek.h"
 #include "fmv/types.h"
 
 #define FMV_CHUNK_MORE  0x00u
@@ -15,5 +16,6 @@ void fmv_movie_set_muted(u8 muted);
 u8 fmv_movie_muted(void);
 u8 fmv_movie_bank(void);
 u16 fmv_movie_defers(void);
+void fmv_movie_seek(const fmv_key *key);
 
 #endif

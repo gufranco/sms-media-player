@@ -116,15 +116,28 @@ def _split_close(chunk: bytes) -> tuple[bytes, bytes]:
     return chunk, b""
 
 
+@dataclass(frozen=True, slots=True)
+class Packed:
+    blob: bytes
+    banks: int
+    starts: tuple[tuple[int, int], ...]
+
+
 def pack_banks(frames: list[list[bytes]], *, bank_size: int) -> tuple[bytes, int]:
+    packed = pack_frames(frames, bank_size=bank_size)
+    return packed.blob, packed.banks
+
+
+def pack_frames(frames: list[list[bytes]], *, bank_size: int) -> Packed:
     if bank_size < SMALLEST_BANK:
         msg = "a bank must hold at least a chunk and a marker"
         raise ValueError(msg)
 
     blob = bytearray()
     room = bank_size
+    starts: list[tuple[int, int]] = []
     for chunks in frames:
-        for chunk in chunks:
+        for index, chunk in enumerate(chunks):
             if len(chunk) + TERMINATOR > bank_size:
                 msg = f"a chunk of {len(chunk)} bytes does not fit a {bank_size}-byte bank"
                 raise ValueError(msg)
@@ -132,13 +145,14 @@ def pack_banks(frames: list[list[bytes]], *, bank_size: int) -> tuple[bytes, int
                 blob.append(NEXT_BANK)
                 blob += bytes(room - TERMINATOR)
                 room = bank_size
+            if index == 0:
+                starts = [*starts, divmod(len(blob), bank_size)]
             blob += chunk
             room -= len(chunk)
 
     if room:
         blob += bytes(room)
-    banks = len(blob) // bank_size
-    return bytes(blob), banks
+    return Packed(blob=bytes(blob), banks=len(blob) // bank_size, starts=tuple(starts))
 
 
 def _emit(run: Write) -> bytes:

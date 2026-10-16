@@ -57,7 +57,7 @@ and the controls.
 | Z80 replay loop | Working. Pattern and name runs at 30 cycles a byte against Sega's documented floor of 29; the palette and name table flip at 16 inside a V counter guard in the vertical blank. Held by a build gate and by running the built replay on a Z80 |
 | Sound | Tone synthesis on the PSG, written once a field before the picture. `--silent` leaves it out. Not yet run on a console |
 | Subtitles | A SubRip `.srt` named with `--subtitles`, or one beside the source under the same name, is burned into the bottom of the picture in the family's 8x8 font, white on a black edge, at most two lines of 32 columns |
-| Controls | Plays on a loop. Button 1 restarts, button 2 exits to a black screen. Pause, or Start on a Game Gear, pauses and resumes, and shows a position bar with the elapsed and total time while paused. Button 1 while paused shows the diagnostics: frame over total frames, the cartridge bank, and how many fields were deferred because the vertical blank was missed. Up turns sound off and on; sound returns within a second. A corrupt stream stops on a red one |
+| Controls | Plays on a loop. Button 1 restarts, button 2 exits to a black screen. Pause, or Start on a Game Gear, pauses and resumes, and shows a position bar with the elapsed and total time while paused. Button 1 while paused shows the diagnostics: frame over total frames, the cartridge bank, and how many fields were deferred because the vertical blank was missed. Up turns sound off and on; sound returns within a second. Left and Right jump to the seek points the baker places every 10 seconds, `--seek-every` to change; a jump shows about a quarter of a second of black while the point's picture loads. A corrupt stream stops on a red one |
 | Field rate | Paced for NTSC, 59.92 fields a second, which the Game Gear also runs at. The player draws one chunk a field, so a 50 Hz PAL console plays the same stream at about five sixths of its intended speed. Nothing here has been checked on a PAL console |
 | Regression set | Six clips of different kinds baked on every test run |
 | Hardware run | Not done. Every figure here comes from an emulator or a listing |
@@ -83,7 +83,7 @@ none does today.
 | Subtitles from a SubRip file | Yes | Yes, burned into the picture, so they cannot be switched off |
 | Play and pause | Yes | Yes. Pause on the console, Start on a Game Gear |
 | Fast forward and rewind | Yes, forward at 2x, 5x and 10x | Planned |
-| Seek | Yes, 10 seconds back or forward | Planned |
+| Seek | Yes, 10 seconds back or forward | Yes, Left and Right jump between points 10 seconds apart |
 | A position bar with elapsed and total time | Yes | Yes, while paused |
 | Restart and stop | Yes | Yes |
 | Sound on and off | Yes | Yes, Up |
@@ -465,6 +465,7 @@ listing or the replay oracle, and the owner's Game Gear is the hardware check.
 | Replay oracle | The baker's model of the stream replays to the picture the encoder meant, to five decimals |
 | mednafen capture | A frame captured from mednafen matches the replay oracle pixel for pixel, so the oracle stands for the screen |
 | `make timing` | Every VDP write pair in the compiled player clears 29 T-states, or 16 inside the guarded vertical-blank copy, walking every listing as one program |
+| `test_seek_on_z80.py` | The built player picks the right seek point for Left and Right, and a jump puts the replay at that point's bank and offset |
 | `test_diag_on_z80.py` | The built diagnostics run on a Z80 against a VDP model, and write the frame, bank and deferred-field rows after the position overlay's sprites |
 | `test_osd_on_z80.py` | The built pause overlay runs on a Z80 against a VDP model, and writes the elapsed and total time, the bar and its palette where the sprites read them |
 | `test_replay_on_z80.py` | The built replay runs on a Z80 with the V counter held at chosen lines, and no palette byte or flip reaches the VDP outside the window |

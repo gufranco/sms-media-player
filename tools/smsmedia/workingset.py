@@ -74,6 +74,17 @@ class WorkingSet:
         self._where[payload] = slot
         return slot
 
+    def payload_of(self, slot: int) -> bytes | None:
+        return self._occupant[slot]
+
+    def keep_only(self, slots: set[int]) -> None:
+        self._occupant = [
+            payload if slot in slots else None for slot, payload in enumerate(self._occupant)
+        ]
+        self._where = {
+            payload: slot for slot, payload in enumerate(self._occupant) if payload is not None
+        }
+
     def residents(self) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.uint8]]:
         slots = sorted(self._where.values())
         data = np.zeros((len(slots), PATTERN_BYTES), dtype=np.uint8)

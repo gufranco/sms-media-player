@@ -30,6 +30,7 @@ from smsmedia import (
 P90: Final = 0.9
 MOST_MERGED_SHOWN: Final = 3
 BAR_ANALYSIS_SECONDS: Final = 8.0
+SEEK_EVERY_SECONDS: Final = 10.0
 
 
 def fits(*, banks: int, max_banks: int) -> bool:
@@ -153,6 +154,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--generated", type=Path, default=Path("build/generated"))
     parser.add_argument("--report", type=Path, default=Path("build/report.json"))
     parser.add_argument(
+        "--seek-every",
+        type=float,
+        default=SEEK_EVERY_SECONDS,
+        help="seconds between the points Left and Right jump to; 0 leaves only the start",
+    )
+    parser.add_argument(
         "--subtitles",
         type=Path,
         default=None,
@@ -180,6 +187,7 @@ class Baked:
     sources: list[npt.NDArray[np.uint8]]
     sound_writes: int = 0
     bars: source.Bars | None = None
+    keys: tuple[int, ...] = (0,)
 
 
 def most_merged(per_frame: list[int]) -> list[int]:
@@ -259,6 +267,7 @@ def bake_film(args: argparse.Namespace, *, geometry: bake.Geometry, settled: dia
         slot=rate.fields_for(settled.fps),
         encoder=encoder,
         pace=not args.no_pace,
+        keyframe_every=args.seek_every,
     )
     fields = stream.defer_closes(timed.frames)
     writes = _sound(args, fields) if sound else []
@@ -273,6 +282,7 @@ def bake_film(args: argparse.Namespace, *, geometry: bake.Geometry, settled: dia
         dither=args.dither,
         sound_writes=sum(len(field) for field in writes),
         bars=args.bars,
+        keys=tuple(timed.keys) or (0,),
     )
 
 
@@ -333,7 +343,8 @@ def main(argv: list[str] | None = None) -> int:
     settled = dials.settle_dials(args, geometry=geometry, wanted=wanted)
     baked = bake_film(args, geometry=geometry, settled=settled)
     _describe_bake(baked, fps=settled.fps)
-    blob, banks = stream.pack_banks(baked.fields, bank_size=limits.BANK_BYTES)
+    packed = stream.pack_frames(baked.fields, bank_size=limits.BANK_BYTES)
+    blob, banks = packed.blob, packed.banks
     report = build_report(baked=baked, blob=blob, banks=banks, settled=settled)
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2) + "\n")
@@ -342,7 +353,7 @@ def main(argv: list[str] | None = None) -> int:
     if refused is not None:
         output.clear(assets=args.assets, generated=args.generated)
         return refused
-    _publish(args, baked=baked, blob=blob, banks=banks, settled=settled, geometry=geometry)
+    _publish(args, baked=baked, packed=packed, settled=settled, geometry=geometry)
     _summarise(baked.encoded, blob=blob, banks=banks, report=report)
     return 0
 
@@ -396,23 +407,36 @@ def _publish(
     args: argparse.Namespace,
     *,
     baked: Baked,
-    blob: bytes,
-    banks: int,
+    packed: stream.Packed,
     settled: dials.Dials,
     geometry: bake.Geometry,
 ) -> None:
     output.publish(
         assets=args.assets,
         generated=args.generated,
-        blob=blob,
-        banks=banks,
+        blob=packed.blob,
+        banks=packed.banks,
         frame_count=len(baked.fields),
         field_count=sum(len(frame) for frame in baked.fields),
         hold_fields=rate.fields_for(settled.fps),
+        keys=seek_points(baked, packed),
     )
     if args.preview is not None:
-        _write_preview(args.preview, blob=blob, sources=baked.sources, geometry=geometry)
+        _write_preview(args.preview, blob=packed.blob, sources=baked.sources, geometry=geometry)
         print(f"preview written to {args.preview}")
+
+
+def seek_points(baked: Baked, packed: stream.Packed) -> tuple[output.Key, ...]:
+    fields_before = [sum(len(frame) for frame in baked.fields[:index]) for index in baked.keys]
+    return tuple(
+        output.Key(
+            bank=packed.starts[index][0],
+            offset=packed.starts[index][1],
+            frame=index,
+            field=fields,
+        )
+        for index, fields in zip(baked.keys, fields_before, strict=True)
+    )
 
 
 def _write_preview(
