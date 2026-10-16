@@ -1,7 +1,7 @@
 import pytest
 from fmvcore.testing import seeded
 
-from smsmedia import cartridge, frames, limits, scout
+from smsmedia import cartridge, flags, frames, limits, scout
 
 FAKE = seeded()
 FILM = FAKE.file_name(extension="mp4")
@@ -17,7 +17,7 @@ class TestTheWindowFlags:
     @pytest.mark.parametrize("value", ["-1", "nan", "inf", "14401"])
     def test_an_out_of_range_start_is_refused(self, value):
         # Arrange
-        parser = cartridge.build_parser()
+        parser = flags.build_parser()
 
         # Act
         code = refusal_code(parser, [FILM, "--start", value])
@@ -28,7 +28,7 @@ class TestTheWindowFlags:
     @pytest.mark.parametrize("value", ["0", "-2", "nan", "0.01"])
     def test_a_duration_shorter_than_a_field_is_refused(self, value):
         # Arrange
-        parser = cartridge.build_parser()
+        parser = flags.build_parser()
 
         # Act
         code = refusal_code(parser, [FILM, "--duration", value])
@@ -38,7 +38,7 @@ class TestTheWindowFlags:
 
     def test_a_duration_of_one_field_is_accepted(self):
         # Arrange
-        parser = cartridge.build_parser()
+        parser = flags.build_parser()
 
         # Act
         args = parser.parse_args([FILM, "--duration", "0.017"])
@@ -81,7 +81,7 @@ class TestTheWindowInsideTheSource:
 
 
 class TestTheScalerFlag:
-    @pytest.mark.parametrize("build", [cartridge.build_parser, scout.build_parser])
+    @pytest.mark.parametrize("build", [flags.build_parser, scout.build_parser])
     def test_a_filter_graph_in_place_of_a_scaler_is_refused(self, build):
         # Arrange
         parser = build()
@@ -92,7 +92,7 @@ class TestTheScalerFlag:
         # Assert
         assert code == 2
 
-    @pytest.mark.parametrize("build", [cartridge.build_parser, scout.build_parser])
+    @pytest.mark.parametrize("build", [flags.build_parser, scout.build_parser])
     def test_a_known_scaler_is_accepted(self, build):
         # Arrange
         parser = build()
@@ -118,7 +118,7 @@ class TestTheScalerFlag:
 class TestTheBudgetFlag:
     def test_a_budget_past_the_measured_field_is_refused(self):
         # Arrange
-        parser = cartridge.build_parser()
+        parser = flags.build_parser()
 
         # Act
         code = refusal_code(parser, [FILM, "--budget", "1901"])
@@ -128,7 +128,7 @@ class TestTheBudgetFlag:
 
     def test_the_measured_field_is_accepted(self):
         # Arrange
-        parser = cartridge.build_parser()
+        parser = flags.build_parser()
 
         # Act
         args = parser.parse_args([FILM, "--budget", "1900"])

@@ -8,7 +8,7 @@ from typing import Final
 import numpy as np
 from fmvcore import arguments, ffmpeg
 
-from smsmedia import bake, cartridge, limits, tune
+from smsmedia import bake, cartridge, flags, limits, tune
 
 SCOUT_DENOISE: Final = 4.0
 DEFAULT_SCOUT_SECONDS: Final = 40.0
@@ -212,7 +212,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--top", type=arguments.count(low=1, high=MAX_TOP, name="--top"), default=DEFAULT_TOP
     )
-    cartridge.add_picture_flags(parser)
+    flags.add_picture_flags(parser)
     return parser
 
 

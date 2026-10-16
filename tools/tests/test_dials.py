@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from smsmedia import cartridge, clips, dials, rate, tune
+from smsmedia import clips, dials, flags, rate, tune
 
 SMALL = tune.bake.Geometry(columns=8, rows=6, top_row=0)
 FULL = tune.bake.Geometry(columns=32, rows=24, top_row=0)
@@ -46,7 +46,7 @@ def noise(tmp_path_factory) -> Path:
 
 
 def parsed(source, *extra: str):
-    return cartridge.build_parser().parse_args([str(source), *FAST, *extra])
+    return flags.build_parser().parse_args([str(source), *FAST, *extra])
 
 
 class TestSettle:

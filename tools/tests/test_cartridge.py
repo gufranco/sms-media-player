@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from fmvcore.testing import seeded
 
-from smsmedia import bake, cartridge, dials, limits, output, tune
+from smsmedia import bake, cartridge, dials, flags, limits, output, tune
 
 FAKE = seeded()
 FILM = FAKE.file_name(extension="mp4")
@@ -645,7 +645,7 @@ class TestTheCommand:
 class TestTheDitherFlag:
     def test_the_default_is_the_measured_strength(self):
         # Arrange
-        parser = cartridge.build_parser()
+        parser = flags.build_parser()
 
         # Act
         args = parser.parse_args([FILM])
@@ -655,7 +655,7 @@ class TestTheDitherFlag:
 
     def test_it_can_be_turned_off(self):
         # Arrange
-        parser = cartridge.build_parser()
+        parser = flags.build_parser()
 
         # Act
         args = parser.parse_args([FILM, "--dither", "0"])
@@ -665,7 +665,7 @@ class TestTheDitherFlag:
 
     def test_a_strength_past_half_a_step_is_refused(self):
         # Arrange
-        parser = cartridge.build_parser()
+        parser = flags.build_parser()
 
         # Act
         with pytest.raises(SystemExit) as refused:

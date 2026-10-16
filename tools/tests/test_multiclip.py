@@ -11,6 +11,7 @@ from smsmedia import (
     clips,
     console,
     dials,
+    flags,
     limits,
     rate,
     replay,
@@ -55,7 +56,7 @@ def baked(clip: clips.Clip, geometry: bake.Geometry):
     verdict = clips.verify(path, clip)
     assert verdict.ok, verdict.diagnosis
 
-    args = cartridge.build_parser().parse_args(shipping_argv(clip, path))
+    args = flags.build_parser().parse_args(shipping_argv(clip, path))
     settled = dials.settle_dials(args, geometry=geometry, wanted=clip.duration)
     baked = cartridge.bake_film(args, geometry=geometry, settled=settled)
     assert baked.decoded, f"{clip.key} decoded to nothing"
@@ -321,7 +322,7 @@ def error_at(path: Path, clip: clips.Clip, geometry: bake.Geometry, dial: dials.
         "--reuse",
         str(dial.reuse),
     ]
-    args = cartridge.build_parser().parse_args(argv)
+    args = flags.build_parser().parse_args(argv)
     settled = dials.settle_dials(args, geometry=geometry, wanted=clip.duration)
     return cartridge.bake_film(args, geometry=geometry, settled=settled).encoded.error
 
@@ -329,7 +330,7 @@ def error_at(path: Path, clip: clips.Clip, geometry: bake.Geometry, dial: dials.
 def search_against_record(
     clip: clips.Clip, path: Path, geometry: bake.Geometry
 ) -> tuple[dials.Dials, float, float]:
-    args = cartridge.build_parser().parse_args(shipping_argv(clip, path, measured=True))
+    args = flags.build_parser().parse_args(shipping_argv(clip, path, measured=True))
     found = dials.settle_dials(args, geometry=geometry, wanted=clip.duration)
     recorded = dials.Dials(fps=clip.fps, denoise=clip.denoise, reuse=clip.reuse)
     if found == recorded:

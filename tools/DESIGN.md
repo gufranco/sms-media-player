@@ -296,6 +296,14 @@ decide which cells can share a pattern, and appearance is what that
 question is about, so the feature is the colour each pixel resolves to
 rather than the index that names it.
 
+### [`smsmedia/flags.py`](smsmedia/flags.py)
+
+The command line of [`smsmedia/cartridge.py`](smsmedia/cartridge.py). Every
+numeric flag is range-checked by `fmvcore.arguments` at parse time, so a
+value outside its range stops the run before anything is decoded. The scout
+reuses the picture flags from here, so both commands read a picture the same
+way.
+
 ### [`smsmedia/frames.py`](smsmedia/frames.py)
 
 Build the filter chain that turns a film into frames at the console's raster
