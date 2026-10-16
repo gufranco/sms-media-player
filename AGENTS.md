@@ -181,9 +181,10 @@ Rules that follow:
   inside the guarded block too. Sega's documentation gives the same floor for
   VRAM, CRAM and registers, and the documented figure binds, so every pair in
   `src/replay.s` and `src/vdp.s` is padded with `nop` to 30.
-- `tools/tests/test_osd_on_z80.py`, `tools/tests/test_diag_on_z80.py` and
-  `tools/tests/test_seek_on_z80.py` run the built pause overlay, diagnostics
-  and seek on a Z80 against the VDP model in
+- `tools/tests/test_osd_on_z80.py`, `tools/tests/test_diag_on_z80.py`,
+  `tools/tests/test_transport_on_z80.py` and
+  `tools/tests/test_seek_on_z80.py` run the built position overlay,
+  diagnostics, transport and seek on a Z80 against the VDP model in
   `tools/tests/z80vdp.py` and read back the palette, the glyph pixels and the
   sprite table they wrote.
 - `tools/tests/test_replay_on_z80.py` runs the built replay on a Z80 with the
@@ -273,14 +274,18 @@ Taken from the hardware-tested sibling project, and each one applies here.
   program intended to run until the console is switched off.
 - `fmv_assert_fail()` in `src/assert.c` runs `for (;;)`. An assertion failure is
   a deliberate halt, and returning from it would defeat its purpose.
+- `wait_for_resume()` and `wait_for_wake()` in `src/main.c` wait, one vertical
+  blank per pass, for the viewer to resume from a pause or to play again after
+  a stop. A viewer may leave the console paused or stopped indefinitely, and
+  no bound would mean anything to them.
 
 No other unbounded loop is permitted. Adding one requires updating this table and
 saying why.
 
 ### Recorded exceptions to rules 6 and 9
 
-- `movie_cursor`, `movie_bank`, `movie_kind` and `movie_last_bank` in
-  `src/mediaplayer.c` are globals shared with `src/replay.s`, because the
+- `movie_cursor`, `movie_bank`, `movie_kind`, `movie_last_bank` and
+  `movie_inks` in `src/mediaplayer.c` are globals shared with `src/replay.s`, because the
   replay is assembly and reads and writes them by symbol. Nothing else
   touches them.
 - The mapper register at `0xFFFF` is written through a cast `volatile`
@@ -524,10 +529,25 @@ outside the V counter guard, an assertion halt paints the backdrop entry so it
 shows with the display off, the replay cursor is asserted below `0xC000`, the
 replay writes the sound run, kind `0x06`, to the PSG 34 T-states apart, and
 the player pauses on the Pause NMI, draws a position bar in sprites while paused and the diagnostics on button 1, counts deferred fields in the replay, seeks on Left and Right through `fmv_movie_seek` after a screen reset, and skips sound runs while muted.
+The overlay now also draws during play, for 180 fields at the start and after
+any press of Up, Down, Left, Right or button 1, with a play, pause and mute
+glyph; Down toggles the diagnostics during play; button 2 stops on black and
+button 1, button 2 or Pause plays again. While the overlay or the diagnostics
+are up, the replay writes black and white into sprite palette entries 30 and
+31 right after the guarded palette copy, through a paced `outi`, `nop`,
+`jp nz` loop and a padded address setup, which is a change to `src/replay.s`.
+The overlay's own writes go through `fmv_vdp_copy` at 30 T-states a byte, and
+its work is split into steps, each started only when the V counter shows
+enough lines left before the frame interrupt; the line cost of each step was
+measured on the Z80 model and carries 6 lines of margin.
 A fresh ROM carrying them needs one Game Gear run: play through with sound,
 press Start to pause, check the white elapsed and total time and the bar near the bottom, press button 1 for the diagnostics rows above them and again to hide them, press Start again to resume, press Up to mute and again to hear
 the tones return within a second, press Right and Left to seek and check the picture returns whole after a moment of black, press button 1 to restart and button 2 to
-exit, and watch for shredded tiles.
+stop on black, press button 1 to play again, press Down during play for the
+diagnostics and again to hide them, check the overlay appears for about three
+seconds after each press and disappears, check its play glyph turns to pause
+while paused and gains the mute mark while muted, and watch for shredded tiles
+and for film colours flickering in the overlay.
 
 Start pausing on a Game Gear rests on the SMS Power Start Button page, which
 says that in Master System mode the Start button acts identically to the
@@ -539,7 +559,10 @@ The pause overlay lives in VRAM no picture reaches. The back name table spans
 last four rows, so 0x3600 to 0x37FF holds 16 patterns, sprite tiles 176 to
 191 with the sprite patterns at 0x2000. The front table's last four rows,
 0x3E00 to 0x3EFF, give 8 more, sprite tiles 240 to 247; the diagnostics use
-240 to 242. The overlay sets sprite palette
+240 to 242, the state glyph 243, and 244 is the blank tile a hidden overlay's
+sprites point at, so the diagnostics after them stay in the sprite list. The
+screen reset fills those rows with the idle name table cell, which draws as a
+one-pixel column, so the overlay clears 244 before it places its sprites. The overlay sets sprite palette
 entries 30 and 31 to black and white; the next frame's closing run writes
 every palette entry again, so resuming restores the film's colours on the
 first frame. A mednafen run of a probe ROM drew it in place, white on a black
