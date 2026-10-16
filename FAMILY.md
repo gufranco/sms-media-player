@@ -284,10 +284,6 @@ verifies films and measures captures through `fmv-core-python`.
 
 Gaps against "What every player does" (as of 2026-10-15):
 
-- No sound. The player was built silent by an earlier owner decision, now
-  replaced by the sound requirement. Sound has to come from the PSG alone, so
-  its cost in Z80 cycles against the transfer loop is the open design
-  question.
 - The rate, denoise and reuse threshold are measured per bake, but nothing yet
   sizes the film to the cartridge as a whole.
 - The player loops, restarts and exits; it has no position bar, pause or seek.

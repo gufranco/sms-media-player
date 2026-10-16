@@ -20,6 +20,7 @@ from smsmedia import (
     limits,
     output,
     preview,
+    psgsound,
     rate,
     schedule,
     stream,
@@ -140,6 +141,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=limits.DEFAULT_BUDGET,
     )
     parser.add_argument("--no-pace", action="store_true")
+    parser.add_argument(
+        "--silent",
+        action="store_true",
+        help="leave sound out and give its share of each field to the picture",
+    )
     add_picture_flags(parser)
     parser.add_argument("--assets", type=Path, default=Path("assets"))
     parser.add_argument("--generated", type=Path, default=Path("build/generated"))
@@ -163,6 +169,7 @@ class Baked:
     unshown_tail: int
     dither: float
     sources: list[npt.NDArray[np.uint8]]
+    sound_writes: int = 0
 
 
 def most_merged(per_frame: list[int]) -> list[int]:
@@ -180,6 +187,7 @@ def build_report(
         "reuse": settled.reuse,
         "dither": baked.dither,
         "fps": settled.fps,
+        "sound_writes": baked.sound_writes,
     }
 
 
@@ -219,10 +227,11 @@ def _picture_report(baked: Baked) -> dict[str, float | list[int]]:
 
 
 def bake_film(args: argparse.Namespace, *, geometry: bake.Geometry, settled: dials.Dials) -> Baked:
+    sound = not args.silent and psgsound.has_audio(args.source)
     decoded = _decode(args, geometry=geometry, settled=settled)
     encoder = bake.Encoder(
         geometry=geometry,
-        budget=args.budget,
+        budget=args.budget - (limits.SOUND_RESERVE if sound else 0),
         cap=args.cap,
         reuse_threshold=settled.reuse,
         upload_ceiling=args.upload_ceiling,
@@ -235,16 +244,25 @@ def bake_film(args: argparse.Namespace, *, geometry: bake.Geometry, settled: dia
         encoder=encoder,
         pace=not args.no_pace,
     )
+    fields = stream.defer_closes(timed.frames)
+    writes = _sound(args, fields) if sound else []
     return Baked(
         encoded=encoder.result(),
-        fields=stream.defer_closes(timed.frames),
+        fields=stream.add_sound(fields, writes),
         decoded=len(decoded),
         lags=timed.lags,
         lead=timed.lead,
         unshown_tail=timed.unshown_tail,
         sources=[decoded[pick] for pick in timed.picks],
         dither=args.dither,
+        sound_writes=sum(len(field) for field in writes),
     )
+
+
+def _sound(args: argparse.Namespace, fields: list[list[bytes]]) -> list[bytes]:
+    count = sum(len(chunks) for chunks in fields)
+    samples = psgsound.decode(args.source, start=args.start, duration=args.duration)
+    return psgsound.synthesize(samples, rate=psgsound.DECODE_RATE, fields=count)
 
 
 def _decode(

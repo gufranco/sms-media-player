@@ -55,7 +55,7 @@ and the controls.
 | Encoder and working-set policy | Working, with a replay oracle that agrees with it to five decimals |
 | Picture | 256x192, the whole raster. A source of another shape is cropped to fill it |
 | Z80 replay loop | Working. Pattern and name runs at 30 cycles a byte against Sega's documented floor of 29; the palette and name table flip at 16 inside a V counter guard in the vertical blank. Held by a build gate and by running the built replay on a Z80 |
-| Sound | None. The player silences the PSG at boot and the stream carries picture only |
+| Sound | Tone synthesis on the PSG, written once a field before the picture. `--silent` leaves it out. Not yet run on a console |
 | Controls | Plays on a loop. Button 1 restarts, button 2 exits to a black screen. A corrupt stream stops on a red one |
 | Field rate | Paced for NTSC, 59.92 fields a second, which the Game Gear also runs at. The player draws one chunk a field, so a 50 Hz PAL console plays the same stream at about five sixths of its intended speed. Nothing here has been checked on a PAL console |
 | Regression set | Six clips of different kinds baked on every test run |
@@ -77,8 +77,8 @@ none does today.
 | The largest standard cartridge, no added hardware | Yes, 128 MiB of character ROM | Yes, 1 MB, the most any Sega mapper revision decodes |
 | Ordered dithering | Yes, `--dither` | Yes, on by default |
 | Palettes refit as the film changes | Yes, per scene | Yes, per frame, kept while they still fit |
-| Sound with no added hardware | Yes, ADPCM-B on the YM2610 | Planned, from the PSG |
-| A silent build that gives sound's room to the picture | Partly. A library bundle can leave sound out; sound has its own ROM, so leaving it out frees no picture room | Every build is silent today |
+| Sound with no added hardware | Yes, ADPCM-B on the YM2610 | Yes, tone synthesis on the PSG |
+| A silent build that gives sound's room to the picture | Partly. A library bundle can leave sound out; sound has its own ROM, so leaving it out frees no picture room | Yes, `--silent` |
 | Subtitles from a SubRip file | Yes | Planned |
 | Play and pause | Yes | Planned |
 | Fast forward and rewind | Yes, forward at 2x, 5x and 10x | Planned |
@@ -145,9 +145,15 @@ over are held black by the player.
 
 ### Sound
 
-The player is silent today; sound from the PSG is planned. The stream holds
-picture only, and the player never enables the line interrupt, so the whole
-field, active display included, is free for the transfer loop.
+Sound comes from the PSG by tone synthesis. The baker reads the soundtrack
+once a field, picks its three strongest tones and its high-frequency noise,
+and writes only the registers that changed: about 7 a field, 0.5 KB of ROM a
+second. The player writes them to the PSG before the field's picture, 34
+T-states apart, and the transfer loop is untouched. Speech and dense mixes
+come out as tones; music with a clear melody survives best. `--silent` leaves
+sound out and gives its 16 bytes a field back to the picture. The player never
+enables the line interrupt, so the whole field, active display included, stays
+free for the transfer loop. None of this has run on a console yet.
 
 It still writes the PSG once, at boot: full attenuation on all four channels.
 A console powers up with its tone channels audible, so leaving the chip alone

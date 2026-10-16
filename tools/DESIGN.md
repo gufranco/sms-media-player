@@ -301,8 +301,8 @@ next vblank and costs two fields. A capture compared field by field against
 the replay oracle shows that directly: one missed vertical blank and every
 later field is offset, so the capture stops repeating the stream.
 
-The player has no sound and never enables the line interrupt, so the whole
-field is free for the paced loop. Swept on popeye-for-president from 60 s
+The player never enables the line interrupt, and its sound writes take a
+few hundred T-states a field, so the field is free for the paced loop. Swept on popeye-for-president from 60 s
 for 12 s, with 48 sampled fields compared each time:
 
     budget                    600    800   1000   1200   1400   1600   1900
@@ -639,6 +639,28 @@ about a third.
 The chroma weight reaches the decision here, which is the only place it
 can change anything: with per-channel rounding the choice is made before
 any perceptual metric is consulted, so weighting it had no effect at all.
+
+### [`smsmedia/psgsound.py`](smsmedia/psgsound.py)
+
+Turn a soundtrack into the PSG register writes the player sends once a field.
+
+The PSG has three square-wave tone channels and a noise channel, each with a
+4-bit attenuator in 2 dB steps. Every field the module takes a 2,048-sample
+Hann window of the soundtrack at 22,050 Hz, finds up to three spectral peaks
+between the lowest tone the 10-bit divider reaches and 4 kHz, a semitone or
+more apart, and refines each peak between bins so a held note keeps one
+divider. The loudest peak of the whole film plays at full volume and anything
+24 dB below it is muted. Noise follows the energy between 4 and 10 kHz.
+
+Only registers that changed are written, so a held note costs nothing after
+its first field. A field writes at most 11 bytes: the noise mode on the first
+field, two bytes a tone, one attenuator a channel. The cartridge takes
+`limits.SOUND_RESERVE` from the field budget for them, the run's 13 bytes at
+34 T-states each, measured in 30 T-state transfer bytes.
+
+This is tone synthesis, not sample playback: speech and dense mixes come out
+as tones. Sample playback through the attenuators is the alternative the
+sound plan measures, and it would rewrite the replay's timing.
 
 ### [`smsmedia/stream.py`](smsmedia/stream.py)
 

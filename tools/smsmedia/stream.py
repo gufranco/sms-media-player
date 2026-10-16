@@ -9,11 +9,13 @@ END_CHUNK: Final = 0x00
 END_FRAME: Final = 0x01
 VRAM: Final = 0x02
 CLOSE: Final = 0x05
+PSG: Final = 0x06
 NEXT_BANK: Final = 0xFF
 
 MAX_RUN: Final = 255
 VRAM_HEADER: Final = 4
 CLOSE_HEADER: Final = 2
+PSG_HEADER: Final = 2
 TERMINATOR: Final = 1
 
 CLOSE_BYTES: Final = smscolor.CRAM_BYTES
@@ -155,3 +157,30 @@ def pace(chunks: list[bytes], *, fields: int) -> list[bytes]:
         return chunks
     padding = [bytes([END_CHUNK])] * (fields - len(chunks))
     return padding + chunks
+
+
+def psg_run(data: bytes) -> bytes:
+    if len(data) > MAX_RUN:
+        msg = f"a sound run holds at most {MAX_RUN} writes, got {len(data)}"
+        raise ValueError(msg)
+    return bytes([PSG, len(data)]) + data
+
+
+def add_sound(frames: list[list[bytes]], writes: list[bytes]) -> list[list[bytes]]:
+    out: list[list[bytes]] = []
+    field = 0
+    for chunks in frames:
+        built: list[bytes] = []
+        for chunk in chunks:
+            data = writes[field] if field < len(writes) else b""
+            built.append(_with_sound(chunk, data))
+            field += 1
+        out.append(built)
+    return out
+
+
+def _with_sound(chunk: bytes, data: bytes) -> bytes:
+    if not data:
+        return chunk
+    carried = CLOSE_HEADER + CLOSE_BYTES if chunk and chunk[0] == CLOSE else 0
+    return chunk[:carried] + psg_run(data) + chunk[carried:]

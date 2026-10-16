@@ -11,6 +11,7 @@ README under "Quality". This file carries the ones that cost time.
 
 ## Contents
 
+- [Sound from the PSG](#sound-from-the-psg)
 - [Paths the timing gate never walked](#paths-the-timing-gate-never-walked)
 - [No cell left badly wrong](#no-cell-left-badly-wrong)
 - [Stray tiles drawn in the other palette's colours](#stray-tiles-drawn-in-the-other-palettes-colours)
@@ -29,6 +30,19 @@ README under "Quality". This file carries the ones that cost time.
 - [Four parameters checked against the conditions that changed](#four-parameters-checked-against-the-conditions-that-changed)
 - [The film was promising a frame rate it could not hold](#the-film-was-promising-a-frame-rate-it-could-not-hold)
 - [An unrolled loop that every check approved](#an-unrolled-loop-that-every-check-approved)
+
+## Sound from the PSG
+
+The player had been silent since the soundtracks were dropped. It now plays
+tone synthesis on the PSG: the baker reads the soundtrack once a field, keeps
+the three strongest tones a semitone apart and the high-frequency noise, and
+writes only the registers that changed, about 7 a field on the regression
+films. The replay sends them to port `$7F` 34 T-states apart before the
+field's picture, with the transfer loop untouched, and the field budget gives
+up 16 bytes for them. `--silent` leaves sound out. Sample playback through the
+attenuators would sound closer to the source and costs about 6% of the picture
+budget and a rewrite of the replay's timing, so it waits for a measurement and
+the owner's ear. Not yet run on a console.
 
 ## Paths the timing gate never walked
 

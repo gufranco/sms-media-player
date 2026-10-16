@@ -21,6 +21,9 @@ STEP_LIMIT = 200_000
 V_COUNTER = 0x7E
 DATA_PORT = 0xBE
 CONTROL_PORT = 0xBF
+SOUND_PORT = 0x7F
+SOUND_FLOOR = 32
+SOUND_WRITES = bytes([0x9F, 0xBF, 0xDF, 0x80, 0x04])
 INSIDE = 0xC8
 ACTIVE = 0x40
 LATE = 0xE4
@@ -85,8 +88,11 @@ class Ports:
         return 0xFF
 
     def write(self, address: int, value: int) -> None:
-        if self.clock is not None and address & 0xFF in (DATA_PORT, CONTROL_PORT):
+        if self.clock is not None and address & 0xFF in (DATA_PORT, CONTROL_PORT, SOUND_PORT):
             self.writes.append((self.clock.cycles, address & 0xFF, value))
+
+    def sound(self) -> list[tuple[int, int]]:
+        return [(cycle, value) for cycle, port, value in self.writes if port == SOUND_PORT]
 
     def data(self) -> list[int]:
         return [value for _, port, value in self.writes if port == DATA_PORT]
@@ -324,7 +330,6 @@ class TestACorruptStream:
         assert memory.read8(names["_movie_bank"]) == FIRST_BANK + 1
 
 
-PSG_PORT = 0x7F
 PSG_ATTENUATE_ALL = [0x9F, 0xBF, 0xDF, 0xFF]
 
 
@@ -361,7 +366,7 @@ def silence(built) -> Speaker:
 class TestTheSoundChipIsSilenced:
     def test_every_channel_is_attenuated_fully_on_the_psg_port(self, built):
         # Arrange
-        expected = [(PSG_PORT, value) for value in PSG_ATTENUATE_ALL]
+        expected = [(SOUND_PORT, value) for value in PSG_ATTENUATE_ALL]
 
         # Act
         speaker = silence(built)
@@ -450,3 +455,40 @@ class TestTheRomHeader:
         # Assert
         assert declared is not None
         assert stamped == b"SDSC" + bytes([bcd(int(declared[1])), bcd(int(declared[2]))])
+
+
+def sounded_film() -> bytes:
+    return stream.psg_run(SOUND_WRITES) + film()
+
+
+class TestASoundRun:
+    def test_the_writes_reach_the_sound_port_in_order(self, built):
+        # Arrange
+        lines = [INSIDE]
+
+        # Act
+        ports, _, _ = replay(built, lines, data=sounded_film())
+
+        # Assert
+        assert [value for _, value in ports.sound()] == list(SOUND_WRITES)
+
+    def test_consecutive_sound_writes_keep_the_floor(self, built):
+        # Arrange
+        lines = [INSIDE]
+
+        # Act
+        ports, _, _ = replay(built, lines, data=sounded_film())
+
+        # Assert
+        stamps = [cycle for cycle, _ in ports.sound()]
+        assert min(later - earlier for earlier, later in pairwise(stamps)) >= SOUND_FLOOR
+
+    def test_the_picture_after_the_sound_still_arrives(self, built):
+        # Arrange
+        lines = [INSIDE]
+
+        # Act
+        ports, _, _ = replay(built, lines, data=sounded_film())
+
+        # Assert
+        assert ports.data()[: len(PAYLOAD)] == list(PAYLOAD)

@@ -21,6 +21,8 @@ mvloop:
         jr  z, mvclose
         cp  a, #0xFF
         jp  z, mvbank
+        cp  a, #0x06
+        jr  z, mvpsg
         cp  a, #0x02
         jr  nc, mvbad
 
@@ -62,6 +64,18 @@ mvpaced:
         outi
         nop
         jp  nz, mvpaced
+        jp  mvloop
+
+mvpsg:
+        inc hl
+        ld  b, (hl)
+        inc hl
+        ld  c, #0x7F
+mvpsgpaced:
+        outi
+        nop
+        nop
+        jp  nz, mvpsgpaced
         jp  mvloop
 
 mvclose:

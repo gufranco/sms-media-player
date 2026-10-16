@@ -594,3 +594,66 @@ class TestMostMerged:
 
         # Assert
         assert result == [1]
+
+
+@pytest.fixture(scope="module")
+def sounded_clip(tmp_path_factory):
+    path = tmp_path_factory.mktemp("sounded") / "source.mp4"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=320x240:rate=30:duration=2",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=440:duration=2",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            str(path),
+        ],
+        check=True,
+    )
+    return path
+
+
+class TestSound:
+    def test_a_film_with_a_soundtrack_bakes_psg_writes(self, sounded_clip, tmp_path):
+        # Arrange
+        argv = _argv(sounded_clip, tmp_path)
+
+        # Act
+        cartridge.main(argv)
+
+        # Assert
+        report = json.loads((tmp_path / "report.json").read_text())
+        assert report["sound_writes"] > 0
+
+    def test_a_silent_build_bakes_no_sound(self, sounded_clip, tmp_path):
+        # Arrange
+        argv = [*_argv(sounded_clip, tmp_path), "--silent"]
+
+        # Act
+        cartridge.main(argv)
+
+        # Assert
+        report = json.loads((tmp_path / "report.json").read_text())
+        assert report["sound_writes"] == 0
+
+    def test_a_film_without_a_soundtrack_bakes_no_sound(self, clip, tmp_path):
+        # Arrange
+        argv = _argv(clip, tmp_path)
+
+        # Act
+        cartridge.main(argv)
+
+        # Assert
+        report = json.loads((tmp_path / "report.json").read_text())
+        assert report["sound_writes"] == 0

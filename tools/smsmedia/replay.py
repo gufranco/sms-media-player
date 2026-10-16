@@ -22,6 +22,7 @@ class Machine:
         self.cram = console.boot_cram()
         self.table = NAME_TABLE_BASE
         self.flips = 0
+        self.psg: list[int] = []
 
     def apply(self, chunk: bytes) -> bool:
         pos = 0
@@ -49,6 +50,11 @@ class Machine:
                 chunk[start : start + CRAM_BYTES], dtype=np.uint8
             )
             return start + CRAM_BYTES
+        if kind == stream.PSG:
+            length = chunk[body]
+            start = body + stream.PSG_HEADER - 1
+            self.psg = [*self.psg, *chunk[start : start + length]]
+            return start + length
         raise ValueError(unknown_kind(kind, pos))
 
     @staticmethod
@@ -156,6 +162,8 @@ def frames_of(blob: bytes, *, bank_size: int = limits.BANK_BYTES) -> list[bytes]
             size = stream.VRAM_HEADER + blob[pos + 3]
         elif kind == stream.CLOSE:
             size = stream.CLOSE_HEADER + CRAM_BYTES
+        elif kind == stream.PSG:
+            size = stream.PSG_HEADER + blob[pos + 1]
         else:
             raise ValueError(unknown_kind(kind, pos))
         current += blob[pos : pos + size]

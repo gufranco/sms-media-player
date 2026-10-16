@@ -200,15 +200,17 @@ a colour check or an edge-of-screen check.
 references. It is not committed. Read it before proposing a design change, and
 update it in the same turn as any decision that contradicts it.
 
-## Sound is coming back
+## Sound comes from the PSG
 
 Owner's instruction, 2026-10-15, replacing the removal of 2026-10-08: the
 player carries sound like the Neo Geo player, from the PSG alone, with a silent
-build as an option. Until that lands the stream carries picture only, the line
-interrupt stays off, and the one PSG write is full attenuation at boot, because
-a console powers up with its tone channels audible. Any sound path is a change
-to the transfer loop's cycle budget and is unverified until it runs on the
-Game Gear.
+build as an option. It now plays tone synthesis: once a field the replay writes
+the changed PSG registers, 34 T-states apart, before the field's picture, and
+the transfer loop is untouched. The line interrupt stays off, and the boot
+still writes full attenuation, because a console powers up with its tone
+channels audible. Sample playback through the attenuators is the measured
+alternative in the PSG sound plan, and it would change the transfer loop's
+cycle budget. Every sound change is unverified until it runs on the Game Gear.
 
 ## How the picture is judged
 

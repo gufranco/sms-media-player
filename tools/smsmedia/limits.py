@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from smsmedia import console, smscolor, stream
+from smsmedia import console, psgsound, smscolor, stream
 
 BANK_BYTES: Final = 16 * 1024
 
@@ -11,6 +11,10 @@ FIELD_CYCLES: Final = console.NTSC_LINES * CYCLES_PER_LINE
 VDP_WRITE_CYCLES: Final = 30
 FIELD_PAYLOAD_BYTES: Final = FIELD_CYCLES // VDP_WRITE_CYCLES
 CLOSE_RESERVE: Final = stream.CLOSE_HEADER + stream.CLOSE_BYTES
+SOUND_WRITE_CYCLES: Final = 34
+SOUND_RESERVE: Final = -(
+    -(stream.PSG_HEADER + psgsound.MAX_FIELD_WRITES) * SOUND_WRITE_CYCLES // VDP_WRITE_CYCLES
+)
 
 DEFAULT_BUDGET: Final = 1800
 MEASURED_FIELD_BUDGET: Final = 1900

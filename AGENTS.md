@@ -14,12 +14,12 @@ differ in the exact dimension the design leans on.
 
 It is a public member of a family with neogeo-media-player, the two kept as
 alike as their hardware allows, and held to the requirements in
-[FAMILY.md](FAMILY.md) "What every player does". Today it is silent and stops
-at 1 MB: the stream is picture only, the player never enables the line
-interrupt, and its one write to the PSG is full attenuation at boot. Sound from
-the PSG, a silent build option and the whole cartridge are the owner's
-requirements of 2026-10-15, replacing the silent five-second openings of
-2026-10-08.
+[FAMILY.md](FAMILY.md) "What every player does". It fills the 1 MB the Sega
+mapper decodes, and its sound is tone synthesis on the PSG: the baker writes
+the changed tone, noise and attenuation registers once a field, and the replay
+sends them to port `$7F` 34 T-states apart before the field's picture. The
+player never enables the line interrupt, and it still silences the PSG at boot.
+`--silent` leaves sound out. The sound path has not run on a console.
 
 The Neo Geo holds 1,048,576 tiles resident in character ROM, so its player writes
 tile numbers and nothing else. The Master System addresses 512 patterns in 16 KB
@@ -511,12 +511,14 @@ still matters, because the library half places a smaller picture.
 `roms/downloads-30s-hwsafe.sms` is built and waiting for a console test. Every
 figure in this repository comes from an emulator, a model, or static analysis.
 
-Three player changes since that ROM are unverified on hardware for the same
+Four player changes since that ROM are unverified on hardware for the same
 reason: the replay refuses run kind `0x03` instead of copying the palettes
 outside the V counter guard, an assertion halt paints the backdrop entry so it
-shows with the display off, and the replay cursor is asserted below `0xC000`.
-A fresh ROM carrying them needs one Game Gear run: play through, press button
-1 to restart and button 2 to exit, and watch for shredded tiles.
+shows with the display off, the replay cursor is asserted below `0xC000`, and
+the replay writes the sound run, kind `0x06`, to the PSG 34 T-states apart.
+A fresh ROM carrying them needs one Game Gear run: play through with sound,
+press button 1 to restart and button 2 to exit, listen for the tones, and
+watch for shredded tiles.
 
 The owner has a Game Gear with an Everdrive, which runs Master System ROMs, and
 that is the hardware path available. What it can and cannot settle is in
