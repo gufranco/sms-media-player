@@ -1,5 +1,3 @@
-English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
-
 <div align="center">
 
 # SMS Media Player
@@ -7,7 +5,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
 <strong>Full-screen video on a stock Sega Master System,<br>
 its tiles paged through VRAM while the film plays.</strong>
 
-<br>
+English &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; [简体中文](README.zh-Hans.md) &nbsp;|&nbsp; [繁體中文（香港）](README.zh-HK.md)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/gufranco/sms-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/sms-media-player/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](RELEASES.md)

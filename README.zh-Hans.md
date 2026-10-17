@@ -1,5 +1,3 @@
-[English](README.md) | [日本語](README.ja.md) | 简体中文 | [繁體中文（香港）](README.zh-HK.md)
-
 <div align="center">
 
 # SMS Media Player
@@ -7,7 +5,7 @@
 <strong>在原装 Sega Master System 上全屏播放视频，<br>
 影片播放的同时，图块在 VRAM 中分页调入。</strong>
 
-<br>
+[English](README.md) &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; 简体中文 &nbsp;|&nbsp; [繁體中文（香港）](README.zh-HK.md)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/gufranco/sms-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/sms-media-player/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](RELEASES.md)

@@ -1,5 +1,3 @@
-[English](README.md) | 日本語 | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
-
 <div align="center">
 
 # SMS Media Player
@@ -7,7 +5,7 @@
 <strong>改造なしのSega Master Systemでフルスクリーン動画を再生し、<br>
 再生中にタイルをVRAMへページングします。</strong>
 
-<br>
+[English](README.md) &nbsp;|&nbsp; 日本語 &nbsp;|&nbsp; [简体中文](README.zh-Hans.md) &nbsp;|&nbsp; [繁體中文（香港）](README.zh-HK.md)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/gufranco/sms-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/sms-media-player/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](RELEASES.md)
