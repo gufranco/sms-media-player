@@ -29,12 +29,13 @@ from smsmedia import (
     schedule,
     stepdown,
     stream,
+    target,
 )
 
 P90: Final = 0.9
 MOST_MERGED_SHOWN: Final = 3
 BAR_ANALYSIS_SECONDS: Final = 8.0
-ROM: Final = Path("build") / "smsmedia.sms"
+ROM: Final = Path("build") / f"smsmedia{target.DEFAULT.extension}"
 
 
 def fits(*, banks: int, max_banks: int) -> bool:

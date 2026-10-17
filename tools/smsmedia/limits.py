@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from smsmedia import console, psgsound, smscolor, stream
+from smsmedia import console, psgsound, smscolor, stream, target
 
 BANK_BYTES: Final = 16 * 1024
 
@@ -26,8 +26,8 @@ DEFAULT_SCALER: Final = "area"
 MAX_DENOISE: Final = 64.0
 MAX_SOURCE_SECONDS: Final = 4 * 60 * 60
 DEFAULT_FPS: Final = 12.0
-DEFAULT_COLUMNS: Final = 32
-DEFAULT_ROWS: Final = 24
+DEFAULT_COLUMNS: Final = target.DEFAULT.columns
+DEFAULT_ROWS: Final = target.DEFAULT.rows
 NTSC_FIELD_HZ: Final = console.NTSC_FIELD_HZ
 FIELD_SECONDS: Final = 1.0 / NTSC_FIELD_HZ
 CODE_BANKS: Final = 2

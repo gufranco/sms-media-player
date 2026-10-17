@@ -6,13 +6,15 @@ import numpy as np
 import numpy.typing as npt
 from fmvcore import colour
 
-LEVELS: Final = 4
+from smsmedia import target
+
+LEVELS: Final = target.MASTER_SYSTEM.channel_levels
 RGB_CHANNELS: Final = 3
 IMAGE_RANK: Final = 3
 CHANNEL_MAX: Final = LEVELS - 1
 PALETTE_ENTRIES: Final = 16
 PALETTE_COUNT: Final = 2
-CRAM_BYTES: Final = PALETTE_ENTRIES * PALETTE_COUNT
+CRAM_BYTES: Final = PALETTE_ENTRIES * PALETTE_COUNT * target.MASTER_SYSTEM.cram_entry_bytes
 COLOUR_COUNT: Final = LEVELS**3
 
 _LEVEL_TO_BYTE: Final = np.array([0, 85, 170, 255], dtype=np.uint8)

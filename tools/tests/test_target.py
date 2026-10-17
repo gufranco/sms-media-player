@@ -1,0 +1,70 @@
+from __future__ import annotations
+
+import pytest
+
+from smsmedia import target
+
+
+class TestTheMasterSystem:
+    def test_it_draws_the_whole_raster_in_cells(self):
+        # Arrange
+        console = target.MASTER_SYSTEM
+
+        # Act
+        cells = (console.columns, console.rows)
+
+        # Assert
+        assert cells == (32, 24)
+
+    def test_it_has_four_levels_a_channel_in_one_cram_byte(self):
+        # Arrange
+        console = target.MASTER_SYSTEM
+
+        # Act
+        colour = (console.channel_levels, console.cram_entry_bytes)
+
+        # Assert
+        assert colour == (4, 1)
+
+    def test_its_header_says_master_system_export(self):
+        # Arrange
+        console = target.MASTER_SYSTEM
+
+        # Act
+        header = (console.region, console.extension)
+
+        # Assert
+        assert header == (0x4, ".sms")
+
+
+class TestNamed:
+    def test_a_known_name_gives_its_target(self):
+        # Arrange
+        name = "sms"
+
+        # Act
+        found = target.named(name)
+
+        # Assert
+        assert found is target.MASTER_SYSTEM
+
+    def test_an_unknown_name_is_refused_with_the_known_ones(self):
+        # Arrange
+        name = "nes"
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            target.named(name)
+
+        # Assert
+        assert str(refused.value) == "no target named 'nes'; the targets are sms"
+
+    def test_the_default_is_the_master_system(self):
+        # Arrange
+        default = target.DEFAULT
+
+        # Act
+        name = default.name
+
+        # Assert
+        assert name == "sms"
