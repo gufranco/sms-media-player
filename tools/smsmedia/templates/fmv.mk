@@ -22,7 +22,7 @@ $(FMV_BUILD)/%.rel: $(FMV_DIR)/src/%.c $(FMV_ASSET_HDR)
 
 $(FMV_BUILD)/%.rel: $(FMV_DIR)/src/%.s
 	mkdir -p $(FMV_BUILD)
-	sdasz80 -l -o $@ $<
+	sdasz80 -l -I$(FMV_DIR)/src -o $@ $<
 
 FMV_BANK_NUMS = $(shell ls $(FMV_ASSETS)/bank*.rel 2>/dev/null \
                         | sed 's#.*/bank##; s#\.rel##' | sort -n)

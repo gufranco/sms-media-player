@@ -9,6 +9,7 @@ from smsmedia import console
 
 ROOT = Path(__file__).resolve().parents[2]
 SCREEN_HEADER = ROOT / "include" / "fmv" / "screen.h"
+CONSOLE_HEADER = ROOT / "include" / "fmv" / "console.h"
 PSG_SOURCE = ROOT / "src" / "psg.s"
 MAIN_SOURCE = ROOT / "src" / "main.c"
 SCREEN_SOURCE = ROOT / "src" / "screen.c"
@@ -251,8 +252,8 @@ class TestScreenResetDoesTheWork:
         text = source.read_text()
 
         # Assert
-        assert "SMS_setBGPaletteColor(0u, FMV_SCREEN_BLACK);" in text
-        assert "SMS_setSpritePaletteColor(0u, FMV_SCREEN_BLACK);" in text
+        assert "fmv_set_bg_colour(0u, FMV_COLOUR_BLACK);" in text
+        assert "fmv_set_sprite_colour(0u, FMV_COLOUR_BLACK);" in text
 
     def test_nothing_else_prepares_the_screen(self):
         # Arrange
@@ -292,17 +293,17 @@ class TestTheEndOfAFilm:
 
         # Assert
         assert fault is not None
-        assert fault.group(1).strip() == "SMS_setSpritePaletteColor(0u, FMV_SCREEN_FAULT_RED);"
+        assert fault.group(1).strip() == "fmv_set_sprite_colour(0u, FMV_COLOUR_RED);"
 
     def test_the_fault_colour_is_a_red_the_console_can_show(self):
         # Arrange
-        name = "FMV_SCREEN_FAULT_RED"
+        text = CONSOLE_HEADER.read_text()
 
         # Act
-        colour = screen(name)
+        reds = re.findall(r"^#define\s+FMV_COLOUR_RED\s+(0x[0-9A-Fa-f]+)u", text, re.MULTILINE)
 
         # Assert
-        assert colour == 0b00_00_11
+        assert [int(red, 16) for red in reds] == [0x000F, 0b00_00_11]
 
     def test_the_player_shows_the_fault_only_after_a_fault(self):
         # Arrange

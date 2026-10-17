@@ -605,6 +605,16 @@ bar drew at y 179, below that window, so a Game Gear in Master System mode
 never showed it. Only sprite positions changed; a Game Gear run should confirm
 the clock and bar now show on the panel.
 
+The Game Gear build, `--target gg` and `make rom TARGET=gg`, has run only in
+mednafen's Game Gear module. It compiles the same player with `TARGET_GG`,
+links `SMSlib_GG.lib` and writes header region `0x7C`. Its closing run copies
+64 CRAM bytes, two an entry through the Game Gear's latch, with the same 16
+T-state `outi` copy inside the same V counter guard; `make timing` walks its
+listings in `build/gg`. Start, bit 7 of port `$00`, pauses instead of the
+Pause NMI. None of this is verified until it runs on the Game Gear in its own
+mode: play with sound, press Start to pause and again to resume, and watch for
+shredded tiles and wrong colours.
+
 Start pausing on a Game Gear rests on the SMS Power Start Button page, which
 says that in Master System mode the Start button acts identically to the
 Pause button, and on the Mark III software reference, which wires Pause to

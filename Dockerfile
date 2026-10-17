@@ -37,6 +37,7 @@ RUN mkdir /opt/devkitSMS \
 RUN make -C /opt/devkitSMS/crt0/src \
  && make -C /opt/devkitSMS/SMSlib/src CONFIG="--sdcccall 1" \
  && install -m 0644 /opt/devkitSMS/SMSlib/src/SMSlib.lib /opt/devkitSMS/SMSlib/SMSlib.lib \
+ && install -m 0644 /opt/devkitSMS/SMSlib/src/SMSlib_GG.lib /opt/devkitSMS/SMSlib/SMSlib_GG.lib \
  && install -m 0644 /opt/devkitSMS/crt0/src/crt0_sms.rel /opt/devkitSMS/crt0/crt0_sms.rel
 
 ENV DEVKITSMS=/opt/devkitSMS

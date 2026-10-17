@@ -41,6 +41,7 @@ class TestWrite:
         assert copied == sorted(
             [
                 *(f"src/{name}" for name in bundle.LIBRARY_SOURCES),
+                f"src/{bundle.TARGET_INCLUDE}",
                 *(f"include/fmv/{name}" for name in bundle.LIBRARY_HEADERS),
                 "movie/movie.h",
                 "movie/assets/movie.bin",

@@ -1,6 +1,18 @@
 PROJECT      := sms-media-player
 ROM_NAME     := smsmedia
-ROM          := build/$(ROM_NAME).sms
+TARGET       ?= sms
+ifeq ($(TARGET),gg)
+TARGET_DIR   := build/gg
+TARGET_FLAGS := -DTARGET_GG
+TARGET_LIB   := SMSlib_GG.lib
+else ifeq ($(TARGET),sms)
+TARGET_DIR   := build
+TARGET_FLAGS :=
+TARGET_LIB   := SMSlib.lib
+else
+$(error TARGET must be sms or gg, got $(TARGET))
+endif
+ROM          := build/$(ROM_NAME).$(TARGET)
 DOCKER_IMAGE := $(PROJECT)-toolchain
 DOCKER_USER  := $(shell id -u):$(shell id -g)
 
@@ -20,12 +32,12 @@ SDCC_STD     := --std-c23
 SDCC_ARCH    := -mz80 --sdcccall 1 --no-std-crt0 --data-loc 0xC000
 SDCC_WARN    := --Werror --max-allocs-per-node 50000
 SDCC_INC     := -I$(INC_DIR) -I$(GEN_DIR) -I$(SMSLIB)/src
-SDCC_FLAGS   := $(SDCC_ARCH) $(SDCC_STD) $(SDCC_WARN) $(SDCC_INC)
+SDCC_FLAGS   := $(SDCC_ARCH) $(SDCC_STD) $(SDCC_WARN) $(SDCC_INC) $(TARGET_FLAGS)
 
 SOURCES      := $(wildcard $(SRC_DIR)/*.c)
 ASM_SOURCES  := $(wildcard $(SRC_DIR)/*.s)
-OBJECTS      := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.rel,$(SOURCES)) \
-                $(patsubst $(SRC_DIR)/%.s,$(BUILD_DIR)/%.rel,$(ASM_SOURCES))
+OBJECTS      := $(patsubst $(SRC_DIR)/%.c,$(TARGET_DIR)/%.rel,$(SOURCES)) \
+                $(patsubst $(SRC_DIR)/%.s,$(TARGET_DIR)/%.rel,$(ASM_SOURCES))
 
 ifdef DEVKITSMS
 
@@ -34,6 +46,10 @@ all: rom
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
+
+$(TARGET_DIR)/.made: | $(BUILD_DIR)
+	mkdir -p $(TARGET_DIR)
+	touch $@
 
 assets: $(ASSET_HDR)
 
@@ -48,11 +64,11 @@ $(VERSION_HDR): $(INC_DIR)/fmv/version.h
 	awk -F'[".]' '/^#define FMV_VERSION "/ { printf "#define FMV_VERSION_MAJOR %du\n#define FMV_VERSION_MINOR %du\n", $$2, $$3; found = 1 } END { exit !found }' $< > $@.tmp
 	mv $@.tmp $@
 
-$(BUILD_DIR)/%.rel: $(SRC_DIR)/%.c $(ASSET_HDR) $(HEADERS) $(VERSION_HDR) | $(BUILD_DIR)
+$(TARGET_DIR)/%.rel: $(SRC_DIR)/%.c $(ASSET_HDR) $(HEADERS) $(VERSION_HDR) | $(TARGET_DIR)/.made
 	$(SDCC) $(SDCC_FLAGS) -I$(ASSET_OUT) -c $< -o $@
 
-$(BUILD_DIR)/%.rel: $(SRC_DIR)/%.s | $(BUILD_DIR)
-	sdasz80 -l -o $@ $<
+$(TARGET_DIR)/%.rel: $(SRC_DIR)/%.s $(SRC_DIR)/$(TARGET)/target.inc | $(TARGET_DIR)/.made
+	sdasz80 -l -I$(SRC_DIR)/$(TARGET) -o $@ $<
 
 BANK_NUMS = $(shell ls $(ASSET_OUT)/bank*.rel 2>/dev/null \
                     | sed 's#.*/bank##; s#\.rel##' | sort -n)
@@ -61,11 +77,11 @@ BANK_FLAGS = $(foreach n,$(BANK_NUMS),-Wl-b_BANK$(n)=0x8000)
 
 rom: $(ASSET_HDR) $(OBJECTS)
 	$(SDCC) $(SDCC_ARCH) $(SDCC_STD) $(BANK_FLAGS) \
-	    -o $(BUILD_DIR)/$(ROM_NAME).ihx \
+	    -o $(TARGET_DIR)/$(ROM_NAME).ihx \
 	    $(CRT0)/crt0_sms.rel \
 	    $(OBJECTS) $(BANK_RELS) \
-	    $(SMSLIB)/SMSlib.lib
-	ihx2sms $(BUILD_DIR)/$(ROM_NAME).ihx $(ROM)
+	    $(SMSLIB)/$(TARGET_LIB)
+	ihx2sms $(TARGET_DIR)/$(ROM_NAME).ihx $(ROM)
 	@echo "built $(ROM) ($$(stat -c %s $(ROM)) bytes)"
 
 timing:
@@ -95,7 +111,7 @@ image:
 
 rom: image
 	docker run --rm --user $(DOCKER_USER) -e HOME=/tmp -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) \
-	    make --no-print-directory rom
+	    make --no-print-directory rom TARGET=$(TARGET)
 
 analyse: image
 	docker run --rm --user $(DOCKER_USER) -e HOME=/tmp -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) \
@@ -103,6 +119,7 @@ analyse: image
 
 timing:
 	uv --project tools run python tools/scripts/check_vdp_timing.py
+	if [ -d build/gg ]; then uv --project tools run python tools/scripts/check_vdp_timing.py build/gg/*.lst; fi
 
 example: image
 	docker run --rm --user $(DOCKER_USER) -e HOME=/tmp -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) \

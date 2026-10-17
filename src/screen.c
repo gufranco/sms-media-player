@@ -1,6 +1,7 @@
 #include "fmv/screen.h"
 
 #include "SMSlib.h"
+#include "fmv/console.h"
 
 void fmv_screen_reset(void)
 {
@@ -19,12 +20,12 @@ void fmv_screen_reset(void)
     SMS_VRAMmemset(FMV_SCREEN_SAT, FMV_SCREEN_SPRITE_OFF, FMV_SCREEN_SPRITES);
     SMS_initSprites();
     SMS_copySpritestoSAT();
-    SMS_setBGPaletteColor(0u, FMV_SCREEN_BLACK);
-    SMS_setSpritePaletteColor(0u, FMV_SCREEN_BLACK);
+    fmv_set_bg_colour(0u, FMV_COLOUR_BLACK);
+    fmv_set_sprite_colour(0u, FMV_COLOUR_BLACK);
     SMS_displayOn();
 }
 
 void fmv_screen_fault(void)
 {
-    SMS_setSpritePaletteColor(0u, FMV_SCREEN_FAULT_RED);
+    fmv_set_sprite_colour(0u, FMV_COLOUR_RED);
 }

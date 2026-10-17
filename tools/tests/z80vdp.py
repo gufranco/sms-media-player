@@ -9,6 +9,10 @@ from z80 import Cpu, Memory, core
 ROOT = Path(__file__).resolve().parents[2]
 ROM = ROOT / "build" / "smsmedia.sms"
 SYMBOLS = ROOT / "build" / "smsmedia.noi"
+GG_ROM = ROOT / "build" / "smsmedia.gg"
+GG_SYMBOLS = ROOT / "build" / "gg" / "smsmedia.noi"
+CRAM_BYTES = 32
+GG_CRAM_BYTES = 64
 ROM_REQUIRED_ENV = "SMSMEDIA_ROM_REQUIRED"
 CODE_WINDOW = 0x8000
 RETURN = 0xFFF0
@@ -51,21 +55,25 @@ GLYPHS = {
 }
 
 
-def symbols() -> dict[str, int]:
+def symbols(path: Path = SYMBOLS) -> dict[str, int]:
     found = {}
-    for line in SYMBOLS.read_text().splitlines():
+    for line in path.read_text().splitlines():
         parts = line.split()
         if len(parts) == 3 and parts[0] == "DEF":
             found[parts[1]] = int(parts[2], 16)
     return found
 
 
-def load() -> tuple[bytes, dict[str, int]]:
-    if not ROM.is_file() or not SYMBOLS.is_file():
+def load(rom: Path = ROM, names: Path = SYMBOLS) -> tuple[bytes, dict[str, int]]:
+    if not rom.is_file() or not names.is_file():
         if os.environ.get(ROM_REQUIRED_ENV) == "1":
-            pytest.fail(f"{ROM.name} or its symbols are missing and {ROM_REQUIRED_ENV}=1")
+            pytest.fail(f"{rom.name} or its symbols are missing and {ROM_REQUIRED_ENV}=1")
         pytest.skip("run `make rom` first; this executes the ROM's own code")
-    return ROM.read_bytes(), symbols()
+    return rom.read_bytes(), symbols(names)
+
+
+def load_gg() -> tuple[bytes, dict[str, int]]:
+    return load(GG_ROM, GG_SYMBOLS)
 
 
 def counter(line: int) -> int:
@@ -74,9 +82,11 @@ def counter(line: int) -> int:
 
 
 class Vdp:
-    def __init__(self) -> None:
+    def __init__(self, *, gg: bool = False) -> None:
+        self.gg = gg
         self.vram = bytearray(0x4000)
-        self.cram = bytearray(32)
+        self.cram = bytearray(GG_CRAM_BYTES if gg else CRAM_BYTES)
+        self.cram_latch = 0
         self.address = 0
         self.code = 0
         self.latch: int | None = None
@@ -118,10 +128,20 @@ class Vdp:
     def _data(self, value: int) -> None:
         self.writes += 1
         if self.code == CRAM_WRITE:
-            self.cram[self.address & 0x1F] = value
+            self._cram(value)
         elif self.code == VRAM_WRITE:
             self.vram[self.address & 0x3FFF] = value
         self.address += 1
+
+    def _cram(self, value: int) -> None:
+        if not self.gg:
+            self.cram[self.address % CRAM_BYTES] = value
+            return
+        if self.address % 2 == 0:
+            self.cram_latch = value
+            return
+        self.cram[(self.address - 1) % GG_CRAM_BYTES] = self.cram_latch
+        self.cram[self.address % GG_CRAM_BYTES] = value
 
 
 def call(
@@ -129,6 +149,8 @@ def call(
     routine: str,
     payload: bytes = b"",
     pokes: dict[int, int] | None = None,
+    *,
+    gg: bool = False,
 ) -> tuple[Vdp, Cpu, Memory]:
     rom, names = built
     image = bytearray(0x10000)
@@ -138,7 +160,7 @@ def call(
         image[address] = value
     image[RETURN] = HALT
     image[STACK : STACK + 2] = RETURN.to_bytes(2, "little")
-    vdp = Vdp()
+    vdp = Vdp(gg=gg)
     memory = Memory(image=bytes(image))
     cpu = Cpu("z80", memory, ports=vdp)
     cpu.reset()

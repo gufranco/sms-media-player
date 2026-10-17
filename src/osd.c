@@ -1,6 +1,7 @@
 #include "fmv/osd.h"
 
 #include "fmv/budget.h"
+#include "fmv/console.h"
 #include "fmv/glyph.h"
 #include "fmv/vdpcopy.h"
 
@@ -31,8 +32,6 @@
 #define OSD_BAR_X          96u
 #define OSD_STATE_X        96u
 #define OSD_INK_ENTRY      30u
-#define OSD_INK_BLACK      0x00u
-#define OSD_INK_WHITE      0x3Fu
 #define OSD_FIELD_HZ_MILLI 59923ul
 #define OSD_INK_LINES      10u
 #define OSD_CLOCK_LINES    98u
@@ -256,9 +255,10 @@ static void osd_request(u8 step)
 
 void fmv_osd_inks(void)
 {
-    static const u8 inks[2] = {OSD_INK_BLACK, OSD_INK_WHITE};
+    static const fmv_colour inks[2] = {FMV_COLOUR_BLACK, FMV_COLOUR_WHITE};
 
-    fmv_vdp_write(OSD_INK_ENTRY, FMV_VDP_CRAM_WRITE, inks, (u8)sizeof inks);
+    fmv_vdp_write(OSD_INK_ENTRY * FMV_CRAM_ENTRY_BYTES, FMV_VDP_CRAM_WRITE, (const u8 *)inks,
+                  (u8)sizeof inks);
 }
 
 void fmv_osd_open(void)

@@ -10,10 +10,7 @@
         .globl _movie_defers
 
         CHUNK_BAD = 0x80
-        INK_ENTRY = 0x1E
-        INK_COUNT = 2
-        INK_BLACK = 0x00
-        INK_WHITE = 0x3F
+        .include "target.inc"
 
         .area _CODE
 
@@ -24,7 +21,7 @@ mvloop:
         ld  a, (hl)
         cp  a, #0x02
         jr  z, mvvram
-        cp  a, #0x05
+        cp  a, #CLOSE_KIND
         jr  z, mvclose
         cp  a, #0xFF
         jp  z, mvbank
@@ -126,7 +123,7 @@ mvclose:
         ei
         ld  c, #0xBE
 fmvcopy:
-        .rept 32
+        .rept CLOSE_BYTES
         outi
         .endm
 fmvdone:
@@ -154,7 +151,7 @@ mvinkpaced:
         jp  mvloop
 
 mvinks:
-        .db INK_BLACK, INK_WHITE
+        INK_BYTES
 
 mvbank:
         ld  a, (_movie_last_bank)

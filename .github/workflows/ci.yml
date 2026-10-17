@@ -157,6 +157,16 @@ jobs:
       - name: VDP write spacing
         run: uv --project tools run python tools/scripts/check_vdp_timing.py
 
+      - name: Bake and build a Game Gear cartridge
+        run: >-
+          uv --project tools run python -m smsmedia.cartridge
+          build/ci-source.mp4 --duration 2 --fps 8 --target gg
+
+      - name: VDP write spacing in the Game Gear build
+        run: >-
+          uv --project tools run python tools/scripts/check_vdp_timing.py
+          build/gg/*.lst
+
       - name: The replay writes only in the vertical blank
         env:
           SMSMEDIA_ROM_REQUIRED: "1"
@@ -166,6 +176,8 @@ jobs:
           tools/tests/test_osd_on_z80.py
           tools/tests/test_diag_on_z80.py
           tools/tests/test_seek_on_z80.py
+          tools/tests/test_transport_on_z80.py
+          tools/tests/test_gg_build.py
 
       - name: The ROM is real
         run: |

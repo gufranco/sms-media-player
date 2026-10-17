@@ -13,8 +13,6 @@
 #define FMV_SCREEN_SPRITES          64u
 #define FMV_SCREEN_SPRITE_OFF       0xD0u
 #define FMV_SCREEN_RESERVED         1u
-#define FMV_SCREEN_BLACK            0x00u
-#define FMV_SCREEN_FAULT_RED        0x03u
 
 void fmv_screen_reset(void);
 void fmv_screen_table(u8 value);

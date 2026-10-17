@@ -1,8 +1,10 @@
 #include "SMSlib.h"
 #include "assets.h"
+#include "fmv/console.h"
 #include "fmv/diag.h"
 #include "fmv/mediaplayer.h"
 #include "fmv/osd.h"
+#include "fmv/pause.h"
 #include "fmv/psg.h"
 #include "fmv/screen.h"
 #include "fmv/transport.h"
@@ -21,8 +23,8 @@ typedef enum {
 SMS_EMBED_SEGA_ROM_HEADER(0, 0);
 SMS_EMBED_SDSC_HEADER(FMV_VERSION_MAJOR, FMV_VERSION_MINOR, 2026, 9, 4,
                       "gufranco",
-                      "SMS Media Player",
-                      "1 restarts 2 stops Pause pauses Up mutes Down diag Left/Right seek");
+                      FMV_PLAYER_NAME,
+                      FMV_KEYS_TEXT);
 
 static fmv_osd_view view;
 static fmv_transport transport;
@@ -41,7 +43,7 @@ static void hold_last_frame(void)
 static void read_input(void)
 {
     transport.pressed = (u16)SMS_getKeysPressed();
-    transport.pause = (u8)SMS_queryPauseRequested();
+    transport.pause = (u8)fmv_pause_requested(transport.pressed);
 }
 
 static fmv_diagnostics diagnostics(void)
@@ -101,7 +103,7 @@ static void wait_for_resume(void)
     u16 actions;
 
     fmv_psg_silence();
-    SMS_resetPauseRequest();
+    fmv_pause_clear();
     SMS_waitForVBlank();
     view.paused = 1u;
     fmv_osd_show(&view);
@@ -116,7 +118,7 @@ static void wait_for_resume(void)
             toggle_diagnostics(false);
         }
     } while ((actions & FMV_ACT_RESUME) == 0u);
-    SMS_resetPauseRequest();
+    fmv_pause_clear();
     view.paused = 0u;
     fmv_osd_state();
     show_inks();
@@ -124,12 +126,12 @@ static void wait_for_resume(void)
 
 static void wait_for_wake(void)
 {
-    SMS_resetPauseRequest();
+    fmv_pause_clear();
     do {
         SMS_waitForVBlank();
         read_input();
     } while (!fmv_transport_wakes(&transport));
-    SMS_resetPauseRequest();
+    fmv_pause_clear();
 }
 
 static void toggle_sound(void)
@@ -173,10 +175,11 @@ static fmv_outcome handle_input(void)
 {
     u16 actions;
 
-    if (SMS_queryPauseRequested()) {
-        wait_for_resume();
-    }
     read_input();
+    if (transport.pause != 0u) {
+        wait_for_resume();
+        read_input();
+    }
     actions = fmv_transport_playing(&transport);
     if ((actions & FMV_ACT_MUTE) != 0u) {
         toggle_sound();

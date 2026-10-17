@@ -25,8 +25,10 @@ LIBRARY_HEADERS: Final = (
     "psg.h",
     "screen.h",
     "assert.h",
+    "console.h",
 )
 MAKEFILE: Final = "fmv.mk"
+TARGET_INCLUDE: Final = "target.inc"
 GUIDE: Final = "README.md"
 GUIDE_TEMPLATE: Final = "bundle_readme.md"
 FILM: Final = "movie.bin"
@@ -49,6 +51,7 @@ class Figures:
 
 def write(*, target: Path, assets: Path, generated: Path, figures: Figures) -> Path:
     bundle.copy_files(LIBRARY_SOURCES, ROOT / "src", target / "src", required=True)
+    bundle.copy_files((TARGET_INCLUDE,), ROOT / "src" / "sms", target / "src", required=True)
     bundle.copy_files(
         LIBRARY_HEADERS, ROOT / "include" / "fmv", target / "include" / "fmv", required=True
     )
