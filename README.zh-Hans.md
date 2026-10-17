@@ -29,6 +29,10 @@
 
 <sub>Sintel 预告片的六秒片段，由 mednafen 运行构建好的卡带、以主机原生的 256x192 捕获。Neo Geo 播放器的 README 也以同一部影片开篇。Sintel 由 Blender Foundation 制作，采用 CC BY 3.0 许可。</sub>
 
+<img src="readme/demo-gg.gif" alt="由构建好的 Game Gear 卡带播放的 Sintel 预告片六秒片段，从 mednafen 捕获" width="320">
+
+<sub>同一部影片由 Game Gear 卡带播放，<code>--target gg</code>，以屏幕原生的 160x144 放大两倍显示，调色板取自 4096 种颜色。从 mednafen 的 Game Gear 模式捕获。</sub>
+
 </div>
 
 ```bash

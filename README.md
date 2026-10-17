@@ -29,6 +29,10 @@ English &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; [简体中文](REA
 
 <sub>Six seconds of the Sintel trailer, captured from mednafen running the built cartridge at the console's own 256x192. The same film opens the Neo Geo player's README. Sintel is by the Blender Foundation, CC BY 3.0.</sub>
 
+<img src="readme/demo-gg.gif" alt="Six seconds of the Sintel trailer playing from the built Game Gear cartridge, captured from mednafen" width="320">
+
+<sub>The same film from the Game Gear cartridge, <code>--target gg</code>, at the panel's 160x144 shown at twice the size, with palettes from 4096 colours. Captured from mednafen's Game Gear mode.</sub>
+
 </div>
 
 ```bash

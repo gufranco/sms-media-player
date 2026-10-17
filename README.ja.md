@@ -29,6 +29,10 @@
 
 <sub>Sintelの予告編の6秒間です。ビルドしたカートリッジをコンソール本来の256x192で実行するmednafenからキャプチャしました。同じ映像がNeo GeoプレイヤーのREADMEの冒頭にも使われています。SintelはBlender Foundationの作品で、ライセンスはCC BY 3.0です。</sub>
 
+<img src="readme/demo-gg.gif" alt="ビルドしたGame Gearカートリッジで再生するSintelの予告編の6秒間、mednafenからキャプチャ" width="320">
+
+<sub>同じ映像をGame Gearのカートリッジ、<code>--target gg</code>で再生したものです。画面本来の160x144を2倍で表示し、パレットは4096色から合わせています。mednafenのGame Gearモードからキャプチャしました。</sub>
+
 </div>
 
 ```bash
