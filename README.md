@@ -1,16 +1,16 @@
 <div align="center">
 
-# SMS Media Player
+# SMS/GG Media Player
 
-<strong>Full-screen video on a stock Sega Master System,<br>
-its tiles paged through VRAM while the film plays.</strong>
+<strong>Full-screen video on a stock Sega Master System or Game Gear,<br>
+each in its own mode, its tiles paged through VRAM while the film plays.</strong>
 
 English &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; [简体中文](README.zh-Hans.md) &nbsp;|&nbsp; [繁體中文（香港）](README.zh-HK.md)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/gufranco/smsgg-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/smsgg-media-player/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](RELEASES.md)
 [![Licence](https://img.shields.io/badge/licence-MIT-blue?style=flat-square)](LICENSE)
-[![Target](https://img.shields.io/badge/target-Sega%20Master%20System-red?style=flat-square)](#hardware-ceilings)
+[![Target](https://img.shields.io/badge/target-Master%20System%20%2B%20Game%20Gear-red?style=flat-square)](#hardware-ceilings)
 [![Hardware](https://img.shields.io/badge/hardware-Master%20System%20%2B%20Game%20Gear-brightgreen?style=flat-square)](#verification)
 
 </div>
@@ -34,14 +34,17 @@ English &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; [简体中文](REA
 ```bash
 uv --project tools run python -m smsggmedia.cartridge ~/Movies/my-film.mkv --duration 5
 # build/smsggmedia.sms
+uv --project tools run python -m smsggmedia.cartridge ~/Movies/my-film.mkv --duration 5 --target gg
+# build/smsggmedia.gg
 ```
 
 ---
 
 ## What it is
 
-A baker that turns any video file into a Master System cartridge, and a Z80
-player that shows it full screen on a stock console. The baker runs on the
+A baker that turns any video file into a Master System or a Game Gear
+cartridge, and a Z80 player that shows it full screen on a stock console. Each
+console gets its own cartridge, built for its own screen, colours and sound. The baker runs on the
 host; the player and every ROM build run in a pinned Docker image.
 
 ### The problem
@@ -73,7 +76,8 @@ and the controls.
 | Subtitles | A SubRip `.srt` named with `--subtitles`, or one beside the source under the same name, is burned into the bottom of the picture in the family's 8x8 font, white on a black edge, at most two lines of 32 columns |
 | Controls | Plays on a loop. A position bar with a play, pause and mute glyph and the elapsed and total time shows for about three seconds at the start and after any press of Up, Down, Left, Right or button 1, then gets out of the picture's way; while paused it stays up. Button 1 restarts. Button 2 stops on a black screen, and button 1, button 2 or Pause then plays from the beginning. Pause, or Start on a Game Gear, pauses and resumes. Down shows and hides the diagnostics at any time, and button 1 does too while paused: frame over total frames, the cartridge bank, and how many fields were deferred because the vertical blank was missed. Up turns sound off and on; sound returns within a second. Left and Right jump to the seek points the baker places every 10 seconds, `--seek-every` to change; a jump shows about a quarter of a second of black while the point's picture loads. A corrupt stream stops on a red one |
 | Field rate | Paced for NTSC, 59.92 fields a second, which the Game Gear also runs at. The player draws one chunk a field, so a 50 Hz PAL console plays the same stream at about five sixths of its intended speed. Nothing here has been checked on a PAL console |
-| Regression set | Six clips of different kinds baked on every test run |
+| Game Gear | `--target gg` builds a native Game Gear cartridge: the 160x144 panel as 20 by 18 cells, palettes fitted from 4096 colours, the PSG's voices routed left and right on the headphones from a stereo source, and Start to pause. It plays in mednafen's Game Gear mode, and its capture matches the replay oracle pixel for pixel. It has not run on a Game Gear in its own mode yet |
+| Regression set | Six clips of different kinds baked on every test run, for the Master System. The Game Gear target is not in the set yet |
 | Hardware run | Done on 2026-10-17 on a Master System and a Game Gear, with no defect seen. The figures here still come from an emulator or a listing |
 
 ## What every player does
@@ -82,32 +86,32 @@ Both players are built to the same feature list, set in [FAMILY.md](FAMILY.md),
 and this table is the same in both READMEs. "Planned" is work not done yet. A
 feature a console cannot carry says "Not possible" with the hardware reason.
 
-| Feature | Neo Geo | Master System |
-|---|---|---|
-| One command from a video file to a cartridge | Yes | Yes |
-| The picture fills the screen, scaled to cover and cropped | Yes | Yes |
-| Black bars baked into a source are found and cropped | Yes | Yes |
-| Picture and sound step down from the best until the film fits | Yes. `--quality search` bakes down a 35-rung ladder, and sound takes the highest rate that still fits | Yes. A bake that overruns the cartridge steps the frame rate down through the same search, and sound goes last |
-| The largest standard cartridge, no added hardware | Yes, 128 MiB of character ROM | Yes, 1 MB, the most any Sega mapper revision decodes |
-| Ordered dithering | Yes, `--dither`, off by default | Yes, `--dither`, on by default |
-| Palettes refit as the film changes | Yes, per scene | Yes, per frame, kept while they still fit |
-| Sound with no added hardware | Yes, ADPCM-B on the YM2610 | Yes, tone synthesis on the PSG |
-| A silent build that gives sound's room to the picture | Yes, `--silent`. Sound has its own ROM, so leaving it out frees no picture room | Yes, `--silent` |
-| Subtitles from a SubRip file | Yes | Yes, burned into the picture, so they cannot be switched off |
-| Play and pause | Yes | Yes. Pause on the console, Start on a Game Gear |
-| Fast forward and rewind | Yes, forward at 2x, 5x and 10x | Not possible: moving one frame already takes up to 54,000 of a field's 59,736 T-states, so the replay cannot move two; Left and Right jump between seek points instead |
-| Seek | Yes, C and D jump between points 10 seconds apart, `--seek-every` to change | Yes, Left and Right jump between points 10 seconds apart, `--seek-every` to change |
-| A position bar with elapsed and total time | Yes, for three seconds after any press | Yes, for three seconds after any press, and while paused |
-| Restart and stop | Yes | Yes |
-| Sound on and off | Yes | Yes, Up |
-| The film loops at the end | Yes | Yes |
-| A diagnostics overlay | Yes, Select | Yes, Down |
-| A fault screen for a corrupt stream | Yes | Yes |
-| A film inside your own game | Yes, `--bundle` emits a drop-in library | Yes, `--bundle` emits a drop-in library and `examples/cutscene` builds a game from it |
-| A preview of what the console will draw | Yes, a video, or four frames beside their source | Yes, a video, or four frames beside their source |
-| A write-timing gate on every build | Yes | Yes |
-| A regression set of films baked on every test run | Yes, six films | Yes, six films |
-| Run on the original hardware | Yes, AES and MVS | Yes, a Master System and a Game Gear |
+| Feature | Neo Geo | Master System | Game Gear |
+|---|---|---|---|
+| One command from a video file to a cartridge | Yes | Yes | Yes, `--target gg` |
+| The picture fills the screen, scaled to cover and cropped | Yes | Yes | Yes, the 160 by 144 panel |
+| Black bars baked into a source are found and cropped | Yes | Yes | Yes |
+| Picture and sound step down from the best until the film fits | Yes. `--quality search` bakes down a 35-rung ladder, and sound takes the highest rate that still fits | Yes. A bake that overruns the cartridge steps the frame rate down through the same search, and sound goes last | Yes, the same search as the Master System |
+| The largest standard cartridge, no added hardware | Yes, 128 MiB of character ROM | Yes, 1 MB, the most any Sega mapper revision decodes | Yes, 1 MB, the same mapper |
+| Ordered dithering | Yes, `--dither`, off by default | Yes, `--dither`, on by default | Yes, `--dither`, on by default |
+| Palettes refit as the film changes | Yes, per scene | Yes, per frame, kept while they still fit | Yes, per frame, from 4096 colours |
+| Sound with no added hardware | Yes, ADPCM-B on the YM2610 | Yes, tone synthesis on the PSG | Yes, tone synthesis on the PSG, routed left and right on the headphones from a stereo source |
+| A silent build that gives sound's room to the picture | Yes, `--silent`. Sound has its own ROM, so leaving it out frees no picture room | Yes, `--silent` | Yes, `--silent` |
+| Subtitles from a SubRip file | Yes | Yes, burned into the picture, so they cannot be switched off | Yes, burned into the picture, so they cannot be switched off |
+| Play and pause | Yes | Yes. Pause on the console, Start on a Game Gear | Yes, Start |
+| Fast forward and rewind | Yes, forward at 2x, 5x and 10x | Not possible: moving one frame already takes up to 54,000 of a field's 59,736 T-states, so the replay cannot move two; Left and Right jump between seek points instead | Not possible, for the Master System's reason: one frame takes up to 54,000 of a field's 59,736 T-states |
+| Seek | Yes, C and D jump between points 10 seconds apart, `--seek-every` to change | Yes, Left and Right jump between points 10 seconds apart, `--seek-every` to change | Yes, Left and Right jump between points 10 seconds apart, `--seek-every` to change |
+| A position bar with elapsed and total time | Yes, for three seconds after any press | Yes, for three seconds after any press, and while paused | Yes, for three seconds after any press, and while paused |
+| Restart and stop | Yes | Yes | Yes |
+| Sound on and off | Yes | Yes, Up | Yes, Up |
+| The film loops at the end | Yes | Yes | Yes |
+| A diagnostics overlay | Yes, Select | Yes, Down | Yes, Down |
+| A fault screen for a corrupt stream | Yes | Yes | Yes |
+| A film inside your own game | Yes, `--bundle` emits a drop-in library | Yes, `--bundle` emits a drop-in library and `examples/cutscene` builds a game from it | Yes, `--bundle` with `--target gg` emits a Game Gear library |
+| A preview of what the console will draw | Yes, a video, or four frames beside their source | Yes, a video, or four frames beside their source | Yes, a video, or four frames beside their source |
+| A write-timing gate on every build | Yes | Yes | Yes |
+| A regression set of films baked on every test run | Yes, six films | Yes, six films | Planned: the six films are baked for the Master System only |
+| Run on the original hardware | Yes, AES and MVS | Yes, a Master System and a Game Gear | Planned: the Master System cartridge has run on a Game Gear, the native one has not yet |
 
 ## How it works
 
@@ -211,6 +215,9 @@ Every figure here carries its source in [AGENTS.md](AGENTS.md).
 | VDP data port, active display | 29 T-states between writes | Pattern and name runs go out at 30 T-states a byte |
 | VDP data port, blanking | 16 T-states between writes | Only the guarded closing run, palettes and the name table flip, uses it |
 | Colours | 64, in two palettes of 16 | A cell of 8x8 pixels draws from one palette, so a cell has 16 colours |
+| Colours, Game Gear | 4096, in two palettes of 16, two bytes an entry | The closing run carries 64 palette bytes instead of 32, inside the same guarded vertical-blank copy |
+| Screen, Game Gear | 160x144, the centre of the 256x192 raster | The film is 20 by 18 cells, so a field moves fewer cells |
+| Stereo, Game Gear | Port `$06` routes each PSG channel left and right, on the headphones only | One pan byte a field at most, kind `0x08` |
 | Field rate, NTSC | 59.9227 Hz, 228 T-states a line, 262 lines | One chunk of the stream a field |
 | Cartridge | 64 banks of 16 KB through the Sega mapper, two of them code | The baker's ceiling today is 62 banks of film |
 | Work RAM | 8 KB at `$C000`, mirrored at `$E000` | The mapper registers live in the mirror |
@@ -261,7 +268,7 @@ the clock passed before a slot was free for them.
 
 ### Running it
 
-On hardware, copy `build/smsggmedia.sms` to a flash cartridge. Under an
+On hardware, copy `build/smsggmedia.sms`, or `build/smsggmedia.gg` for a Game Gear, to a flash cartridge. Under an
 emulator, run it windowed, never fullscreen:
 
 ```bash
@@ -534,6 +541,9 @@ with an Everdrive, and saw no defect. The two consoles settle different things:
 | Colour | Yes | No: the Game Gear remaps the palette onto its own |
 | The screen edges | Yes | No: in Master System mode it shows only the centre 160x144 |
 
+Both runs used the Master System cartridge. The native Game Gear cartridge
+has not run on a console yet.
+
 No emulator enforces the VDP write spacing, so the next change to the transfer
 loop is unverified until it runs on hardware again, however good the local
 numbers look.
@@ -651,10 +661,11 @@ frame's new ones into slots the screen is not showing.
 <summary><strong>Does it run on a Game Gear?</strong></summary>
 <br>
 
-A Game Gear with an Everdrive runs Master System ROMs, and that is how write
-timing gets checked here. In Master System mode it shows only the centre 160 by
-144 of the picture and remaps the palette, so the full picture is a Master
-System's to show.
+Yes, two ways. `--target gg` builds a native Game Gear cartridge that uses
+the whole 160x144 panel, a 4096-colour palette and stereo on the headphones;
+it has run only in mednafen so far. A Game Gear with an Everdrive also runs
+the Master System cartridge, which is how write timing was checked; in that
+mode it shows only the centre 160x144 of the picture and remaps the palette.
 
 </details>
 

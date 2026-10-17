@@ -174,6 +174,10 @@ write spacing at all, and every check in this repository runs against one.
 | NTSC field rate | 59.9227 Hz, derived: the clock over 262 lines of 228 T-states. `console.NTSC_FIELD_HZ` computes it rather than storing it | derived from the three rows above |
 | Line interrupt | counter reloaded on lines 193 to 261, so it never fires in the vertical blank | same |
 | Safe start window for a blank copy | V counter at or above `C0` and below `E0` | settled on hardware by a sibling project's vertical-blank copy |
+| Game Gear palette | 4096 colours, an entry `----BBBB GGGGRRRR` in two bytes; a write to an even CRAM address goes to a latch, and the odd write stores both | [SMS Power, Palette](https://www.smspower.org/Development/Palette); [ChibiAkumas, Master System and Game Gear](https://chibiakumas.com/z80/MasterSystemGameGear.php) for the bit layout |
+| Game Gear screen | 160x144, the raster's columns 48 to 207 and lines 24 to 167 | [ChibiAkumas](https://chibiakumas.com/z80/MasterSystemGameGear.php): six cells each side and three rows top and bottom are hidden |
+| Game Gear stereo | Port `$06`: bits 0 to 3 send channels 0 to 3 right, bits 4 to 7 left, headphones only; no power-on value is stated | [SMS Power, SN76489](https://www.smspower.org/Development/SN76489) |
+| Game Gear header region | Nibble `$7`, Game Gear international | [SMS Power, ROM header](https://www.smspower.org/Development/ROMHeader) |
 | Cartridge ceiling | 64 banks of 16 KB, 1 MB: Sega's mapper revisions decode 3, 5 or 6 bank bits, and 6 is the most any known revision decodes. 4 MB needs a cartridge that decodes all 8 bits, which no Sega mapper does | [SMS Power, Mappers](https://www.smspower.org/Development/Mappers); no Sega datasheet states it |
 
 Pattern and name table runs are copied with `outi`, `nop`, `jp nz`: 30

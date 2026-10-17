@@ -1,8 +1,8 @@
 <div align="center">
 
-# SMS Media Player
+# SMS/GG Media Player
 
-<strong>在原装 Sega Master System 上全屏播放视频，<br>
+<strong>在原装 Sega Master System 和 Game Gear 上各以自己的模式全屏播放视频，<br>
 影片播放的同时，图块在 VRAM 中分页调入。</strong>
 
 [English](README.md) &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; 简体中文 &nbsp;|&nbsp; [繁體中文（香港）](README.zh-HK.md)
@@ -10,7 +10,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/gufranco/smsgg-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/smsgg-media-player/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](RELEASES.md)
 [![Licence](https://img.shields.io/badge/licence-MIT-blue?style=flat-square)](LICENSE)
-[![Target](https://img.shields.io/badge/target-Sega%20Master%20System-red?style=flat-square)](#硬件上限)
+[![Target](https://img.shields.io/badge/target-Master%20System%20%2B%20Game%20Gear-red?style=flat-square)](#硬件上限)
 [![Hardware](https://img.shields.io/badge/hardware-Master%20System%20%2B%20Game%20Gear-brightgreen?style=flat-square)](#验证)
 
 </div>
@@ -34,13 +34,15 @@
 ```bash
 uv --project tools run python -m smsggmedia.cartridge ~/Movies/my-film.mkv --duration 5
 # build/smsggmedia.sms
+uv --project tools run python -m smsggmedia.cartridge ~/Movies/my-film.mkv --duration 5 --target gg
+# build/smsggmedia.gg
 ```
 
 ---
 
 ## 简介
 
-一个把任意视频文件转换成 Master System 卡带的烘焙器，以及一个在原装主机上全屏显示它的 Z80 播放器。烘焙器在宿主机上运行；播放器和每一次 ROM 构建都在一个固定版本的 Docker 镜像中运行。
+一个把任意视频文件转换成 Master System 或 Game Gear 卡带的烘焙器，以及一个在原装主机上全屏显示它的 Z80 播放器。每台主机都有自己的卡带，按它自己的屏幕、颜色和声音构建。烘焙器在宿主机上运行；播放器和每一次 ROM 构建都在一个固定版本的 Docker 镜像中运行。
 
 ### 问题
 
@@ -63,39 +65,40 @@ Master System 除了图块显示之外没有任何视频硬件。它从 16 KB �
 | 字幕 | 用 `--subtitles` 指定的 SubRip `.srt`，或与源文件同名并放在旁边的那个，会以家族共用的 8x8 字体烧录在画面底部，白字黑边，最多两行、每行 32 列 |
 | 操控 | 循环播放。带有播放、暂停和静音符号以及已播放时间和总时长的进度条，会在开始时以及按下上、下、左、右或按钮 1 之后显示约三秒，然后让开画面；暂停时一直显示。按钮 1 重新开始。按钮 2 停在黑屏上，之后按按钮 1、按钮 2 或暂停键从头播放。暂停键，在 Game Gear 上为 Start 键，用于暂停和继续。下键随时显示和隐藏诊断信息，暂停时按钮 1 也可以：当前帧与总帧数、卡带存储体，以及因错过垂直消隐而推迟的场数。上键关闭和打开声音，声音会在一秒内恢复。左右键跳到烘焙器每 10 秒放置的跳转点，可用 `--seek-every` 修改；跳转时在载入该点画面期间会黑屏约四分之一秒。损坏的数据流会停在红屏上 |
 | 场频 | 按 NTSC 节奏设定，每秒 59.92 场，Game Gear 也以此运行。播放器每场绘制一个数据块，因此 50 Hz 的 PAL 主机会以预期速度的约六分之五播放同一数据流。这里没有任何内容在 PAL 主机上检验过 |
-| 回归集 | 每次测试运行都会烘焙六段不同类型的片段 |
+| Game Gear | `--target gg` 构建原生的 Game Gear 卡带：以 20×18 个单元格使用 160x144 的屏幕，调色板从 4096 种颜色中拟合，按立体声来源把 PSG 的各个声部分配到耳机的左右声道，并用 Start 键暂停。它能在 mednafen 的 Game Gear 模式下播放，其捕获画面与回放预言逐像素一致。尚未在 Game Gear 自身的模式下于实机上运行 |
+| 回归集 | 每次测试运行都会为 Master System 烘焙六段不同类型的片段。Game Gear 目标尚未纳入 |
 | 硬件运行 | 已于 2026-10-17 在 Master System 和 Game Gear 上运行，未发现缺陷。这里的数字仍然来自模拟器或汇编清单 |
 
 ## 每个播放器都要做到的事
 
 两个播放器都按照 [FAMILY.md](FAMILY.md) 中规定的同一份功能清单构建，这张表在两份 README 中完全相同。标为计划中的功能尚未完成。主机无法承载的功能会标为无法实现，并注明硬件原因。
 
-| 功能 | Neo Geo | Master System |
-|---|---|---|
-| 一条命令从视频文件生成卡带 | 是 | 是 |
-| 画面填满屏幕，缩放至覆盖后裁剪 | 是 | 是 |
-| 检测并裁掉源视频中自带的黑边 | 是 | 是 |
-| 画面和声音从最高质量逐级降低，直到影片能装下 | 是。`--quality search` 沿 35 档阶梯向下烘焙，声音选用仍能装下的最高采样率 | 是。超出卡带的烘焙会用同一搜索逐级降低帧率，声音最后才去掉 |
-| 不加额外硬件，使用最大的标准卡带 | 是，128 MiB 字符 ROM | 是，1 MB，任何 Sega 映射器版本可寻址的上限 |
-| 有序抖动 | 是，`--dither`，默认关闭 | 是，`--dither`，默认开启 |
-| 调色板随影片变化重新拟合 | 是，按场景 | 是，按帧，仍然适用时保留 |
-| 不加额外硬件即可发声 | 是，YM2610 上的 ADPCM-B | 是，PSG 音调合成 |
-| 无声构建，把声音的空间让给画面 | 是，`--silent`。声音有独立的 ROM，所以去掉它并不会为画面腾出空间 | 是，`--silent` |
-| 读取 SubRip 文件中的字幕 | 是 | 是，烧录进画面，因此无法关闭 |
-| 播放和暂停 | 是 | 是。主机上的暂停键，Game Gear 上的 Start 键 |
-| 快进和倒退 | 是，快进可选 2x、5x 和 10x | 不可能：仅传输一帧就要用掉每场 59,736 个 T 状态中的最多 54,000 个，回放无法传输两帧；改用左右键在跳转点之间跳转 |
-| 跳转 | 是，C 和 D 键在相隔 10 秒的位置之间跳转，可用 `--seek-every` 修改 | 是，左右键在相隔 10 秒的位置之间跳转，可用 `--seek-every` 修改 |
-| 显示已播放时间和总时长的进度条 | 是，按下任意键后显示三秒 | 是，按下任意键后显示三秒，暂停时也显示 |
-| 重新开始和停止 | 是 | 是 |
-| 声音开关 | 是 | 是，上键 |
-| 影片播完后循环播放 | 是 | 是 |
-| 诊断信息叠加层 | 是，Select 键 | 是，下键 |
-| 数据流损坏时显示故障画面 | 是 | 是 |
-| 在你自己的游戏中播放影片 | 是，`--bundle` 生成可直接接入的库 | 是，`--bundle` 生成可直接接入的库，`examples/cutscene` 用它构建一个游戏 |
-| 预览主机将要绘制的画面 | 是，视频，或四帧画面与其源帧并排 | 是，视频，或四帧画面与其源帧并排 |
-| 每次构建都检查写入时序 | 是 | 是 |
-| 每次测试运行都烘焙的回归影片集 | 是，六部影片 | 是，六部影片 |
-| 在原装硬件上运行 | 是，AES 和 MVS | 是，Master System 和 Game Gear |
+| 功能 | Neo Geo | Master System | Game Gear |
+|---|---|---|---|
+| 一条命令从视频文件生成卡带 | 是 | 是 | 是，`--target gg` |
+| 画面填满屏幕，缩放至覆盖后裁剪 | 是 | 是 | 是，填满 160×144 的屏幕 |
+| 检测并裁掉源视频中自带的黑边 | 是 | 是 | 是 |
+| 画面和声音从最高质量逐级降低，直到影片能装下 | 是。`--quality search` 沿 35 档阶梯向下烘焙，声音选用仍能装下的最高采样率 | 是。超出卡带的烘焙会用同一搜索逐级降低帧率，声音最后才去掉 | 是，与 Master System 使用同一搜索 |
+| 不加额外硬件，使用最大的标准卡带 | 是，128 MiB 字符 ROM | 是，1 MB，任何 Sega 映射器版本可寻址的上限 | 是，1 MB，同一映射器 |
+| 有序抖动 | 是，`--dither`，默认关闭 | 是，`--dither`，默认开启 | 是，`--dither`，默认开启 |
+| 调色板随影片变化重新拟合 | 是，按场景 | 是，按帧，仍然适用时保留 | 是，按帧从 4096 种颜色中拟合 |
+| 不加额外硬件即可发声 | 是，YM2610 上的 ADPCM-B | 是，PSG 音调合成 | 是，PSG 音调合成，并按立体声来源在耳机左右声道间分配 |
+| 无声构建，把声音的空间让给画面 | 是，`--silent`。声音有独立的 ROM，所以去掉它并不会为画面腾出空间 | 是，`--silent` | 是，`--silent` |
+| 读取 SubRip 文件中的字幕 | 是 | 是，烧录进画面，因此无法关闭 | 是，烧录进画面，因此无法关闭 |
+| 播放和暂停 | 是 | 是。主机上的暂停键，Game Gear 上的 Start 键 | 是，Start 键 |
+| 快进和倒退 | 是，快进可选 2x、5x 和 10x | 不可能：仅传输一帧就要用掉每场 59,736 个 T 状态中的最多 54,000 个，回放无法传输两帧；改用左右键在跳转点之间跳转 | 不可能，原因与 Master System 相同：仅传输一帧就要用掉每场 59,736 个 T 状态中的最多 54,000 个 |
+| 跳转 | 是，C 和 D 键在相隔 10 秒的位置之间跳转，可用 `--seek-every` 修改 | 是，左右键在相隔 10 秒的位置之间跳转，可用 `--seek-every` 修改 | 是，左右键在相隔 10 秒的位置之间跳转，可用 `--seek-every` 修改 |
+| 显示已播放时间和总时长的进度条 | 是，按下任意键后显示三秒 | 是，按下任意键后显示三秒，暂停时也显示 | 是，按下任意键后显示三秒，暂停时也显示 |
+| 重新开始和停止 | 是 | 是 | 是 |
+| 声音开关 | 是 | 是，上键 | 是，上键 |
+| 影片播完后循环播放 | 是 | 是 | 是 |
+| 诊断信息叠加层 | 是，Select 键 | 是，下键 | 是，下键 |
+| 数据流损坏时显示故障画面 | 是 | 是 | 是 |
+| 在你自己的游戏中播放影片 | 是，`--bundle` 生成可直接接入的库 | 是，`--bundle` 生成可直接接入的库，`examples/cutscene` 用它构建一个游戏 | 是，`--bundle` 配合 `--target gg` 生成 Game Gear 用的库 |
+| 预览主机将要绘制的画面 | 是，视频，或四帧画面与其源帧并排 | 是，视频，或四帧画面与其源帧并排 | 是，视频，或四帧画面与其源帧并排 |
+| 每次构建都检查写入时序 | 是 | 是 | 是 |
+| 每次测试运行都烘焙的回归影片集 | 是，六部影片 | 是，六部影片 | 计划中：六部影片目前只为 Master System 烘焙 |
+| 在原装硬件上运行 | 是，AES 和 MVS | 是，Master System 和 Game Gear | 计划中：Master System 卡带已在 Game Gear 上运行，原生卡带尚未运行 |
 
 ## 工作原理
 
@@ -151,6 +154,9 @@ Master System **在 16 KB VRAM 中可寻址 512 个图案**，而 512 个图案�
 | VDP 数据端口，有效显示期 | 两次写入间隔 29 T-states | 图案和名称表的连续写入以每字节 30 T-states 进行 |
 | VDP 数据端口，消隐期 | 两次写入间隔 16 T-states | 只有受保护的收尾批次，即调色板和名称表切换，使用这一间隔 |
 | 颜色 | 64 种，分为两个各 16 色的调色板 | 一个 8x8 像素的单元格只能取自一个调色板，因此一个单元格有 16 种颜色 |
+| 颜色，Game Gear | 4096 种，分为两个各 16 色的调色板，每项两个字节 | 收尾段携带 64 个调色板字节而不是 32 个，仍在同一个受 V 计数器保护的垂直消隐复制中完成 |
+| 屏幕，Game Gear | 160x144，即 256x192 光栅的中央 | 影片为 20×18 个单元格，因此每场需要传输的单元格更少 |
+| 立体声，Game Gear | 端口 `$06` 把每个 PSG 声道分配到左右，仅限耳机 | 每场最多一个声像字节，类型 `0x08` |
 | 场频，NTSC | 59.9227 Hz，每行 228 T-states，262 行 | 每场一个数据流块 |
 | 卡带 | 通过 Sega mapper 访问 64 个 16 KB 的 bank，其中两个用于代码 | 烘焙器目前的上限是 62 个 bank 的影片 |
 | 工作内存 | 8 KB，位于 `$C000`，镜像于 `$E000` | mapper 寄存器位于镜像区 |
@@ -190,7 +196,7 @@ make timing     # VDP write spacing, read out of the assembler's own listing
 
 ### 运行
 
-在硬件上，把 `build/smsggmedia.sms` 复制到烧录卡带。在模拟器下，以窗口模式运行，绝不要全屏：
+在硬件上，把 `build/smsggmedia.sms`，或 Game Gear 用的 `build/smsggmedia.gg`，复制到烧录卡带。在模拟器下，以窗口模式运行，绝不要全屏：
 
 ```bash
 mednafen -video.fs 0 -sound 0 build/smsggmedia.sms
@@ -386,6 +392,8 @@ Sintel 预告片从 0:10 开始的三十秒，使用默认设置烘焙：
 | 颜色 | 能 | 不能：Game Gear 会把调色板重映射到它自己的颜色上 |
 | 屏幕边缘 | 能 | 不能：在 Master System 模式下它只显示中央 160x144 |
 
+两次运行用的都是 Master System 卡带。原生的 Game Gear 卡带尚未在主机上运行。
+
 没有模拟器会强制 VDP 写入间隔，因此下一次对传输循环的改动在再次于硬件上运行之前都是未经验证的，无论本地数字看起来多好。
 
 ## 仓库结构
@@ -485,7 +493,7 @@ Master System 只从 VRAM 绘制，而 VRAM 容纳 512 个图案。一部影片�
 <summary><strong>能在 Game Gear 上运行吗？</strong></summary>
 <br>
 
-带 Everdrive 的 Game Gear 可以运行 Master System ROM，这里就是用它来检验写入时序的。在 Master System 模式下，它只显示画面中央宽 160、高 144 的区域，并重映射调色板，因此完整画面只能由 Master System 来显示。
+能，有两种方式。`--target gg` 构建原生的 Game Gear 卡带，使用完整的 160x144 屏幕、4096 色调色板和耳机立体声，目前只在 mednafen 中运行过。带 Everdrive 的 Game Gear 也能运行 Master System 卡带，写入时序就是这样检验的；在那种模式下它只显示画面中央 160x144 的区域，并重映射调色板。
 
 </details>
 

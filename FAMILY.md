@@ -11,7 +11,7 @@ the hardware forces.
 | Member | What it is | Kind |
 |:--|:--|:--|
 | [neogeo-media-player](https://github.com/gufranco/neogeo-media-player) | A full-screen movie with sound on a Neo Geo AES or MVS, and a library that plays one inside another game | Player |
-| [smsgg-media-player](https://github.com/gufranco/smsgg-media-player) | A full-screen film on a Sega Master System, its tiles paged through VRAM as it plays | Player |
+| [smsgg-media-player](https://github.com/gufranco/smsgg-media-player) | A full-screen film on a Sega Master System or a Game Gear, each in its own mode, its tiles paged through VRAM as it plays | Player |
 | [fmv-core-python](https://github.com/gufranco/fmv-core-python) | The baker and measurement code both players share: decoding, colour, dither, the regression set, capture comparison, the write-timing walk, the test helpers | Core |
 
 ## How a repository joins
@@ -73,6 +73,11 @@ the requirement.
   Black bars baked into a source file are detected and cropped before scaling.
   No player adds letterboxing or padding, because bars cost tiles and transfer
   like any other picture.
+- **Every console a player serves gets its own cartridge.** Owner's
+  instruction, 2026-10-17: where one player serves consoles that share a
+  design, such as the Master System and the Game Gear, the baker builds a
+  native cartridge for each, and each uses its console fully: its own screen,
+  colours and sound, never the mode the weaker console imposes.
 - **Perceived picture quality comes before frame rate.** When the two compete
   for bytes, slots or cycles, the picture wins.
 - **Sound, the way the console can play it, with no added hardware.** Every
@@ -290,10 +295,12 @@ in as the film plays, and the binding constraint is the bytes the console
 accepts in a field rather than the size of a cartridge. It decodes, scores,
 verifies films and measures captures through `fmv-core-python`.
 
-Gaps against "What every player does" (as of 2026-10-16):
+Gaps against "What every player does" (as of 2026-10-17):
 
 - `--dither` is on by default here and off on the Neo Geo. The default waits
-  on the owner's dither verdict.
+  on the owner's dither verdict, for both targets.
+- The Game Gear cartridge, `--target gg`, has not run on a Game Gear in its
+  own mode, and the regression set bakes the Master System target only.
 
 Differences the hardware forces:
 
