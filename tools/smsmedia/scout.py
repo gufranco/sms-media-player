@@ -172,6 +172,7 @@ def _probe(
         reuse_threshold=settings.reuse,
         upload_ceiling=settings.upload_ceiling,
         dither=settings.dither,
+        system=settings.system,
     )
     sizes = [sum(len(chunk) for chunk in chunks) for chunks in encoded.frames]
     return Probe(start=footage.start, error=encoded.error, per_frame=float(np.mean(sizes)))
@@ -235,6 +236,7 @@ def main(argv: list[str] | None = None) -> int:
         reuse=args.reuse,
         upload_ceiling=args.upload_ceiling,
         dither=args.dither,
+        system=args.target,
     )
     probing = Probing(probe_seconds=args.probe, stride_seconds=args.stride)
     probes = profile(footage, settings, fps=args.fps, denoise=args.denoise, probing=probing)

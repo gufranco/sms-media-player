@@ -103,6 +103,7 @@ def settle_dials(args: argparse.Namespace, *, geometry: bake.Geometry, wanted: f
         reuse=bake.DEFAULT_REUSE if args.reuse == AUTO else float(args.reuse),
         upload_ceiling=args.upload_ceiling,
         dither=args.dither,
+        system=args.target,
     )
     rate_denoise = RATE_SEARCH_DENOISE if args.denoise == AUTO else float(args.denoise)
     fps = resolve_rate(args.fps, footage, settings, denoise=rate_denoise)

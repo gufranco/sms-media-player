@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from smsmedia import rate, tune
+from smsmedia import rate, target, tune
 
 needs_ffmpeg = pytest.mark.ffmpeg
 
@@ -899,3 +899,28 @@ class TestWorkingSetTail:
 
         # Assert
         assert score.working_set_p90 == pytest.approx(0.91)
+
+
+def grey_ramp_window() -> list[list[np.ndarray]]:
+    ramp = np.linspace(0, 255, SMALL.width).astype(np.uint8)
+    frame = np.repeat(np.repeat(ramp[None, :, None], SMALL.height, axis=0), 3, axis=2)
+    return [[frame, frame]]
+
+
+def test_a_game_gear_score_is_measured_on_its_own_colours():
+    # Arrange
+    window = grey_ramp_window()
+    narrow = tune.score_windows(
+        window, settings=tune.EncodeSettings(SMALL, budget=1400, cap=60, dither=0.0)
+    )
+
+    # Act
+    wide = tune.score_windows(
+        window,
+        settings=tune.EncodeSettings(
+            SMALL, budget=1400, cap=60, dither=0.0, system=target.GAME_GEAR
+        ),
+    )
+
+    # Assert
+    assert wide.error < narrow.error / 2

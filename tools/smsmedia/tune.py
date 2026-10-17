@@ -10,7 +10,7 @@ import numpy.typing as npt
 from fmvcore import colour
 from fmvcore import source as bar_analysis
 
-from smsmedia import bake, capture, frames, limits, pattern, stream
+from smsmedia import bake, capture, frames, limits, pattern, stream, target
 
 DEFAULT_CANDIDATES: Final = (0.0, 2.0, 4.0, 8.0)
 DEFAULT_REUSE_CANDIDATES: Final = (0.016, 0.008, 0.004, 0.002, 0.001)
@@ -142,6 +142,7 @@ class EncodeSettings:
     reuse: float = bake.DEFAULT_REUSE
     upload_ceiling: int | None = None
     dither: float = bake.DEFAULT_DITHER
+    system: target.Target = target.DEFAULT
 
 
 def score_windows(
@@ -213,6 +214,7 @@ def _window_cost(
         reuse_threshold=settings.reuse,
         upload_ceiling=settings.upload_ceiling,
         dither=settings.dither,
+        system=settings.system,
     )
     sizes = [sum(len(chunk) for chunk in chunks) for chunks in encoded.frames]
     blurred = 0.0 if wanted is None else replayed_error(encoded, wanted, geometry=settings.geometry)
