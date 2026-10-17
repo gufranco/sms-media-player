@@ -5,12 +5,14 @@ from typing import Final
 
 import numpy as np
 import numpy.typing as npt
+from fmvcore import dither
 
 from smsggmedia import lattice, pattern, smscolor
 
 LLOYD_ROUNDS: Final = 8
 ASSIGN_ROUNDS: Final = 6
 FEWEST_TO_SPLIT: Final = 2
+TILE_PIXELS: Final = pattern.TILE_PX * pattern.TILE_PX
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,24 +119,29 @@ def fit_or_keep(
         msg = f"a palette keep margin must not be negative, got {margin}"
         raise ValueError(msg)
     lab = space.oklab(chroma_weight)
-    cells = _cells_of(frame, ordered_dither, space)
-    columns = frame.shape[1] // pattern.TILE_PX
-    fresh, fresh_error = _quantise(cells, _fit(cells, lab), space, columns=columns, lab=lab)
+    cells = _cells_of(frame, space, ordered_dither)
+    mapping = _Mapping(
+        pixels=cells.reshape(cells.shape[0], -1),
+        lab=lab,
+        space=space,
+        columns=frame.shape[1] // pattern.TILE_PX,
+        strength=ordered_dither,
+    )
+    fresh, fresh_error = mapping.quantise(_fit(cells, lab))
     if previous is None:
         return fresh
     table = previous.reshape(smscolor.PALETTE_COUNT, smscolor.PALETTE_ENTRIES)
-    kept, kept_error = _quantise(cells, table, space, columns=columns, lab=lab)
+    kept, kept_error = mapping.quantise(table)
     return kept if kept_error <= fresh_error * (1.0 + margin) else fresh
 
 
 def _cells_of(
-    frame: npt.NDArray[np.uint8], ordered_dither: float, space: lattice.Lattice
+    frame: npt.NDArray[np.uint8], space: lattice.Lattice, strength: float
 ) -> npt.NDArray[np.unsignedinteger]:
     if frame.ndim != smscolor.IMAGE_RANK or frame.shape[2] != smscolor.RGB_CHANNELS:
         msg = f"expected a trailing RGB axis, got shape {frame.shape}"
         raise ValueError(msg)
-    colours = space.pack(space.quantise(frame, dither=ordered_dither))
-    return pattern.tile_frame(colours)
+    return pattern.tile_frame(space.pack(space.quantise(frame, dither=strength)))
 
 
 def _fit(
@@ -153,35 +160,37 @@ def _fit(
     return table
 
 
-def _quantise(
-    cells: npt.NDArray[np.unsignedinteger],
-    table: npt.NDArray[np.uint16],
-    space: lattice.Lattice,
-    *,
-    columns: int,
-    lab: npt.NDArray[np.float32],
-) -> tuple[FramePalettes, float]:
-    flat = cells.reshape(cells.shape[0], -1)
-    best_index = np.zeros((smscolor.PALETTE_COUNT, *flat.shape), dtype=np.uint8)
-    best_error = np.zeros((smscolor.PALETTE_COUNT, cells.shape[0]), dtype=np.float64)
-    for index in range(smscolor.PALETTE_COUNT):
-        distance = _squared_matrix(lab[flat], lab[table[index]])
-        nearest = np.argmin(distance, axis=2)
-        best_index[index] = nearest.astype(np.uint8)
-        best_error[index] = np.take_along_axis(distance, nearest[..., None], axis=2)[..., 0].sum(
-            axis=1
+@dataclass(frozen=True, slots=True)
+class _Mapping:
+    pixels: npt.NDArray[np.unsignedinteger]
+    lab: npt.NDArray[np.float32]
+    space: lattice.Lattice
+    columns: int
+    strength: float
+
+    def quantise(self, table: npt.NDArray[np.uint16]) -> tuple[FramePalettes, float]:
+        count = self.pixels.shape[0]
+        best_index = np.zeros((smscolor.PALETTE_COUNT, count, TILE_PIXELS), dtype=np.uint8)
+        best_error = np.zeros((smscolor.PALETTE_COUNT, count), dtype=np.float64)
+        threshold = dither.bayer_thresholds(pattern.TILE_PX).reshape(-1)
+        for index in range(smscolor.PALETTE_COUNT):
+            entries = self.lab[table[index]]
+            distance = _squared_matrix(self.lab[self.pixels], entries)
+            spacing = _squared_matrix(entries, entries)
+            nearest, runner, share = dither.two_nearest(distance, spacing, self.strength)
+            best_index[index] = dither.mix(nearest, runner, share, threshold)
+            best_error[index] = distance.min(axis=2).sum(axis=1)
+        choice = np.argmin(best_error, axis=0).astype(np.uint8)
+        indices = np.take_along_axis(best_index, choice[None, :, None], axis=0)[0]
+        fitted = FramePalettes(
+            cram=table.reshape(-1).astype(np.uint16),
+            choice=choice,
+            indices=indices.reshape(count, pattern.TILE_PX, pattern.TILE_PX),
+            rows=count // self.columns,
+            columns=self.columns,
+            lattice=self.space,
         )
-    choice = np.argmin(best_error, axis=0).astype(np.uint8)
-    indices = np.take_along_axis(best_index, choice[None, :, None], axis=0)[0]
-    fitted = FramePalettes(
-        cram=table.reshape(-1).astype(np.uint16),
-        choice=choice,
-        indices=indices.reshape(cells.shape).astype(np.uint8),
-        rows=cells.shape[0] // columns,
-        columns=columns,
-        lattice=space,
-    )
-    return fitted, float(best_error.min(axis=0).sum())
+        return fitted, float(best_error.min(axis=0).sum())
 
 
 def _squared(

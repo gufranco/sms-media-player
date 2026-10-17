@@ -4,9 +4,9 @@ from fmvcore import colour
 
 from smsggmedia import bake, capture, limits, stream
 
-GOLDEN_STREAM_BYTES = 51303
+GOLDEN_STREAM_BYTES = 52041
 GOLDEN_BANKS = 4
-GOLDEN_BLURRED_ERROR = 0.04230
+GOLDEN_BLURRED_ERROR = 0.04276
 GOLDEN_TOLERANCE = 0.005
 GEOMETRY = bake.Geometry(columns=32, rows=24, top_row=0)
 SEED = 2026

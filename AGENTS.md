@@ -108,8 +108,11 @@ CRT returns: no composite model and no `--gamut-dither`.
   on both sides, against one fixed reference, and by a rendered sheet looked
   at beside the source. Both must agree.
 - The quantiser adds a tile-aligned 4x4 Bayer threshold before rounding,
-  full strength by default through `--dither`. The dial search runs with the
-  same strength as the bake.
+  full strength by default through `--dither`, then draws each pixel through
+  its cell's palette with the family's two-entry mix, `fmvcore.dither`. One
+  path serves both consoles: on the Master System the mix almost never
+  fires, on the Game Gear it is what carries the dither past the 32-entry
+  palettes. The dial search runs with the same strength as the bake.
 - Fresh tiles merge only within their palette. A merged cell draws its
   stand-in through its own palette, so a tile taken from a cell of the other
   palette draws in the wrong colours. `placement.merge_by_palette` splits the

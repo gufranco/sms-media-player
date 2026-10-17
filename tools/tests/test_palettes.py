@@ -223,6 +223,51 @@ class TestOrderedDither:
         assert np.unique(result.indices).size == 1
 
 
+def more_colours_than_entries() -> np.ndarray:
+    step = lattice.BYTE_MAX // lattice.GAME_GEAR.top
+    colours = [
+        (step * red, step * green, 0) for red in range(0, 16, 2) for green in range(0, 16, 3)
+    ]
+    cells = [np.full((8, 8, 3), colour, dtype=np.uint8) for colour in colours]
+    return np.concatenate(cells, axis=1)
+
+
+def cells_drawn_in_two_entries(fitted: palettes.FramePalettes) -> int:
+    return sum(np.unique(cell).size == 2 for cell in fitted.indices)
+
+
+class TestDitherAgainstThePalette:
+    def test_a_game_gear_colour_left_out_of_the_palettes_is_mixed_from_two_entries(self):
+        # Arrange
+        frame = more_colours_than_entries()
+
+        # Act
+        fitted = fresh_fit(frame, ordered_dither=1.0, space=lattice.GAME_GEAR)
+
+        # Assert
+        assert cells_drawn_in_two_entries(fitted) > 0
+
+    def test_without_dither_every_flat_cell_takes_its_nearest_entry(self):
+        # Arrange
+        frame = more_colours_than_entries()
+
+        # Act
+        fitted = fresh_fit(frame, ordered_dither=smscolor.NO_DITHER, space=lattice.GAME_GEAR)
+
+        # Assert
+        assert cells_drawn_in_two_entries(fitted) == 0
+
+    def test_a_colour_the_palette_holds_is_never_mixed(self):
+        # Arrange
+        frame = np.full((8, 8, 3), lattice.BYTE_MAX, dtype=np.uint8)
+
+        # Act
+        fitted = fresh_fit(frame, ordered_dither=1.0, space=lattice.GAME_GEAR)
+
+        # Assert
+        assert np.unique(fitted.indices).size == 1
+
+
 NUDGE_SEED = 5
 WHITE = (255, 255, 255)
 

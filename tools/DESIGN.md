@@ -433,6 +433,48 @@ already, and this palette carries a small minority of the cells, so
 reserving the entry moved the error by 0.00% across the frames it was
 measured on.
 
+#### `_Mapping`
+
+Draw every pixel of a cell through its palette, dithered between two
+entries.
+
+A pixel takes its nearest entry, or the runner-up for a share of the
+cell's pixels set by how far along the segment between the two its colour
+projects, through the same `fmvcore.dither` every player of the family
+uses: an 8x8 Bayer field over the tile, so a tile still quantises alike
+wherever it lands. A pair that does not bracket the colour never mixes.
+The colour it starts from is the lattice colour after the 4x4 dither,
+which keeps one path for both consoles.
+
+On the Master System that colour is nearly always an entry already, so
+the picture stays the one the 4x4 dither gives. On the Game Gear the
+lattice step is a sixteenth of a channel, too fine for its dither to
+survive the snap to 32 entries, and this mix is what carries the dither
+to the screen. Blurred error, four seconds a film, before and after:
+
+| Film | Master System | Game Gear |
+|---|---|---|
+| Synthetic | 0.02545 to 0.02517 | 0.03605 to 0.03503 |
+| Dance | 0.04245 to 0.04236 | 0.02983 to 0.02826 |
+| Bird | 0.02097 to 0.02090 | 0.01691 to 0.01491 |
+| Hong Kong | 0.03615 to 0.03613 | 0.02122 to 0.02118 |
+| Sintel, regression window | level at 0.02416 | 0.00948 to 0.00944 |
+| Popeye | 0.04216 to 0.04221 | 0.01923 to 0.01840 |
+
+On the rendered sheet the flat 8x8 plateaus over faces, sky and
+Popeye's red background break into dither. The golden frames, a noisy
+synthetic gradient, moved from 0.04230 to 0.04276 and from 51,303 to
+52,041 bytes, and were blessed again after that measurement.
+
+Three other mixes were measured and dropped. Mixing from the source
+colour scored 0.0175 on the Game Gear but scattered bright sparkles, and
+on the Master System doubled the working-set error, 0.0056 to 0.0120,
+because mixed tiles make worse stand-ins. Pairing the nearest entry with
+the one whose segment passes closest scored no better and looked
+noisier. The earlier share, the nearer radius over the sum of both,
+mixed in runners-up of another hue and lost 3 to 5% on the synthetic
+and Hong Kong films.
+
 #### `_assign`
 
 Send every cell to whichever palette quantises it with less error.
