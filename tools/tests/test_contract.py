@@ -9,7 +9,7 @@ from smsggmedia import console
 
 ROOT = Path(__file__).resolve().parents[2]
 SCREEN_HEADER = ROOT / "include" / "fmv" / "screen.h"
-CONSOLE_HEADER = ROOT / "include" / "fmv" / "console.h"
+TARGET_HEADERS = (ROOT / "src" / "gg" / "fmv_target.h", ROOT / "src" / "sms" / "fmv_target.h")
 PSG_SOURCE = ROOT / "src" / "psg.s"
 MAIN_SOURCE = ROOT / "src" / "main.c"
 SCREEN_SOURCE = ROOT / "src" / "screen.c"
@@ -64,19 +64,32 @@ class TestTheSoundChipIsSilent:
         # Assert
         assert [value for value in PSG_ATTENUATE_ALL if value in text] == list(PSG_ATTENUATE_ALL)
 
-    def test_the_player_silences_it_before_the_screen_comes_up(self):
+    def test_putting_the_console_at_rest_silences_it_before_the_screen_resets(self):
+        # Arrange
+        text = SCREEN_SOURCE.read_text()
+
+        # Act
+        rest = text[text.index("void fmv_screen_rest(void)") :]
+
+        # Assert
+        assert -1 < rest.index("fmv_psg_silence();") < rest.index("fmv_screen_reset();")
+
+    def test_the_player_rests_at_boot_and_after_every_film(self):
         # Arrange
         text = MAIN_SOURCE.read_text()
 
         # Act
-        boot = text[text.index("static void boot(void)") :]
+        player = text[text.index("void main(void)") :]
 
         # Assert
-        assert -1 < boot.index("fmv_psg_silence();") < boot.index("fmv_screen_reset();")
+        assert player.count("fmv_screen_rest();") == 2
+        assert player.index("fmv_screen_rest();", player.index("play_once();")) < player.index(
+            "fmv_screen_fault();"
+        )
 
     def test_nothing_enables_the_line_interrupt(self):
         # Arrange
-        sources = sorted((ROOT / "src").glob("*.c"))
+        sources = sorted((ROOT / "src").rglob("*.c"))
 
         # Act
         offenders = [
@@ -297,7 +310,7 @@ class TestTheEndOfAFilm:
 
     def test_the_fault_colour_is_a_red_the_console_can_show(self):
         # Arrange
-        text = CONSOLE_HEADER.read_text()
+        text = "".join(header.read_text() for header in TARGET_HEADERS)
 
         # Act
         reds = re.findall(r"^#define\s+FMV_COLOUR_RED\s+(0x[0-9A-Fa-f]+)u", text, re.MULTILINE)

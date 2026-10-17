@@ -41,7 +41,8 @@ class TestWrite:
         assert copied == sorted(
             [
                 *(f"src/{name}" for name in bundle.LIBRARY_SOURCES),
-                f"src/{bundle.TARGET_INCLUDE}",
+                "src/target.inc",
+                "src/fmv_target.h",
                 *(f"include/fmv/{name}" for name in bundle.LIBRARY_HEADERS),
                 "movie/movie.h",
                 "movie/assets/movie.bin",
@@ -123,7 +124,7 @@ class TestTheTarget:
         )
 
         # Assert
-        included = (where / "src" / bundle.TARGET_INCLUDE).read_text()
+        included = (where / "src" / "target.inc").read_text()
         assert ((where / bundle.TARGET_MAKEFILE).read_text(), "CLOSE_BYTES = 64" in included) == (
             "FMV_TARGET := gg\n",
             True,

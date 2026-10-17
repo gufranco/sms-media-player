@@ -20,6 +20,8 @@
       "reuse": 0.001,
       "max_error": 0.019,
       "max_banks_per_second": 6.5,
+      "gg_max_error": 0.0068,
+      "gg_max_banks_per_second": 6.5,
       "bytes": 60444,
       "sha256": "8240cc3521efc5b101570947c91e05726f4cf3c0ec693ed70d1a74d57f0888d2"
     },
@@ -45,7 +47,9 @@
       "denoise": 8.0,
       "reuse": 0.002,
       "max_error": 0.031,
-      "max_banks_per_second": 4.0
+      "max_banks_per_second": 4.0,
+      "gg_max_error": 0.0033,
+      "gg_max_banks_per_second": 5.5
     },
     {
       "key": "popeye-for-president",
@@ -69,7 +73,9 @@
       "denoise": 8.0,
       "reuse": 0.002,
       "max_error": 0.0218,
-      "max_banks_per_second": 3.5
+      "max_banks_per_second": 3.5,
+      "gg_max_error": 0.0017,
+      "gg_max_banks_per_second": 5.5
     },
     {
       "key": "hong-kong-evening",
@@ -93,7 +99,9 @@
       "denoise": 8.0,
       "reuse": 0.004,
       "max_error": 0.0376,
-      "max_banks_per_second": 6.0
+      "max_banks_per_second": 6.0,
+      "gg_max_error": 0.0042,
+      "gg_max_banks_per_second": 6.5
     },
     {
       "key": "colourful-bird",
@@ -117,7 +125,9 @@
       "denoise": 2.0,
       "reuse": 0.002,
       "max_error": 0.0217,
-      "max_banks_per_second": 6.0
+      "max_banks_per_second": 6.0,
+      "gg_max_error": 0.0024,
+      "gg_max_banks_per_second": 6.5
     },
     {
       "key": "bhagoria-dance",
@@ -141,7 +151,9 @@
       "denoise": 0.0,
       "reuse": 0.001,
       "max_error": 0.0301,
-      "max_banks_per_second": 6.0
+      "max_banks_per_second": 6.0,
+      "gg_max_error": 0.0062,
+      "gg_max_banks_per_second": 6.5
     }
   ],
   "measured": "Budgets measured on 2026-10-14 at 256x192 with the defaults: budget 1800, cap 200, full-strength ordered dither, palette carry-over, and the dials each clip's search settled on, then rounded up by 30%. Displayed error is mean squared Oklab over every cell of every frame against the source; banks per second is the packed stream rate. Re-measure and restate rather than relaxing a number that starts failing."

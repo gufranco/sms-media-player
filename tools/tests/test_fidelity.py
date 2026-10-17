@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from smsggmedia import fidelity, palettes, pattern, smscolor, workingset
+from smsggmedia import fidelity, lattice, palettes, pattern, workingset
 
 CELL = pattern.TILE_PX
 
@@ -82,7 +82,7 @@ def two_cells(shown: list[int]) -> dict[str, object]:
     )
     return {
         "fitted": fitted,
-        "lab": smscolor.oklab_palette(),
+        "lab": lattice.MASTER_SYSTEM.oklab(),
         "slots": np.array([1, 4], dtype=np.int32),
         "data": np.zeros((2, pattern.PATTERN_BYTES), dtype=np.uint8),
         "shown_slot": np.array(shown, dtype=np.int32),

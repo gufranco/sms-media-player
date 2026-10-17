@@ -34,19 +34,31 @@ def decode(
         msg = f"no such source file: {path}"
         raise FileNotFoundError(msg)
 
+    stages = _stages(width=width, height=height, fps=fps, scaler=scaler, denoise=denoise, bars=bars)
+    command = ffmpeg.frame_command(path, start=start, duration=duration, stages=stages)
+    yield from ffmpeg.stream_frames(
+        command, path=path, shape=(height, width, CHANNELS), max_frames=MAX_FRAMES
+    )
+
+
+def _stages(
+    *,
+    width: int,
+    height: int,
+    fps: float,
+    scaler: str,
+    denoise: float,
+    bars: source_mod.Bars | None,
+) -> list[str]:
     denoising = [f"hqdn3d={denoise}:{denoise}:{denoise * 2}:{denoise * 2}"] if denoise > 0.0 else []
     cropping = ["crop={}:{}:{}:{}".format(*bars)] if bars is not None else []
-    stages = [
+    return [
         *cropping,
         f"fps={fps}",
         *denoising,
         f"scale={width}:{height}:flags={scaler}:force_original_aspect_ratio=increase",
         f"crop={width}:{height}",
     ]
-    command = ffmpeg.frame_command(path, start=start, duration=duration, stages=stages)
-    yield from ffmpeg.stream_frames(
-        command, path=path, shape=(height, width, CHANNELS), max_frames=MAX_FRAMES
-    )
 
 
 def _check_request(*, width: int, height: int, fps: float, scaler: str) -> None:

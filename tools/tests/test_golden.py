@@ -1,16 +1,36 @@
+from dataclasses import dataclass
+
 import numpy as np
 import pytest
 from fmvcore import colour
 
-from smsggmedia import bake, capture, limits, stream
+from smsggmedia import bake, capture, limits, stream, target
 
-GOLDEN_STREAM_BYTES = 52041
-GOLDEN_BANKS = 4
-GOLDEN_BLURRED_ERROR = 0.04276
 GOLDEN_TOLERANCE = 0.005
 GEOMETRY = bake.Geometry(columns=32, rows=24, top_row=0)
 SEED = 2026
 FRAME_COUNT = 12
+
+
+@dataclass(frozen=True, slots=True)
+class Golden:
+    system: target.Target
+    geometry: bake.Geometry
+    stream_bytes: int
+    banks: int
+    blurred_error: float
+
+
+GOLDENS = (
+    Golden(target.MASTER_SYSTEM, GEOMETRY, 52041, 4, 0.04276),
+    Golden(
+        target.GAME_GEAR,
+        bake.Geometry(columns=20, rows=18, top_row=3, left_column=6),
+        80501,
+        6,
+        0.02383,
+    ),
+)
 
 
 def golden_frames() -> list[np.ndarray]:
@@ -28,32 +48,41 @@ def golden_frames() -> list[np.ndarray]:
     return frames
 
 
-def baked_fields(frames: list[np.ndarray]) -> list[list[bytes]]:
+def measured(golden: Golden) -> tuple[int, int, int, float]:
+    geometry = golden.geometry
+    frames = [frame[: geometry.height, : geometry.width] for frame in golden_frames()]
     encoded = bake.encode_frames(
-        frames, geometry=GEOMETRY, budget=limits.DEFAULT_BUDGET, cap=limits.DEFAULT_CAP
+        frames,
+        geometry=geometry,
+        budget=limits.DEFAULT_BUDGET,
+        cap=limits.DEFAULT_CAP,
+        system=golden.system,
     )
-    return stream.defer_closes(encoded.frames)
-
-
-def measured(frames: list[np.ndarray]) -> tuple[int, int, int, float]:
-    fields = baked_fields(frames)
+    fields = stream.defer_closes(encoded.frames)
     blob, banks = stream.pack_banks(fields, bank_size=limits.BANK_BYTES)
     played = capture.replay_fields(blob)
-    shown = capture.picture_frames(played, top=0, height=GEOMETRY.height, width=GEOMETRY.width)
+    shown = capture.picture_frames(
+        played,
+        top=geometry.top_row * 8,
+        height=geometry.height,
+        width=geometry.width,
+        left=geometry.left_column * 8,
+    )
     error = colour.blurred_error(shown[: len(frames)], np.stack(frames))
     size = sum(len(chunk) for frame in fields for chunk in frame)
     return size, banks, len(played.completes), error
 
 
+@pytest.mark.parametrize("golden", GOLDENS, ids=[golden.system.name for golden in GOLDENS])
 class TestGoldenStream:
-    def test_the_encoder_output_matches_the_blessed_stream(self):
+    def test_the_encoder_output_matches_the_blessed_stream(self, golden):
         # Arrange
-        frames = golden_frames()
+        expected = (golden.banks, FRAME_COUNT)
 
         # Act
-        size, banks, completed, error = measured(frames)
+        size, banks, completed, error = measured(golden)
 
         # Assert
-        assert (banks, completed) == (GOLDEN_BANKS, FRAME_COUNT)
-        assert size == pytest.approx(GOLDEN_STREAM_BYTES, rel=GOLDEN_TOLERANCE)
-        assert error == pytest.approx(GOLDEN_BLURRED_ERROR, rel=GOLDEN_TOLERANCE)
+        assert (banks, completed) == expected
+        assert size == pytest.approx(golden.stream_bytes, rel=GOLDEN_TOLERANCE)
+        assert error == pytest.approx(golden.blurred_error, rel=GOLDEN_TOLERANCE)

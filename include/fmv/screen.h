@@ -17,5 +17,6 @@
 void fmv_screen_reset(void);
 void fmv_screen_table(u8 value);
 void fmv_screen_fault(void);
+void fmv_screen_rest(void);
 
 #endif

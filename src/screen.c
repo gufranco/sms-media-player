@@ -2,6 +2,7 @@
 
 #include "SMSlib.h"
 #include "fmv/console.h"
+#include "fmv/psg.h"
 
 void fmv_screen_reset(void)
 {
@@ -28,4 +29,10 @@ void fmv_screen_reset(void)
 void fmv_screen_fault(void)
 {
     fmv_set_sprite_colour(0u, FMV_COLOUR_RED);
+}
+
+void fmv_screen_rest(void)
+{
+    fmv_psg_silence();
+    fmv_screen_reset();
 }

@@ -166,11 +166,7 @@ class Encoder:
             placed.cell_slot, fitted, self.committed, self.committed_slot
         )
         uploads = [*placed.uploads, *self._refresh(next_slot, placed.uploads, keyframe=keyframe)]
-        writes = [
-            *tablewrites.merge_uploads(uploads),
-            *_entry_writes(shown, self._known_back(), geometry=self.geometry, base=back_base),
-            _closing(fitted, back_base, self.system),
-        ]
+        writes = self._frame_writes(uploads, shown, fitted, back_base)
         error, working_set = self._measure(frame, fitted, placed.cell_slot, features)
         self.committed_slot = next_slot
         stats = (
@@ -182,6 +178,19 @@ class Encoder:
             placed.merged,
         )
         return writes, shown, stats
+
+    def _frame_writes(
+        self,
+        uploads: list[tuple[int, bytes]],
+        shown: npt.NDArray[np.int64],
+        fitted: palettes.FramePalettes,
+        back_base: int,
+    ) -> list[stream.Write]:
+        return [
+            *tablewrites.merge_uploads(uploads),
+            *_entry_writes(shown, self._known_back(), geometry=self.geometry, base=back_base),
+            _closing(fitted, back_base, self.system),
+        ]
 
     def _refresh(
         self,
@@ -218,7 +227,7 @@ class Encoder:
             committed_slot=self.committed_slot,
             cap=self.cap,
             chroma_weight=self.chroma_weight,
-            reuse_threshold=self.reuse_threshold,
+            reuse_threshold=self.reuse_threshold * lattice.for_target(self.system).reuse_scale,
             upload_ceiling=self.upload_ceiling,
         )
 
@@ -285,9 +294,7 @@ def encode_frames(
     dither: float = DEFAULT_DITHER,
     system: target.Target = target.DEFAULT,
 ) -> Encoded:
-    if not frames:
-        msg = "a movie needs at least one frame"
-        raise ValueError(msg)
+    _require_frames(frames)
     encoder = Encoder(
         geometry=geometry,
         budget=budget,
@@ -303,6 +310,12 @@ def encode_frames(
     for frame in frames:
         encoder.add(frame)
     return encoder.result()
+
+
+def _require_frames(frames: list[npt.NDArray[np.uint8]]) -> None:
+    if not frames:
+        msg = "a movie needs at least one frame"
+        raise ValueError(msg)
 
 
 def _commit(

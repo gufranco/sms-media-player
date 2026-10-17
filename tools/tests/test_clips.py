@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import json
 import os
 import subprocess
 
@@ -19,6 +20,37 @@ class TestTheManifestIsWellFormed:
 
         # Assert
         assert len(manifest) > 0
+
+    def test_an_entry_missing_a_field_is_refused_by_name(self, tmp_path):
+        # Arrange
+        entry = dataclasses.asdict(clips.load()[0])
+        del entry["max_error"]
+        manifest = tmp_path / "clips.manifest.json"
+        manifest.write_text(json.dumps({"clips": [entry]}))
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            clips.load(manifest)
+
+        # Assert
+        assert str(refused.value) == (
+            f"clips.manifest.json: clip {entry['key']} lacks max_error and carries unknown nothing"
+        )
+
+    def test_an_entry_with_an_unknown_field_is_refused_by_name(self, tmp_path):
+        # Arrange
+        entry = {**dataclasses.asdict(clips.load()[0]), "maxerror": 0.1}
+        manifest = tmp_path / "clips.manifest.json"
+        manifest.write_text(json.dumps({"clips": [entry]}))
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            clips.load(manifest)
+
+        # Assert
+        assert str(refused.value) == (
+            f"clips.manifest.json: clip {entry['key']} lacks nothing and carries unknown maxerror"
+        )
 
     def test_every_key_is_unique(self):
         # Arrange

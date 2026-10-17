@@ -264,3 +264,79 @@ class TestHoldLimits:
         assert str(refused.value) == (
             f"the player counts the hold in 16 bits, so {fields} fields cannot be held"
         )
+
+
+class TestARefusedPublish:
+    def test_a_header_the_player_cannot_read_leaves_no_earlier_film(self, tmp_path):
+        # Arrange
+        assets = tmp_path / "a"
+        generated = tmp_path / "g"
+        output.publish(
+            assets=assets,
+            generated=generated,
+            blob=b"old",
+            banks=1,
+            frame_count=1,
+            field_count=9,
+            hold_fields=6,
+        )
+        keys = tuple(output.Key(bank=0, offset=0, frame=0, field=0) for _ in range(255))
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            output.publish(
+                assets=assets,
+                generated=generated,
+                blob=b"new",
+                banks=1,
+                frame_count=1,
+                field_count=9,
+                hold_fields=6,
+                keys=keys,
+            )
+
+        # Assert
+        assert str(refused.value) == (
+            "the player indexes seek points in one byte, so 255 is more than 254"
+        )
+        assert sorted(path.name for path in tmp_path.rglob("*")) == ["a", "g"]
+
+
+class TestFrameLimits:
+    @pytest.mark.parametrize("frames", [0, 0x10000])
+    def test_a_frame_count_the_player_cannot_count_is_refused(self, tmp_path, frames):
+        # Arrange
+        path = tmp_path / "movie.h"
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            output.write_header(
+                path,
+                banks=1,
+                frame_count=frames,
+                field_count=9,
+                hold_fields=6,
+                first_bank_symbol="bank",
+            )
+
+        # Assert
+        assert str(refused.value) == (
+            f"the player counts frames in 16 bits, so a film of {frames} cannot play"
+        )
+
+    def test_the_largest_count_the_player_holds_is_written(self, tmp_path):
+        # Arrange
+        path = tmp_path / "movie.h"
+
+        # Act
+        output.write_header(
+            path,
+            banks=1,
+            frame_count=0xFFFF,
+            field_count=9,
+            hold_fields=6,
+            first_bank_symbol="bank",
+        )
+
+        # Assert
+        assert "#define MOVIE_FRAMES 65535u\n" in path.read_text()

@@ -6,7 +6,6 @@ import pytest
 from smsggmedia import limits, psgpan, psgsound, stream, target
 
 RATE = 22050
-FIELD_HZ = 59.9227
 CENTRE = (True, True)
 
 
@@ -155,6 +154,20 @@ class TestRouting:
         # Assert
         written = {field: value for field, value in enumerate(values) if value is not None}
         assert written == {0: 0xFF, 60: 0xFF, 120: 0xFF}
+
+    def test_a_seek_point_writes_the_routing_again(self):
+        # Arrange
+        melody = tone(440.0, 1.2)
+        writes = psgsound.synthesize(melody, rate=RATE, fields=70)
+
+        # Act
+        values = psgpan.pans(
+            stereo(melody, melody), rate=RATE, writes=writes, refresh_at=frozenset({30})
+        )
+
+        # Assert
+        written = {field: value for field, value in enumerate(values) if value is not None}
+        assert written == {0: 0xFF, 30: 0xFF, 60: 0xFF}
 
     def test_a_move_from_left_to_right_writes_once_at_the_change(self):
         # Arrange

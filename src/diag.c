@@ -1,5 +1,6 @@
 #include "fmv/diag.h"
 
+#include "fmv/assert.h"
 #include "fmv/budget.h"
 #include "fmv/glyph.h"
 #include "fmv/osd.h"
@@ -43,6 +44,8 @@ static void diag_four(u8 at, u16 value)
 {
     const u16 shown = value > DIAG_MAX_FOUR ? DIAG_MAX_FOUR : value;
 
+    FMV_ASSERT(at + 3u < DIAG_ROWS * DIAG_ROW_CELLS);
+    FMV_ASSERT(shown <= DIAG_MAX_FOUR);
     diag_cells[at] = (u8)(shown / DIAG_THOUSAND);
     diag_cells[at + 1u] = (u8)(shown / DIAG_HUNDRED % FMV_GLYPH_TENS);
     diag_cells[at + 2u] = (u8)(shown / FMV_GLYPH_TENS % FMV_GLYPH_TENS);
@@ -72,6 +75,9 @@ static void diag_fill_bottom(const fmv_diagnostics *seen)
 
 static void diag_upload(u8 tile)
 {
+    FMV_ASSERT(tile < DIAG_TILES);
+    FMV_ASSERT(tile * 2u + 1u < DIAG_ROWS * DIAG_ROW_CELLS);
+
     fmv_glyph_text(diag_tile, diag_cells[tile * 2u], diag_cells[tile * 2u + 1u]);
     fmv_glyph_upload(diag_tiles[tile], diag_tile);
 }
@@ -101,6 +107,9 @@ static void diag_place(void)
 
 static void diag_run(u8 step, const fmv_diagnostics *seen)
 {
+    FMV_ASSERT(step < DIAG_STEP_DONE);
+    FMV_ASSERT(seen != 0);
+
     switch (step) {
     case DIAG_STEP_INKS:
         fmv_osd_inks();
@@ -145,6 +154,8 @@ void fmv_diag_work(const fmv_diagnostics *seen)
 {
     u8 count;
 
+    FMV_ASSERT(seen != 0);
+    FMV_ASSERT(diag_next <= DIAG_STEP_DONE);
     for (count = 0u; count < DIAG_STEP_DONE && diag_next < DIAG_STEP_DONE; count++) {
         if (fmv_budget_lines() < diag_lines(diag_next)) {
             return;

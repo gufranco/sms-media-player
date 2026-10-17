@@ -32,13 +32,9 @@ def write_header(
     first_bank_symbol: str,
     keys: tuple[Key, ...] = (Key(bank=0, offset=0, frame=0, field=0),),
 ) -> None:
-    _check_keys(keys)
-    if field_count < 1:
-        msg = "a film needs at least one field"
-        raise ValueError(msg)
-    if not 1 <= hold_fields <= MAX_HOLD_FIELDS:
-        msg = f"the player counts the hold in 16 bits, so {hold_fields} fields cannot be held"
-        raise ValueError(msg)
+    check_header(
+        frame_count=frame_count, field_count=field_count, hold_fields=hold_fields, keys=keys
+    )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         "#ifndef FMV_MOVIE_H\n"
@@ -54,6 +50,21 @@ def write_header(
         "\n"
         "#endif\n"
     )
+
+
+def check_header(
+    *, frame_count: int, field_count: int, hold_fields: int, keys: tuple[Key, ...]
+) -> None:
+    _check_keys(keys)
+    if not 1 <= frame_count <= MAX_FRAME_INDEX:
+        msg = f"the player counts frames in 16 bits, so a film of {frame_count} cannot play"
+        raise ValueError(msg)
+    if field_count < 1:
+        msg = "a film needs at least one field"
+        raise ValueError(msg)
+    if not 1 <= hold_fields <= MAX_HOLD_FIELDS:
+        msg = f"the player counts the hold in 16 bits, so {hold_fields} fields cannot be held"
+        raise ValueError(msg)
 
 
 def _check_keys(keys: tuple[Key, ...]) -> None:
@@ -105,6 +116,10 @@ def publish(
     hold_fields: int,
     keys: tuple[Key, ...] = (Key(bank=0, offset=0, frame=0, field=0),),
 ) -> None:
+    clear(assets=assets, generated=generated)
+    check_header(
+        frame_count=frame_count, field_count=field_count, hold_fields=hold_fields, keys=keys
+    )
     assets.mkdir(parents=True, exist_ok=True)
     film = assets / (FILM + STAGED)
     film.write_bytes(blob)
@@ -118,6 +133,5 @@ def publish(
         first_bank_symbol=FIRST_BANK_SYMBOL,
         keys=keys,
     )
-    (assets / FILM).unlink(missing_ok=True)
     header.replace(generated / HEADER)
     film.replace(assets / FILM)

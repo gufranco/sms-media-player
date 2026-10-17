@@ -11,13 +11,13 @@ the baker emitted. The bundle's own guide shows the same few lines.
 
 ## What it does
 
-1. Clears the screen with `fmv_screen_reset`.
+1. Silences the PSG and clears the screen with `fmv_screen_rest`.
 2. Plays the film one chunk per vertical blank until its last frame, and
    stops early on a bad chunk.
-3. Silences the PSG with `fmv_psg_silence`.
-4. Clears the screen again and waits there.
+3. Calls `fmv_screen_rest` again, so the last note stops with the picture,
+   and waits there.
 
-Step 4 is the part that matters. The game gets the machine back after the
+Step 3 is the part that matters. The game gets the machine back after the
 film and keeps running on its own loop.
 
 ## Building it

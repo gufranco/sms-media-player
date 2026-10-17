@@ -88,7 +88,13 @@ def decode(
     return samples if channels == MONO else samples.reshape(-1, channels)
 
 
-def synthesize(samples: npt.NDArray[np.float32], *, rate: int, fields: int) -> list[bytes]:
+def synthesize(
+    samples: npt.NDArray[np.float32],
+    *,
+    rate: int,
+    fields: int,
+    refresh_at: frozenset[int] = frozenset(),
+) -> list[bytes]:
     if fields < 1:
         msg = "a film needs at least one field of sound"
         raise ValueError(msg)
@@ -99,7 +105,7 @@ def synthesize(samples: npt.NDArray[np.float32], *, rate: int, fields: int) -> l
     voices = _voices(spectra, frequencies, levels)
     hiss = (frequencies >= NOISE_LOW_HZ) & (frequencies <= NOISE_HIGH_HZ)
     noise = [_noise(s, hiss, level) for s, level in zip(spectra, levels, strict=True)]
-    return _changes(voices, noise)
+    return _changes(voices, noise, refresh_at)
 
 
 def field_spectrum(wave: npt.NDArray[np.float64], rate: int, field: int) -> Spectrum:
@@ -231,12 +237,18 @@ def _noise(spectrum: Spectrum, hiss: npt.NDArray[np.bool_], level: float) -> int
     return _attenuation(level * share * NOISE_GAIN)
 
 
-def _changes(voices: list[list[Voice]], noise: list[int]) -> list[bytes]:
+def refreshes(field: int, refresh_at: frozenset[int] = frozenset()) -> bool:
+    return field % REFRESH_FIELDS == 0 or field in refresh_at
+
+
+def _changes(
+    voices: list[list[Voice]], noise: list[int], refresh_at: frozenset[int]
+) -> list[bytes]:
     previous: list[Voice | None] = [None] * TONE_CHANNELS
     previous_noise: int | None = None
     out: list[bytes] = []
     for field, (current, hiss) in enumerate(zip(voices, noise, strict=True)):
-        refresh = field % REFRESH_FIELDS == 0
+        refresh = refreshes(field, refresh_at)
         if refresh:
             previous = [None] * TONE_CHANNELS
             previous_noise = None

@@ -14,10 +14,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("listings", nargs="*", type=Path)
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--root", type=Path, default=vdptiming.ROOT)
+    parser.add_argument("--target", choices=sorted(vdptiming.BUILDS), default="sms")
     args = parser.parse_args(argv)
 
-    listings = args.listings or vdptiming.built_listings(args.root)
-    unusable = _unusable(listings, root=args.root)
+    listings = args.listings or vdptiming.built_listings(args.root, args.target)
+    unusable = _unusable(listings, root=args.root, target=args.target)
     if unusable is not None:
         print(unusable, file=sys.stderr)
         return 2
@@ -36,13 +37,13 @@ def main(argv: list[str] | None = None) -> int:
     return _verdict(failed)
 
 
-def _unusable(listings: list[Path], *, root: Path) -> str | None:
+def _unusable(listings: list[Path], *, root: Path, target: str) -> str | None:
     if not listings:
-        return "no listings to check; run `make rom` first"
-    stale = vdptiming.stale_listings(listings, root)
+        return f"no listings to check; run `make rom TARGET={target}` first"
+    stale = vdptiming.stale_listings(listings, root, target)
     if stale:
         names = ", ".join(path.name for path in stale)
-        return f"listings older than their source: {names}; run `make rom` first"
+        return f"listings older than their source: {names}; run `make rom TARGET={target}` first"
     return None
 
 

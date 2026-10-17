@@ -57,6 +57,7 @@ def baked_film(count: int) -> tuple[bytes, list[np.ndarray]]:
 
 
 class TestPreview:
+    @pytest.mark.ffmpeg
     def test_it_writes_a_picture_beside_its_source_for_each_sampled_frame(self, tmp_path):
         # Arrange
         blob, sources = baked_film(6)
@@ -68,6 +69,7 @@ class TestPreview:
         # Assert
         assert png_size(path) == (2 * GEOMETRY.width, preview.PREVIEW_FRAMES * GEOMETRY.height)
 
+    @pytest.mark.ffmpeg
     def test_a_short_film_shows_every_frame_it_has(self, tmp_path):
         # Arrange
         blob, sources = baked_film(2)
@@ -79,6 +81,7 @@ class TestPreview:
         # Assert
         assert png_size(path) == (2 * GEOMETRY.width, 2 * GEOMETRY.height)
 
+    @pytest.mark.ffmpeg
     def test_each_row_shows_the_console_picture_beside_its_source(self, tmp_path):
         # Arrange
         blob, sources = lattice_film(3)
@@ -133,6 +136,7 @@ def video_shape(path: Path) -> tuple[int, int, int]:
 
 
 class TestPreviewVideo:
+    @pytest.mark.ffmpeg
     def test_the_video_holds_one_frame_per_replayed_field(self, tmp_path):
         # Arrange
         blob, _ = baked_film(4)

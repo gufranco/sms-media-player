@@ -5,7 +5,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 
-from smsggmedia import console, limits, pattern, smscolor, stream
+from smsggmedia import console, lattice, limits, pattern, smscolor, stream
 
 VRAM_BYTES: Final = console.VRAM_BYTES
 CRAM_BYTES: Final = console.CRAM_BYTES
@@ -49,6 +49,9 @@ class Machine:
             return self._close(kind, chunk, body)
         if kind == stream.PSG:
             length = chunk[body]
+            if length == 0:
+                msg = f"an empty sound run at byte {pos}, which the player would read as 256 writes"
+                raise ValueError(msg)
             start = body + stream.PSG_HEADER - 1
             self.psg = [*self.psg, *chunk[start : start + length]]
             return start + length
@@ -67,10 +70,9 @@ class Machine:
         return start + size
 
     def palette_rgb(self) -> npt.NDArray[np.uint8]:
-        if self.wide:
-            rgb = smscolor.wide_to_rgb(self.cram)
-        else:
-            rgb = smscolor.colour_to_rgb(self.cram[:CRAM_BYTES])
+        space = lattice.GAME_GEAR if self.wide else lattice.MASTER_SYSTEM
+        size = stream.WIDE_CLOSE_BYTES if self.wide else CRAM_BYTES
+        rgb = space.to_rgb(space.from_cram(self.cram[:size].tobytes()))
         return rgb.reshape(smscolor.PALETTE_COUNT, smscolor.PALETTE_ENTRIES, 3)
 
     @staticmethod

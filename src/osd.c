@@ -1,5 +1,6 @@
 #include "fmv/osd.h"
 
+#include "fmv/assert.h"
 #include "fmv/budget.h"
 #include "fmv/console.h"
 #include "fmv/glyph.h"
@@ -32,7 +33,9 @@
 #define OSD_BAR_X          96u
 #define OSD_STATE_X        96u
 #define OSD_INK_ENTRY      30u
-#define OSD_FIELD_HZ_MILLI 59923ul
+#define OSD_CLOCK_HZ       3579545ul
+#define OSD_FIELD_CYCLES   (262ul * 228ul)
+#define OSD_FIELD_HZ_MILLI ((OSD_CLOCK_HZ * OSD_MILLI + OSD_FIELD_CYCLES / 2ul) / OSD_FIELD_CYCLES)
 #define OSD_INK_LINES      10u
 #define OSD_CLOCK_LINES    98u
 #define OSD_TEXT_LINES     49u
@@ -80,6 +83,8 @@ static void osd_compose_bar(u8 filled)
     const u8 ink = (u8)(0xFFu << (OSD_SPRITE_PIXELS - filled));
     u8 row;
 
+    FMV_ASSERT(filled <= OSD_SPRITE_PIXELS);
+    FMV_ASSERT(osd_fill <= OSD_BAR_PIXELS);
     for (row = 0u; row < OSD_TILE_ROWS; row++) {
         const bool band = row >= OSD_BAR_TOP && row <= OSD_BAR_BOTTOM;
         const bool track = row >= OSD_TRACK_TOP && row <= OSD_TRACK_BOTTOM;
@@ -96,6 +101,8 @@ static void osd_put_clock(u8 at, u32 fields, u32 bias)
     const u8 shown = (u8)(clamped / OSD_SECONDS);
     const u8 rest = (u8)(clamped % OSD_SECONDS);
 
+    FMV_ASSERT(at + 4u < OSD_CELLS);
+    FMV_ASSERT(shown <= OSD_MAX_MINUTES);
     osd_cells[at] = (u8)(shown / FMV_GLYPH_TENS);
     osd_cells[at + 1u] = (u8)(shown % FMV_GLYPH_TENS);
     osd_cells[at + 2u] = FMV_GLYPH_COLON;
@@ -112,6 +119,9 @@ static void osd_put_total(const fmv_position *where)
 
 static void osd_upload_text(u8 tile)
 {
+    FMV_ASSERT(tile < OSD_TEXT_TILES);
+    FMV_ASSERT(tile * 2u + 1u <= OSD_CELLS);
+
     fmv_glyph_text(osd_tile, osd_cells[tile * 2u], osd_cells[tile * 2u + 1u]);
     fmv_glyph_upload((u8)(OSD_FIRST_TILE + tile), osd_tile);
 }
@@ -211,6 +221,9 @@ static u8 osd_text_tile(u8 step)
 
 static void osd_run(u8 step, const fmv_osd_view *view)
 {
+    FMV_ASSERT(step < OSD_STEP_DONE);
+    FMV_ASSERT(view != 0);
+
     switch (step) {
     case OSD_STEP_INKS:
         fmv_osd_inks();
@@ -291,6 +304,8 @@ void fmv_osd_work(const fmv_osd_view *view)
 {
     u8 count;
 
+    FMV_ASSERT(view != 0);
+    FMV_ASSERT(osd_next <= OSD_STEP_DONE);
     for (count = 0u; count < OSD_STEP_DONE && osd_next < OSD_STEP_DONE; count++) {
         if (fmv_budget_lines() < osd_lines[osd_next]) {
             return;

@@ -5,6 +5,7 @@ import json
 import logging
 import subprocess
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
@@ -145,32 +146,18 @@ def _picture_report(baked: Baked) -> dict[str, float | list[int] | None]:
 
 
 def bake_film(args: argparse.Namespace, *, geometry: bake.Geometry, settled: dials.Dials) -> Baked:
-    sound = not args.silent and ffmpeg.has_audio(args.source)
+    sound = dials.has_sound(args)
     decoded = captions.caption(
         _decode(args, geometry=geometry, settled=settled),
         args.cues,
         start=args.start,
         fps=settled.fps,
     )
-    encoder = bake.Encoder(
-        geometry=geometry,
-        budget=args.budget - (limits.sound_reserve(args.target) if sound else 0),
-        cap=args.cap,
-        reuse_threshold=settled.reuse,
-        upload_ceiling=args.upload_ceiling,
-        dither=args.dither,
-        system=args.target,
-    )
-    timed = schedule.by_clock(
-        decoded,
-        fps=settled.fps,
-        slot=rate.fields_for(settled.fps),
-        encoder=encoder,
-        pace=not args.no_pace,
-        keyframe_every=args.seek_every,
-    )
+    encoder = _picture_encoder(args, geometry=geometry, settled=settled)
+    timed = _scheduled(args, decoded, encoder=encoder, settled=settled)
     fields = stream.defer_closes(timed.frames)
-    writes, pans = _sound(args, fields) if sound else ([], [])
+    keys = frozenset(key_fields(fields, timed.keys))
+    writes, pans = _sound(args, fields, refresh_at=keys) if sound else ([], [])
     return Baked(
         encoded=encoder.result(),
         fields=stream.add_sound(fields, writes, pans),
@@ -187,8 +174,39 @@ def bake_film(args: argparse.Namespace, *, geometry: bake.Geometry, settled: dia
     )
 
 
+def _scheduled(
+    args: argparse.Namespace,
+    decoded: list[npt.NDArray[np.uint8]],
+    *,
+    encoder: bake.Encoder,
+    settled: dials.Dials,
+) -> schedule.Schedule:
+    return schedule.by_clock(
+        decoded,
+        fps=settled.fps,
+        slot=rate.fields_for(settled.fps),
+        encoder=encoder,
+        pace=not args.no_pace,
+        keyframe_every=args.seek_every,
+    )
+
+
+def _picture_encoder(
+    args: argparse.Namespace, *, geometry: bake.Geometry, settled: dials.Dials
+) -> bake.Encoder:
+    return bake.Encoder(
+        geometry=geometry,
+        budget=dials.picture_budget(args),
+        cap=args.cap,
+        reuse_threshold=settled.reuse,
+        upload_ceiling=args.upload_ceiling,
+        dither=args.dither,
+        system=args.target,
+    )
+
+
 def _sound(
-    args: argparse.Namespace, fields: list[list[bytes]]
+    args: argparse.Namespace, fields: list[list[bytes]], *, refresh_at: frozenset[int]
 ) -> tuple[list[bytes], list[int | None]]:
     count = sum(len(chunks) for chunks in fields)
     channels = psgpan.STEREO if args.target.stereo else psgsound.MONO
@@ -196,10 +214,14 @@ def _sound(
         args.source, start=args.start, duration=args.duration, channels=channels
     )
     mixed = samples if samples.ndim == 1 else samples.mean(axis=1)
-    writes = psgsound.synthesize(mixed, rate=psgsound.DECODE_RATE, fields=count)
+    writes = psgsound.synthesize(
+        mixed, rate=psgsound.DECODE_RATE, fields=count, refresh_at=refresh_at
+    )
     if samples.ndim == 1:
         return writes, []
-    return writes, psgpan.pans(samples, rate=psgsound.DECODE_RATE, writes=writes)
+    return writes, psgpan.pans(
+        samples, rate=psgsound.DECODE_RATE, writes=writes, refresh_at=refresh_at
+    )
 
 
 def _decode(
@@ -233,7 +255,19 @@ def window_seconds(*, start: float, duration: float | None, source_seconds: floa
     if start >= source_seconds:
         msg = f"--start {start:g} s is past the end of a {source_seconds:.1f} s source"
         raise ValueError(msg)
-    return duration if duration is not None else source_seconds - start
+    remaining = source_seconds - start
+    return remaining if duration is None else min(duration, remaining)
+
+
+def check_budget(*, budget: int, system: target.Target, sound: bool) -> None:
+    floor = limits.budget_floor(system, sound=sound)
+    if budget < floor:
+        share = "its closing run and its sound" if sound else "its closing run"
+        msg = (
+            f"--budget {budget} is below the {floor} bytes a {system.console} field "
+            f"needs for {share}"
+        )
+        raise ValueError(msg)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -268,12 +302,7 @@ def bake_cartridge(parser: argparse.ArgumentParser, args: argparse.Namespace) ->
     _describe_source(args.source, info=info, geometry=geometry)
     _announce_silence(args)
 
-    try:
-        wanted = window_seconds(
-            start=args.start, duration=args.duration, source_seconds=info.duration
-        )
-    except ValueError as error:
-        parser.error(str(error))
+    wanted = _checked_window(parser, args, source_seconds=info.duration)
     _analyse_source(parser, args, wanted=wanted)
     settled, baked, packed = bake_to_fit(args, geometry=geometry, wanted=wanted)
     blob, banks = packed.blob, packed.banks
@@ -288,6 +317,18 @@ def bake_cartridge(parser: argparse.ArgumentParser, args: argparse.Namespace) ->
     _publish(args, baked=baked, packed=packed, settled=settled, geometry=geometry)
     _summarise(baked.encoded, blob=blob, banks=banks, report=report)
     return 0
+
+
+def _checked_window(
+    parser: argparse.ArgumentParser, args: argparse.Namespace, *, source_seconds: float
+) -> float:
+    try:
+        check_budget(budget=args.budget, system=args.target, sound=dials.has_sound(args))
+        return window_seconds(
+            start=args.start, duration=args.duration, source_seconds=source_seconds
+        )
+    except ValueError as error:
+        parser.error(str(error))
 
 
 Attempt = tuple[dials.Dials, Baked, stream.Packed]
@@ -429,8 +470,12 @@ def _write_bundle(
     print(f"bundle written to {args.bundle}; start with {guide}")
 
 
+def key_fields(fields: list[list[bytes]], keys: Sequence[int]) -> list[int]:
+    return [sum(len(frame) for frame in fields[:index]) for index in keys]
+
+
 def seek_points(baked: Baked, packed: stream.Packed) -> tuple[output.Key, ...]:
-    fields_before = [sum(len(frame) for frame in baked.fields[:index]) for index in baked.keys]
+    fields_before = key_fields(baked.fields, baked.keys)
     return tuple(
         output.Key(
             bank=packed.starts[index][0],

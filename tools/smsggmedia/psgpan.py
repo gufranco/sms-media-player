@@ -38,7 +38,13 @@ class Registers:
         return (*voices, None if self.muted[psgsound.NOISE_CHANNEL] else NOISE_SOUNDING)
 
 
-def pans(stereo: npt.NDArray[np.float32], *, rate: int, writes: list[bytes]) -> list[int | None]:
+def pans(
+    stereo: npt.NDArray[np.float32],
+    *,
+    rate: int,
+    writes: list[bytes],
+    refresh_at: frozenset[int] = frozenset(),
+) -> list[int | None]:
     if stereo.ndim != STEREO or stereo.shape[1] != STEREO:
         msg = f"stereo samples need a left and a right column, got shape {stereo.shape}"
         raise ValueError(msg)
@@ -54,7 +60,7 @@ def pans(stereo: npt.NDArray[np.float32], *, rate: int, writes: list[bytes]) -> 
         )
         for f, tones in enumerate(sounding(writes))
     ]
-    return _written(held(wanted))
+    return _written(held(wanted), refresh_at)
 
 
 def held(wanted: list[int]) -> list[int]:
@@ -68,9 +74,9 @@ def held(wanted: list[int]) -> list[int]:
     return out
 
 
-def _written(routing: list[int]) -> list[int | None]:
+def _written(routing: list[int], refresh_at: frozenset[int]) -> list[int | None]:
     return [
-        value if field % psgsound.REFRESH_FIELDS == 0 or value != routing[field - 1] else None
+        value if psgsound.refreshes(field, refresh_at) or value != routing[field - 1] else None
         for field, value in enumerate(routing)
     ]
 

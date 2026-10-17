@@ -19,6 +19,8 @@ from z80vdp import (
     white_rows,
 )
 
+from smsggmedia import console
+
 FIRST_TILE = 176
 TEXT_TILES = 6
 TEXT_NUMBERS = list(range(FIRST_TILE, FIRST_TILE + TEXT_TILES))
@@ -42,7 +44,7 @@ PARTIAL = FULL + 2
 INK_BLACK = 0x00
 INK_WHITE = 0x3F
 INK_ENTRIES = slice(30, 32)
-FIELDS_PER_SECOND = 59.9227
+FIELDS_PER_SECOND = console.NTSC_FIELD_HZ
 FRAME_INTERRUPT_LINE = 0xC1
 FIELD_LINES = 262
 FIELD_LIMIT = 12
@@ -76,6 +78,11 @@ def work_over_fields(session: Session) -> None:
     for _ in range(FIELD_LIMIT):
         session.vdp.start_at(0)
         session.call("_fmv_osd_work")
+
+
+def request_and_draw(session: Session, request: str) -> None:
+    session.call(request)
+    work_over_fields(session)
 
 
 def bar_tiles(session: Session) -> list[int]:
@@ -269,8 +276,7 @@ class TestTheStateGlyph:
         session.poke(PAUSED_AT, bytes([1]))
 
         # Act
-        session.call("_fmv_osd_state")
-        work_over_fields(session)
+        request_and_draw(session, "_fmv_osd_state")
 
         # Assert
         assert pixels(session.vdp, [STATE_TILE]) == expected_pixels("= ")
@@ -282,8 +288,7 @@ class TestClose:
         session = shown(built, view(elapsed=0, total=180))
 
         # Act
-        session.call("_fmv_osd_close")
-        work_over_fields(session)
+        request_and_draw(session, "_fmv_osd_close")
 
         # Assert
         assert [number for _, _, number in sprites(session.vdp)[:OSD_SPRITES]] == [
@@ -298,8 +303,7 @@ class TestClose:
         session.call("_fmv_osd_show")
 
         # Act
-        session.call("_fmv_osd_close")
-        work_over_fields(session)
+        request_and_draw(session, "_fmv_osd_close")
 
         # Assert
         assert tile(session.vdp, BLANK_TILE) == bytes(TILE_BYTES)
@@ -312,8 +316,7 @@ class TestClose:
         before = session.vdp.writes
 
         # Act
-        session.call("_fmv_osd_tick")
-        work_over_fields(session)
+        request_and_draw(session, "_fmv_osd_tick")
 
         # Assert
         assert session.vdp.writes == before
@@ -326,8 +329,7 @@ class TestTheTick:
         session.poke(WHERE, fields(5).to_bytes(4, "little"))
 
         # Act
-        session.call("_fmv_osd_tick")
-        work_over_fields(session)
+        request_and_draw(session, "_fmv_osd_tick")
 
         # Assert
         assert pixels(session.vdp, TEXT_NUMBERS) == expected_pixels("00:05/00:10 ")
@@ -338,8 +340,7 @@ class TestTheTick:
         session.poke(WHERE, (90).to_bytes(4, "little"))
 
         # Act
-        session.call("_fmv_osd_tick")
-        work_over_fields(session)
+        request_and_draw(session, "_fmv_osd_tick")
 
         # Assert
         assert bar_tiles(session) == [FULL] * 4 + [EMPTY] * 4

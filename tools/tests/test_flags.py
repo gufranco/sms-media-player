@@ -1,7 +1,7 @@
 import pytest
 from fmvcore.testing import seeded
 
-from smsggmedia import cartridge, flags, frames, limits, scout
+from smsggmedia import cartridge, flags, frames, limits, scout, target
 
 FAKE = seeded()
 FILM = FAKE.file_name(extension="mp4")
@@ -78,6 +78,61 @@ class TestTheWindowInsideTheSource:
 
         # Assert
         assert wanted == 4.0
+
+    def test_a_duration_past_the_end_of_the_source_is_cut_to_it(self):
+        # Arrange
+        source_seconds = 12.5
+
+        # Act
+        wanted = cartridge.window_seconds(start=10.5, duration=6.0, source_seconds=source_seconds)
+
+        # Assert
+        assert wanted == 2.0
+
+
+class TestTheBudgetFloor:
+    def test_a_game_gear_budget_below_two_closing_runs_is_refused_by_name(self):
+        # Arrange
+        budget = 131
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            cartridge.check_budget(budget=budget, system=target.GAME_GEAR, sound=False)
+
+        # Assert
+        assert str(refused.value) == (
+            "--budget 131 is below the 132 bytes a Game Gear field needs for its closing run"
+        )
+
+    def test_a_game_gear_budget_of_two_closing_runs_is_accepted(self):
+        # Arrange
+        budget = 132
+
+        # Act
+        cartridge.check_budget(budget=budget, system=target.GAME_GEAR, sound=False)
+
+        # Assert
+        assert limits.budget_floor(target.GAME_GEAR, sound=False) == budget
+
+    def test_the_same_budget_is_enough_for_a_master_system(self):
+        # Arrange
+        budget = 68
+
+        # Act
+        cartridge.check_budget(budget=budget, system=target.MASTER_SYSTEM, sound=False)
+
+        # Assert
+        assert limits.budget_floor(target.MASTER_SYSTEM, sound=False) == budget
+
+    def test_sound_raises_the_floor_by_its_share(self):
+        # Arrange
+        silent = limits.budget_floor(target.GAME_GEAR, sound=False)
+
+        # Act
+        sounded = limits.budget_floor(target.GAME_GEAR, sound=True)
+
+        # Assert
+        assert sounded - silent == limits.sound_reserve(target.GAME_GEAR)
 
 
 class TestTheScalerFlag:

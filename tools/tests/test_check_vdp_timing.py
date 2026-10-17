@@ -210,6 +210,38 @@ class TestTheGate:
         # Assert
         assert result == 2
 
+    def test_a_game_gear_listing_older_than_its_own_source_fails_closed(self, gate, tmp_path):
+        # Arrange
+        built = tmp_path / "build" / "gg"
+        built.mkdir(parents=True)
+        old = listing(built, "paced.lst", PACED)
+        os.utime(old, (1_000_000, 1_000_000))
+        (tmp_path / "src" / "gg").mkdir(parents=True)
+        (tmp_path / "src" / "gg" / "paced.c").write_text("void f(void) {}\n")
+
+        # Act
+        result = gate.main(["--root", str(tmp_path), "--target", "gg"])
+
+        # Assert
+        assert result == 2
+
+    def test_the_game_gear_run_reads_its_own_build(self, gate, tmp_path):
+        # Arrange
+        built = tmp_path / "build" / "gg"
+        built.mkdir(parents=True)
+        listing(tmp_path / "build", "paced.lst", UNROLLED)
+        listing(built, "paced.lst", PACED)
+        (tmp_path / "src").mkdir()
+        source = tmp_path / "src" / "paced.s"
+        source.write_text("        nop\n")
+        os.utime(source, (1_000, 1_000))
+
+        # Act
+        result = gate.main(["--root", str(tmp_path), "--target", "gg"])
+
+        # Assert
+        assert result == 0
+
     def test_an_unguarded_blank_copy_fails_the_gate(self, gate, tmp_path, capsys):
         # Arrange
         text = (

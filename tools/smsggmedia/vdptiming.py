@@ -8,8 +8,13 @@ from typing import Final
 from fmvcore import sdccz80, writetiming
 from fmvcore.writetiming import Gap, Instruction, Listing
 
+from smsggmedia import target as targets
+
 ROOT: Final = Path(__file__).resolve().parents[2]
-BUILD: Final = ROOT / "build"
+BUILDS: Final = {
+    targets.MASTER_SYSTEM.name: Path("build"),
+    targets.GAME_GEAR.name: Path("build/gg"),
+}
 
 MINIMUM_INTERVAL: Final = 29
 VBLANK_INTERVAL: Final = 16
@@ -143,26 +148,27 @@ def _advance_guard(guard: list[str], body: str) -> list[str]:
     return guard
 
 
-def built_listings(root: Path = ROOT) -> list[Path]:
-    build = root / BUILD.name
+def built_listings(root: Path = ROOT, target: str = targets.DEFAULT.name) -> list[Path]:
+    build = root / BUILDS[targets.named(target).name]
     if not build.is_dir():
         return []
-    sources = {path.stem for path in (root / "src").glob("*.c")}
-    sources |= {path.stem for path in (root / "src").glob("*.s")}
+    sources = {path.stem for path in _sources(root, target)}
     return sorted(path for path in build.glob("*.lst") if path.stem in sources)
 
 
-def stale_listings(listings: list[Path], root: Path = ROOT) -> list[Path]:
-    stale: list[Path] = []
-    for listing in listings:
-        sources = [
-            root / "src" / f"{listing.stem}{suffix}"
-            for suffix in (".c", ".s")
-            if (root / "src" / f"{listing.stem}{suffix}").is_file()
-        ]
-        if any(source.stat().st_mtime > listing.stat().st_mtime for source in sources):
-            stale.append(listing)
-    return stale
+def stale_listings(
+    listings: list[Path], root: Path = ROOT, target: str = targets.DEFAULT.name
+) -> list[Path]:
+    edited = {path.stem: path.stat().st_mtime for path in _sources(root, target)}
+    return [
+        listing for listing in listings if edited.get(listing.stem, 0.0) > listing.stat().st_mtime
+    ]
+
+
+def _sources(root: Path, target: str) -> list[Path]:
+    shared = root / "src"
+    own = shared / target
+    return [*shared.glob("*.c"), *shared.glob("*.s"), *own.glob("*.c")]
 
 
 def data_intervals(reports: list[Report]) -> int:

@@ -264,11 +264,12 @@ class TestIntervals:
 
 
 class TestTheShippedPlayer:
-    def test_the_player_listing_is_checked_when_it_has_been_built(self):
+    @pytest.mark.parametrize("target", ["sms", "gg"])
+    def test_the_player_listing_is_checked_when_it_has_been_built(self, target):
         # Arrange
-        listings = vdptiming.built_listings()
+        listings = vdptiming.built_listings(target=target)
         if not listings:
-            reason = "run `make rom` first; this reads the assembler's own output"
+            reason = f"run `make rom TARGET={target}` first; this reads the assembler's own output"
             if os.environ.get("SMSGGMEDIA_ROM_REQUIRED") == "1":
                 pytest.fail(reason)
             pytest.skip(reason)

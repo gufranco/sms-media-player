@@ -40,9 +40,6 @@ resident a cell was already pointing at, so that cell drew the wrong tile for
 exactly one frame and corrected itself on the next. That is a visible flash
 rather than a slow drift, and it happened on a third of frames.
 
-A cell whose tile could not be placed keeps the entry it already has, which
-leaves it showing the previous frame rather than tearing.
-
 #### `Geometry`
 
 Where the picture sits inside the visible raster.
@@ -92,8 +89,9 @@ taken from the encoder, so it checks the schedule instead of trusting it.
 
 Alignment, the mixed-field share and the lag are measured by
 [`fmvcore/capture.py`](../fmv-core-python/fmvcore/capture.py); this module
-replays the Master System stream into the fields they are measured on, and
-holds the floor of this console's 64 colours.
+replays the stream into the fields they are measured on, and holds the floor
+of the console's colours: 64 on the Master System, 4096 on the Game Gear,
+through `Lattice.floor`.
 
 #### `replay_fields`
 
@@ -116,6 +114,15 @@ The picture is 32 by 24 cells, which is 256 by 192: the whole raster, edge to
 edge, with nothing framing it. A source of another shape is scaled until it
 covers that and then cropped to it, so a 16:9 film loses a quarter of its
 width rather than gaining bars.
+
+A `--budget` below what a field of the chosen console needs is refused before
+anything is decoded: twice its closing run, 68 bytes on the Master System and
+132 on the Game Gear, plus the sound share when the film has sound. The flag
+alone cannot check it, because the floor depends on `--target`.
+
+A `--duration` that runs past the end of the source is cut to the source, so
+the dial searches never spread the cartridge's room over frames that do not
+exist.
 
 A smaller picture is still buildable through `--rows`, and it is what the
 library half wants: a cutscene inside somebody else's game rarely owns the
@@ -159,8 +166,19 @@ else's film.
 
 The check itself, size first and then SHA-256, is
 [`fmvcore/clips.py`](../fmv-core-python/fmvcore/clips.py); this module holds
-the Master System's manifest schema, where the films live, and the budgets
-each film is held to.
+the manifest schema, where the films live, and the budgets each film is held
+to on each console. An entry missing a field, or carrying one the schema does
+not know, is refused by name rather than reaching a bare `TypeError`.
+
+The Game Gear ceilings, `gg_max_error` and `gg_max_banks_per_second`, were
+measured on 2026-10-17 by baking each clip at its recorded dials into the
+20 by 18 window, with the reuse threshold scaled to the Game Gear's lattice
+and the contrast guard on, and set at 1.3 times the measurement, the headroom
+the Master System ceilings carry. The Game Gear's displayed error is between
+a third and a thirteenth of the Master System's on the same film, 2.8 times
+lower on the synthetic clip and 13.1 on the cartoon, because its 4096 colours
+sit far closer to the source; it spends 4 to 5 banks a second against the
+Master System's 2.5 to 5.
 
 ### [`smsggmedia/bundle.py`](smsggmedia/bundle.py)
 
@@ -173,8 +191,11 @@ film's bank objects in ascending numeric order, because `ihx2sms` drops banks
 linked alphabetically, and it restores the including Makefile's default goal.
 A bundle is baked for one console, because a Game Gear film closes each field
 with a 64-byte palette run a Master System replay refuses. It carries that
-console's `target.inc` and a one-line `target.mk` naming it, from which the
-fragment adds `-DTARGET_GG` and picks `SMSlib_GG.lib` for a Game Gear film.
+console's `target.inc` and `fmv_target.h` and a one-line `target.mk` naming
+it, from which the fragment adds `-DTARGET_GG`, which SMSlib's own header
+reads, and picks `SMSlib_GG.lib` for a Game Gear film. The fragment compiles
+with `--Werror`, as the player does, and rebuilds when a target file
+changes.
 `examples/cutscene` is a game built from a fresh bundle, and CI builds it from
 a Master System bundle and from a Game Gear one.
 
@@ -393,7 +414,10 @@ What a bake leaves on disk, and how it avoids leaving the wrong thing.
 The build packs whatever film sits in the assets directory. A bake that fails
 after an earlier one succeeded would otherwise leave that earlier film in
 place, and `make rom` would ship it without a word, so a failure removes it
-and a success replaces each file in one rename.
+and a success replaces each file in one rename. `publish` clears the earlier
+film before it checks the header, so a refusal there, such as more than 254
+seek points or more frames than the player counts in 16 bits, also leaves
+none.
 
 ### [`smsggmedia/palettes.py`](smsggmedia/palettes.py)
 
@@ -401,8 +425,9 @@ Fit the two hardware palettes to one frame, and assign a palette per cell.
 
 CRAM holds two palettes of 16 entries drawn from a 64-colour space, so 32
 colours reach the screen at once and a cell picks one palette for all 64 of
-its pixels. Uploading the whole of CRAM costs 32 bytes, which against a
-per-field budget in the hundreds is cheap enough to refit every frame, but a
+its pixels. Uploading the whole of CRAM costs 32 bytes, 64 on the Game Gear,
+which against a per-field budget in the hundreds is cheap enough to refit
+every frame, but a
 refit re-colours every tile already on the console, so `fit_or_keep` keeps the
 previous palettes until a fresh fit is clearly better. Cheap uploads are the
 one place this hardware is kinder than the Neo Geo, where a full
@@ -682,14 +707,20 @@ the two reads the profile, and nothing branches on a console name.
 
 ### [`smsggmedia/lattice.py`](smsggmedia/lattice.py)
 
-The grid of colours a target can show, and the CRAM bytes for an entry.
+The grid of colours a target can show, the CRAM bytes for an entry, and the
+quantiser onto it. It is the one colour codec for both consoles: the Master
+System and the Game Gear differ only in the number of levels a channel holds.
 
 A lattice is a number of levels per channel. The Master System has 4, 64
 colours, a CRAM entry of `--BBGGRR` in one byte. The Game Gear has 16, 4096
 colours, an entry of `----BBBB GGGGRRRR` in two bytes written low byte first.
 A colour index packs red in the low bits, then green, then blue, so on both
-consoles the index is already the CRAM value, and `cram_bytes` only chooses
-the width.
+consoles the index is already the CRAM value; `cram_bytes` chooses the width
+and `from_cram` reads it back. A level maps to 8-bit intensity by scaling
+across the full range, which puts the Master System's four levels at 0, 85,
+170 and 255 and the Game Gear's sixteen a seventeenth apart. Read from
+Charles MacDonald's VDP documentation and SMS Power's palette page; the
+citations are in the design notes.
 
 Palette fitting, tile scoring and placement all take their Oklab table from
 the lattice the frame was fitted on, so "close" means the same thing on both
@@ -701,17 +732,33 @@ A sixteen-level fit costs the same as a four-level one, 0.12 s for a noisy
 present in the frame, never on the whole lattice. On that gradient the mean
 absolute error fell from 22.3 to 14.2.
 
-### [`smsggmedia/smscolor.py`](smsggmedia/smscolor.py)
+Distance is measured in Oklab rather than in RGB, for the same reason the
+Neo Geo baker does it: a metric that agrees with the eye is what lets
+palette fitting, tile assignment and the fidelity number all mean the same
+thing by "close".
 
-The Master System colour space, and distance within it.
+#### `quantise_levels`
 
-CRAM is 32 bytes holding two palettes of 16 entries. An entry is one byte
-laid out as `--BBGGRR`, two bits per channel, so the console can show 64
-distinct colours and 32 of them at once. Read from Charles MacDonald's VDP
-documentation; the citation is in the design notes.
+Round 8-bit RGB onto a grid of levels per channel, through `top`.
 
-A two-bit level maps to 8-bit intensity by scaling across the full range,
-which puts the four levels at 0, 85, 170 and 255.
+With no dither every pixel takes the level nearest its own value. Four
+levels a channel leaves wide steps, and a pale gradient rounds to flat
+plateaus that can change hue at the step: a grey-blue sky became blocks of
+grey and pink on the cartoon in the regression set.
+
+A dither adds a 4x4 Bayer threshold, scaled by `dither`, before rounding,
+so a value between two levels becomes a fixed mix of both in proportion.
+The side divides the 8-pixel tile, which keeps the pattern identical
+wherever a tile lands and leaves tile reuse intact for flat regions. A
+value already on a level is never moved, since the threshold stays inside
+half a step. The strength is checked by `fmvcore.dither.check_strength`, the
+family's one rule for it. It is judged on blurred error and on a rendered
+sheet, never on per-pixel error, which scores any dither as loss by
+construction.
+
+#### `nearest`
+
+Find each pixel's nearest lattice colour, measured in Oklab.
 
 Rounding each channel separately finds the nearest colour in RGB, and that is
 not the nearest colour in Oklab. The two disagree on more than half of all
@@ -726,52 +773,31 @@ is a large visible regression for a large metric improvement. At low
 lightness the two chroma axes are ill-conditioned, so dark colours get hues
 chosen out of numerical noise.
 
-`nearest_colour` is kept because the effect is worth being able to reproduce,
-and it is not the default.
+`nearest` is kept because the effect is worth being able to reproduce, and
+it is not the default. The chroma weight reaches the decision here, which is
+the only place it can change anything. It searches in chunks of pixels, so
+the Game Gear's 4096 colours fit in memory.
 
-Distance is measured in Oklab rather than in RGB, for the same reason the
-Neo Geo baker does it: a metric that agrees with the eye is what lets
-palette fitting, tile assignment and the fidelity number all mean the same
-thing by "close".
+#### `reuse_scale` and `reuse_contrast`
 
-#### `quantise_levels`
+How the reuse dial reads on this lattice. A threshold is given in Master
+System terms and multiplied by the square of the ratio between the two
+consoles' colour steps, 1/25 on the Game Gear, whose step is a fifth as
+wide, so the same dial means the same share of a step on both. The contrast
+guard is 0.5 on the Game Gear's 4096-colour lattice and off on the Master
+System's.
 
-Round 8-bit RGB onto a grid of levels per channel, two bits on the Master
-System and four on the Game Gear through `top`.
+#### `floor`
 
-With no dither every pixel takes the level nearest its own value. Four
-levels a channel leaves wide steps, and a pale gradient rounds to flat
-plateaus that can change hue at the step: a grey-blue sky became blocks of
-grey and pink on the cartoon in the regression set.
+The mean Oklab distance from each pixel to its nearest lattice colour: the
+error no encoder can beat on this console. The capture comparison reports it
+beside the measured error.
 
-A dither adds a 4x4 Bayer threshold, scaled by `dither`, before rounding,
-so a value between two levels becomes a fixed mix of both in proportion.
-The side divides the 8-pixel tile, which keeps the pattern identical
-wherever a tile lands and leaves tile reuse intact for flat regions. A
-value already on a level is never moved, since the threshold stays inside
-half a step. It is judged on blurred error and on a rendered sheet, never
-on per-pixel error, which scores any dither as loss by construction.
+### [`smsggmedia/smscolor.py`](smsggmedia/smscolor.py)
 
-#### `oklab_palette`
-
-Oklab coordinates of all 64 console colours, indexed by CRAM byte.
-
-The chroma weight scales the two colour axes so error on them is charged
-at a fraction of the rate luma error is, which is the lever the Neo Geo
-baker uses too, unchanged.
-
-#### `nearest_colour`
-
-Find each pixel's nearest console colour, measured in Oklab.
-
-Searching all 64 rather than rounding per channel, because the console's
-colours are a uniform grid in RGB and emphatically not one in Oklab. The
-two answers differ on most pixels, and the perceptual one is better by
-about a third.
-
-The chroma weight reaches the decision here, which is the only place it
-can change anything: with per-channel rounding the choice is made before
-any perceptual metric is consulted, so weighting it had no effect at all.
+The shape of the console's palette memory: two palettes of 16 entries, 32
+bytes of CRAM on the Master System, and the RGB axis every frame carries. The
+colour codec itself is `lattice`, so nothing about a colour lives here twice.
 
 ### [`smsggmedia/psgpan.py`](smsggmedia/psgpan.py)
 
@@ -832,7 +858,11 @@ Only registers that changed are written, so a held note costs nothing after
 its first field. Every `REFRESH_FIELDS` fields, about once a second, the whole
 register state is written again, because the player silences the PSG on pause
 and skips sound runs while muted, and a held note would otherwise stay silent
-after either ends. A field writes at most 11 bytes: the noise mode on a
+after either ends. The first field of every seek point refreshes too, along
+with the Game Gear's pan, because a seek silences the PSG and centres it, and
+without this the sound came back up to a second after the picture. A pause or
+an unmute still takes up to a second: the player keeps no copy of the
+registers, and keeping one would add work to the replay's sound run. A field writes at most 11 bytes: the noise mode on a
 refresh field, two bytes a tone, one attenuator a channel. The cartridge takes
 `limits.SOUND_RESERVE` from the field budget for them, the run's 13 bytes at
 34 T-states each, measured in 30 T-state transfer bytes.
@@ -848,7 +878,8 @@ Step a bake down until it fits the cartridge.
 The dials already size each frame to the bank ceiling, so most films fit at
 the rate they settle on. When one does not, `cartridge.bake_to_fit` walks the
 rungs below that rate: every slower candidate rate with sound, then the
-slowest without it, because sound costs the picture only 16 bytes a field and
+slowest without it, because sound costs the picture only 15 bytes a field, 17
+on the Game Gear with its pan run, and
 so is the last thing worth giving up. Each rung re-settles denoise and reuse
 at its own rate and bakes in full. `fmvcore.ladder.first_fit`, the search the
 Neo Geo player uses for its tiers, finds the best rung that fits while baking
@@ -872,7 +903,8 @@ only touch slots and a name table the screen is not showing, so a chunk may
 run on into the picture without anyone seeing it. The closing run is the
 exception: it writes the palettes and flips the name table, so it must land in
 the vertical blank. `defer_closes` moves it to the start of the next field's
-chunk, the player reads the V counter before it and copies its 32 bytes at
+chunk, the player reads the V counter before it and copies its 32 bytes, 64 on
+the Game Gear, at
 the 16 T-states blanking allows, and the first chunk of each frame keeps
 room for it.
 
@@ -1070,7 +1102,11 @@ another path could jump there past the guard.
 
 #### `built_listings`
 
-Every listing the last build produced for a source that still exists.
+Every listing the last build of one console produced for a source that still
+exists: `build/` for the Master System and `build/gg/` for the Game Gear,
+whose own sources in `src/sms/` and `src/gg/` count beside the shared ones.
+Each console is checked on its own run, so a stale Game Gear listing is never
+read while timing the Master System.
 
 The build directory is not cleaned between builds, so it accumulates
 listings for files that have since been deleted. Checking those means
@@ -1126,8 +1162,21 @@ mints a new pattern and pays 32 bytes to upload something the console
 already holds. Matching against what is resident turns a still background
 into no traffic at all.
 
-Distance is the mean squared Oklab error per pixel, so the threshold
-means the same thing whatever the cell size.
+Distance is the mean squared difference per Oklab value, a third of the
+per-pixel figure, so the threshold means the same thing whatever the cell
+size.
+
+On the Game Gear a resident may not stand in for a cell when it keeps less
+than half of that cell's spread of lightness, `contrast`. Without it the
+Game Gear demo was a patchwork of flat 8 by 8 blocks in every dark area: a
+flat tile sits within a small Oklab distance of a dimly textured cell, the
+working-set error the reuse search scores moved by less than its 5% tie, so
+the search took the cheapest threshold and the texture went. With the guard
+the blocks are gone; the demo window grows from 22 to 28 banks and its error
+falls. The Master System does not take the guard: its four-level dither
+already gives nearly every tile texture, the rendered sheets looked the
+same with and without it, and it would have cost that bake 5 more banks.
+The threshold itself is scaled per console too, see `Lattice.reuse_scale`.
 
 #### `merge_to_cap`
 
@@ -1153,10 +1202,27 @@ Check VDP write spacing in the code the last build actually emitted.
 
 Run after `make rom`, from the repository root:
 
-    uv --project tools run python tools/scripts/check_vdp_timing.py
+    uv --project tools run python tools/scripts/check_vdp_timing.py --target sms
+    uv --project tools run python tools/scripts/check_vdp_timing.py --target gg
 
 Exits non-zero on any pair of VDP writes closer together than the active
 display allows. A pair of control-port writes is held to the same floor.
+`make timing` and `make timing TARGET=gg` run the same thing.
+
+### [`scripts/check_rom.py`](scripts/check_rom.py)
+
+Hold a built cartridge's header to what the console checks: a whole number of
+16 KB banks, `TMR SEGA` at `0x7FF0`, the console's region nibble, and a
+checksum that matches the body. The extension names the console. A header that
+declares more than 32 KB is refused rather than checked, because the wider
+checksum range has not been confirmed against a built ROM.
+
+### [`scripts/rom_gate.sh`](scripts/rom_gate.sh)
+
+The ROM gate, as one script CI and the release both run, so the release can
+never check less than CI does. It bakes a generated clip for both consoles,
+builds a game from each bundle, analyses the C for both, times both builds,
+runs the player on a Z80 against both ROMs, and checks both headers.
 
 ### [`scripts/compare_capture.py`](scripts/compare_capture.py)
 
@@ -1168,6 +1234,11 @@ root:
     mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/smsggmedia.sms
     uv --project tools run python tools/scripts/compare_capture.py \
         --capture /tmp/run.mov --source film.mp4 --start 60 --json /tmp/report.json
+
+A Game Gear capture takes `--target gg`. mednafen records the Game Gear's
+160 by 144 panel, so the oracle's fields are cut to the raster's columns 48
+to 207 and lines 24 to 167 before they are compared, the source is decoded
+at the panel's size, and the floor is the Game Gear's 4096 colours.
 
 It replays the baked stream to know what each field should show, proves the
 capture shows exactly that, and then judges the oracle against the source at
@@ -1186,6 +1257,28 @@ The fields are the worst mixed one between its neighbours, or, when no
 field is mixed at all, the finished frame furthest from the source
 between its neighbours. A sheet of the first frames of a film with
 nothing mixed would show only the black the player boots into.
+
+### [`scripts/make_demos.py`](scripts/make_demos.py)
+
+Make the README's demo GIFs, one per console, from one window of a film.
+
+    uv --project tools run python tools/scripts/make_demos.py \
+        sintel-demo.mp4 --duration 6 --out readme
+
+Both consoles are baked from the same window with the same flags, and any
+flag the script does not know is passed to both bakes. Each GIF frame is one
+film frame as the replay oracle draws it from that cartridge's stream, the
+picture alone, at the frame rate the bakes settled on, and both GIFs are cut
+to the shorter film, so frame n shows the same moment in each. A bake that
+settles on a different rate per console is refused. The GIF palette is built
+from the exact colours the frames show, because `palettegen` moved some of
+them by a level even with 136 colours in use; a demo of more than 256
+colours is refused rather than rounded.
+
+The oracle stands in for a capture because the player draws its position
+bar over the first three seconds of every play. A headless mednafen capture
+of each demo cartridge matched its stream pixel for pixel on every field
+after the bar hid, 157 on the Master System and 156 on the Game Gear.
 
 ### [`scripts/fetch_clips.py`](scripts/fetch_clips.py)
 
@@ -1208,6 +1301,17 @@ half-right file left on disk is worse than an absent one, because the next
 run reports it as present and the gate then measures a film nobody chose.
 
 ## The tests
+
+Helpers more than one test file needs live beside them as plain modules, never
+as test files, so pytest collects nothing from them:
+[`tests/z80vdp.py`](tests/z80vdp.py) and [`tests/replayz80.py`](tests/replayz80.py)
+run the built ROM on a Z80, [`tests/lavfi.py`](tests/lavfi.py) makes a
+generated clip and the arguments of a small bake,
+[`tests/tunecases.py`](tests/tunecases.py),
+[`tests/bakeframes.py`](tests/bakeframes.py) and
+[`tests/streamwrites.py`](tests/streamwrites.py) hold the frames, scores and
+writes their suites share. A helper whose name starts with `test` would be
+collected as a test, which is why the clip maker is `lavfi_clip`.
 
 ### [`tests/test_capture.py`](tests/test_capture.py)
 
@@ -1310,8 +1414,14 @@ previous frame on the dance clip once the picture filled the raster, and
 2,112 at the cap one step higher.
 
 The guarantees are per clip and every one is a constant rather than a budget,
-except the displayed error, which is content dependent and carries a per-clip
-ceiling in the manifest.
+except the displayed error and the bandwidth, which are content dependent and
+carry per-clip ceilings in the manifest.
+
+Every clip is baked twice, once into the Master System's full raster and once
+into the Game Gear's 20 by 18 window with `--target gg`, and both bakes are
+held to every guarantee, each against its own console's ceilings. The slow
+search test stays on the Master System, because the recorded dials were
+measured there.
 
 ### [`tests/test_output.py`](tests/test_output.py)
 
@@ -1360,6 +1470,33 @@ setup follows a V counter read; this runs the ROM's own bytes with the V
 counter held at chosen lines and checks what reaches the ports, so a guard
 that compares the wrong way round, or jumps to the wrong place, fails here
 even though the listing looks right.
+
+[`tests/test_gg_build.py`](tests/test_gg_build.py) runs the same window
+checks on the Game Gear ROM, whose closing run is 64 bytes: outside the window
+no palette byte and no flip reaches the VDP, with the guard patched out all
+64 do, and every byte keeps its floor.
+[`tests/test_player_on_z80.py`](tests/test_player_on_z80.py) holds the rest
+of the replay: the overlay inks, sound and pan runs, the assertion halt and
+the SDSC header.
+
+### [`tests/test_screen_on_z80.py`](tests/test_screen_on_z80.py)
+
+Put each built console at rest and read what reached the ports: every PSG
+channel attenuated fully, the name table on the idle cell and every sprite
+parked. The player rests at boot and whenever a film ends, stops or faults,
+so this is what a viewer hears and sees while it waits.
+
+### [`tests/test_check_rom.py`](tests/test_check_rom.py)
+
+The header gate, against hand-built cartridges whose checksum is worked out
+by hand, so a wrong region, a changed body and a missing signature each name
+themselves.
+
+### [`tests/test_make_demos.py`](tests/test_make_demos.py)
+
+Bake a generated clip for both consoles through the demo script and read the
+GIFs back: each at its console's size, both with the same frame count, and a
+GIF of random colours decoded back to the same pixels.
 
 ### [`tests/test_schedule.py`](tests/test_schedule.py)
 

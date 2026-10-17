@@ -3,42 +3,42 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from smsggmedia import lattice, smscolor, target
+from smsggmedia import lattice, target
 
 SMS = lattice.MASTER_SYSTEM
 GG = lattice.GAME_GEAR
 
 
 class TestTheMasterSystemLattice:
-    def test_it_renders_every_colour_as_the_colour_module_does(self):
+    def test_it_has_sixty_four_colours(self):
         # Arrange
-        index = np.arange(64, dtype=np.uint8)
+        console = SMS
 
         # Act
-        rgb = SMS.to_rgb(index)
+        count = console.count
 
         # Assert
-        assert np.array_equal(rgb, smscolor.colour_to_rgb(index))
+        assert count == 64
 
-    def test_it_packs_levels_as_the_colour_module_does(self):
+    def test_its_oklab_table_has_a_coordinate_for_every_colour(self):
         # Arrange
-        levels = SMS.unpack(np.arange(64, dtype=np.uint8))
+        expected = (64, 3)
 
         # Act
-        packed = SMS.pack(levels)
+        lab = SMS.oklab()
 
         # Assert
-        assert np.array_equal(packed, smscolor.pack_colour(levels))
+        assert lab.shape == expected
 
-    def test_its_oklab_table_matches_the_colour_module(self):
+    def test_the_chroma_weight_scales_only_the_colour_axes(self):
         # Arrange
-        weight = 0.5
+        full = SMS.oklab(1.0)
 
         # Act
-        lab = SMS.oklab(weight)
+        halved = SMS.oklab(0.5)
 
         # Assert
-        assert np.allclose(lab, smscolor.oklab_palette(weight))
+        assert np.allclose(halved, full * np.array([1.0, 0.5, 0.5], dtype=np.float32))
 
     def test_its_cram_holds_one_byte_an_entry(self):
         # Arrange
@@ -157,3 +157,35 @@ class TestRefusals:
 
         # Assert
         assert str(refused.value) == "chroma weight must not be negative"
+
+
+class TestReuseOnEachLattice:
+    def test_a_master_system_threshold_is_taken_as_given(self):
+        # Arrange
+        console = SMS
+
+        # Act
+        scale = console.reuse_scale
+
+        # Assert
+        assert scale == 1.0
+
+    def test_a_game_gear_threshold_shrinks_with_the_square_of_its_finer_step(self):
+        # Arrange
+        console = GG
+
+        # Act
+        scale = console.reuse_scale
+
+        # Assert
+        assert scale == pytest.approx(1 / 25)
+
+    def test_only_the_wide_lattice_guards_texture(self):
+        # Arrange
+        consoles = (SMS, GG)
+
+        # Act
+        guards = [console.reuse_contrast for console in consoles]
+
+        # Assert
+        assert guards == [0.0, 0.5]

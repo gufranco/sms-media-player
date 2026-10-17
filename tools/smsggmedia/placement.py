@@ -161,7 +161,9 @@ def reuse_residents(
         if members.size == 0:
             continue
         rendered = lab[table[palette][indices].astype(np.intp)].reshape(indices.shape[0], -1)
-        matched = workingset.match_residents(features[members], rendered, threshold=threshold)
+        matched = workingset.match_residents(
+            features[members], rendered, threshold=threshold, contrast=fitted.lattice.reuse_contrast
+        )
         found = matched != workingset.UNPLACED
         result[members[found]] = slots[matched[found]]
 

@@ -1,5 +1,7 @@
 #include "fmv/seek.h"
 
+#include "fmv/assert.h"
+
 #define SEEK_BACK_GRACE_FIELDS 120ul
 
 static u8 seek_current(const fmv_seek_query *query)
@@ -7,6 +9,8 @@ static u8 seek_current(const fmv_seek_query *query)
     u8 index;
     u8 current = 0u;
 
+    FMV_ASSERT(query->keys != 0);
+    FMV_ASSERT(query->count != 0u);
     for (index = 1u; index < query->count; index++) {
         if (query->keys[index].field <= query->elapsed_fields) {
             current = index;
@@ -20,6 +24,8 @@ u8 fmv_seek_target(const fmv_seek_query *query)
     const u8 current = seek_current(query);
     const u32 into = query->elapsed_fields - query->keys[current].field;
 
+    FMV_ASSERT(current < query->count);
+    FMV_ASSERT(query->count <= FMV_SEEK_MAX);
     if (query->direction > 0) {
         return (u8)(current + 1u) < query->count ? (u8)(current + 1u) : FMV_SEEK_NONE;
     }

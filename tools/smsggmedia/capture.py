@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import numpy as np
-from fmvcore import colour
 from fmvcore.capture import Frames, Played
 
-from smsggmedia import replay, smscolor
+from smsggmedia import lattice, replay
 
 
 def replay_fields(blob: bytes) -> Played:
@@ -35,7 +34,5 @@ def picture_frames(played: Played, *, top: int, height: int, width: int, left: i
     return played.fields[played.completes, top : top + height, left : left + width]
 
 
-def lattice_floor(wanted: Frames) -> float:
-    lab = colour.srgb_to_oklab(wanted.astype(np.float32) / 255.0).reshape(-1, 3)
-    palette = smscolor.oklab_palette(1.0)
-    return float(np.sqrt(((lab[:, None, :] - palette[None, :, :]) ** 2).sum(-1)).min(1).mean())
+def lattice_floor(wanted: Frames, space: lattice.Lattice = lattice.MASTER_SYSTEM) -> float:
+    return space.floor(wanted)

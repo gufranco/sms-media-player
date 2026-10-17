@@ -5,7 +5,7 @@
 <strong>在原裝 Sega Master System 及 Game Gear 上各以自己的模式播放全螢幕影片，<br>
 影片播放期間，圖塊不斷經 VRAM 換入換出。</strong>
 
-[English](README.md) &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; [简体中文](README.zh-Hans.md) &nbsp;|&nbsp; 繁體中文（香港）
+[English](README.md) | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | 繁體中文（香港）
 
 [![CI](https://img.shields.io/github/actions/workflow/status/gufranco/smsgg-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/smsgg-media-player/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](RELEASES.md)
@@ -16,22 +16,22 @@
 </div>
 
 <p align="center">
-  <a href="#快速開始"><strong>快速開始</strong></a> &nbsp;|&nbsp;
-  <a href="#運作原理"><strong>運作原理</strong></a> &nbsp;|&nbsp;
-  <a href="#質素"><strong>畫面質素</strong></a> &nbsp;|&nbsp;
-  <a href="#驗證"><strong>驗證</strong></a> &nbsp;|&nbsp;
+  <a href="#快速開始"><strong>快速開始</strong></a> |
+  <a href="#運作原理"><strong>運作原理</strong></a> |
+  <a href="#質素"><strong>畫面質素</strong></a> |
+  <a href="#驗證"><strong>驗證</strong></a> |
   <a href="#播放器家族"><strong>播放器家族</strong></a>
 </p>
 
 <div align="center">
 
-<img src="readme/demo.gif" alt="以 mednafen 擷取、由建置好的 Master System 卡帶播放的 Sintel 預告片六秒片段" width="640">
+<img src="readme/demo.gif" alt="由建置好的 Master System 卡帶播放的 Sintel 預告片六秒片段，由卡帶的數據流繪製" width="640">
 
-<sub>Sintel 預告片的六秒片段，由 mednafen 執行建置好的卡帶，以遊戲機本身的 256x192 擷取。Neo Geo 播放器的 README 開首也是同一部影片。Sintel 由 Blender Foundation 製作，採用 CC BY 3.0 授權。</sub>
+<sub>Sintel 預告片的六秒片段，來自建置好的 Master System 卡帶，以遊戲機本身的 256x192 顯示。Neo Geo 播放器的 README 開首也是同一部影片。Sintel 由 Blender Foundation 製作，採用 CC BY 3.0 授權。</sub>
 
 <img src="readme/demo-gg.gif" alt="由建置好的 Game Gear 卡帶播放的 Sintel 預告片六秒片段，由卡帶的數據流繪製" width="400">
 
-<sub>同樣的六秒，以相同方式為 Game Gear 卡帶烘焙，<code>--target gg</code>，以螢幕本身的 160x144 按相同倍率顯示，調色盤取自 4096 種顏色。由於播放器每次播放的頭三秒都會顯示進度條，畫面由重播預言按卡帶的數據流繪製；在進度條以外，mednafen Game Gear 模式的擷取與之逐像素一致。</sub>
+<sub>同樣的六秒，來自 Game Gear 卡帶，<code>--target gg</code>，以螢幕本身的 160x144 按相同倍率顯示，調色盤取自 4096 種顏色。兩段示範都由 <code>tools/scripts/make_demos.py</code> 製作：同一時段、相同設定烘焙，影片每一幀對應 GIF 的一幀，兩者都是 12 fps、71 幀，所以第 <i>n</i> 幀在兩邊顯示同一時刻。由於播放器每次播放的頭三秒都會顯示進度條，每段畫面都由重播預言按各自卡帶的數據流繪製；進度條消失後，無介面執行的 mednafen 擷取與各自的數據流逐像素一致。</sub>
 
 </div>
 
@@ -70,7 +70,7 @@ Master System 除了圖塊顯示之外，沒有任何視訊硬件。它從 16 KB
 | 操控 | 循環播放。帶有播放、暫停及靜音符號以及已播放時間及總時間的位置列，會在開始時以及按下上、下、左、右或按鈕 1 之後顯示約三秒，然後讓開畫面；暫停時一直顯示。按鈕 1 重新開始。按鈕 2 停在黑畫面上，之後按按鈕 1、按鈕 2 或暫停鍵從頭播放。暫停鍵，在 Game Gear 上為 Start 鍵，用於暫停及繼續。下鍵隨時顯示及隱藏診斷資訊，暫停時按鈕 1 亦可：目前幀與總幀數、卡帶記憶庫，以及因錯過垂直消隱而押後的場數。上鍵關閉及開啟聲音，聲音會在一秒內恢復。左右鍵跳到烘焙器每 10 秒放置的跳轉點，可用 `--seek-every` 更改；跳轉時在載入該點畫面期間會黑畫面約四分之一秒。串流損毀時停在紅畫面 |
 | 場率 | 按 NTSC 節奏，每秒 59.92 場，Game Gear 亦以此速率運行。播放器每場繪製一個區塊，因此 50 Hz 的 PAL 遊戲機會以約為預定速度六分之五的速度播放同一串流。這裏未曾在任何 PAL 遊戲機上作檢查 |
 | Game Gear | `--target gg` 建置原生的 Game Gear 卡帶：以 20×18 個格子使用 160x144 的螢幕，調色盤從 4096 種顏色中擬合，按立體聲來源把 PSG 的各個聲部分配到耳機的左右聲道，並以 Start 鍵暫停。它可在 mednafen 的 Game Gear 模式下播放，其擷取畫面與重播預言逐像素一致。尚未在 Game Gear 本身的模式下於實機上運行 |
-| 回歸測試集 | 每次執行測試都會為 Master System 烘焙六段不同類型的片段。Game Gear 目標尚未納入 |
+| 回歸測試集 | 每次執行測試都會把六段不同類型的片段分別為 Master System 及 Game Gear 各烘焙一次 |
 | 硬件實機運行 | 已於 2026-10-17 在 Master System 及 Game Gear 上運行，未見任何缺陷。這裏的數字仍然來自模擬器或組譯清單 |
 
 ## 每個播放器都具備的功能
@@ -101,7 +101,7 @@ Master System 除了圖塊顯示之外，沒有任何視訊硬件。它從 16 KB
 | 在你自己的遊戲中播放影片 | 是，`--bundle` 會產生可直接嵌入的程式庫 | 是，`--bundle` 會產生可直接嵌入的程式庫，`examples/cutscene` 用它建置一個遊戲 | 是，`--bundle` 配合 `--target gg` 會產生 Game Gear 用的程式庫 |
 | 預覽主機將會繪製的畫面 | 是，影片，或四幀畫面並列於其來源旁 | 是，影片，或四幀畫面並列於其來源旁 | 是，影片，或四幀畫面並列於其來源旁 |
 | 每次建置都檢查寫入時序 | 是 | 是 | 是 |
-| 每次測試都會烘焙的回歸影片集 | 是，六段影片 | 是，六段影片 | 已計劃：六段影片目前只為 Master System 烘焙 |
+| 每次測試都會烘焙的回歸影片集 | 是，六段影片 | 是，六段影片 | 是，同樣六段影片烘焙到 Game Gear 的顯示範圍 |
 | 在原裝硬件上運行 | 是，AES 及 MVS | 是，Master System 及 Game Gear | 已計劃：Master System 卡帶已在 Game Gear 上運行，原生卡帶尚未運行 |
 
 ## 運作原理
@@ -193,7 +193,7 @@ git submodule update --init   # in a clone made without the flag
 ```bash
 uv --project tools run python -m smsggmedia.cartridge input.mp4 --start 300 --duration 5 \
     --preview build/preview.png
-make timing     # VDP write spacing, read out of the assembler's own listing
+make timing     # VDP write spacing, read out of the assembler's own listing; TARGET=gg for the Game Gear
 ```
 
 `--preview` 會從影片各處取四幀，按遊戲機將繪出的樣子寫出，每幀旁邊附上其來源，因此無需模擬器亦可評估一次烘焙。指定 `.mp4` 時，則輸出遊戲機繪出的每一場組成的影片。`build/report.json` 中的報告列出 `cells_merged`，即顯示合併圖塊而非自身圖塊的格子，以及 `most_merged_frames`，即損失最多的幀，因此結果欠佳時可追溯至導致問題的幀。`frames_unshown_at_end` 計算影片結尾有多少已解碼的幀，在有空槽位容納它們之前，時鐘已越過它們。
@@ -376,13 +376,15 @@ Sintel 預告片由 0:10 開始的三十秒，以預設設定烘焙：
 |---|---|
 | 重播驗證模型 | 烘焙器對串流的模型能重播出編碼器預期的畫面，精確至小數點後五位 |
 | mednafen 擷取 | 從 mednafen 擷取的幀與重播驗證模型逐像素相符，因此該模型可代表螢幕 |
-| `make timing` | 編譯後播放器中每對 VDP 寫入的間隔都達到 29 T-states，在受保護的垂直消隱複製內則為 16，並把所有組譯清單當作同一程式逐一走遍 |
+| `make timing`、`make timing TARGET=gg` | 每部主機編譯後播放器中每對 VDP 寫入的間隔都達到 29 T-states，在受保護的垂直消隱複製內則為 16，並把所有組譯清單當作同一程式逐一走遍 |
 | `test_seek_on_z80.py` | 建置好的播放器為左右鍵選出正確的跳轉點，跳轉後重播位於該點的記憶庫及偏移 |
 | `test_diag_on_z80.py` | 建置好的診斷資訊在 Z80 上對着 VDP 模型執行，幀、記憶庫及押後場數兩行寫在位置疊加層的精靈之後 |
 | `test_osd_on_z80.py` | 建置好的位置疊加層在 Z80 上對着 VDP 模型執行，已播放時間、總時間、位置列、狀態符號及其調色盤都寫到精靈讀取的位置，工作分散到多個場而不越過幀中斷 |
 | `test_transport_on_z80.py` | 建置好的操控判定在 Z80 上執行，檢查每個按鍵的作用、疊加層顯示多久，以及甚麼能喚醒已停止的播放器 |
-| `test_replay_on_z80.py` | 建置好的重播程式在 Z80 上執行，V 計數器固定於選定的行，沒有任何調色盤字節或切換在時窗以外到達 VDP |
-| 回歸測試集 | 六部不同類型的影片在每次測試時烘焙，各自須符合量度出的誤差及記憶庫預算 |
+| `test_replay_on_z80.py`、`test_gg_build.py` | 兩部主機建置好的重播程式在 Z80 上執行，V 計數器固定於選定的行，沒有任何調色盤字節（Master System 32 個，Game Gear 64 個）或切換在時窗以外到達 VDP |
+| `test_screen_on_z80.py` | 開機時，以及影片每次播完、停止或出錯時，兩部主機都把 PSG 每個聲道衰減至最大並清空畫面 |
+| `check_rom.py` | 兩個卡帶都帶有 `TMR SEGA`、該主機的地區碼，以及與內容相符的校驗和 |
+| 回歸測試集 | 六部不同類型的影片在每次測試時為兩部主機烘焙，各自須符合量度出的誤差及記憶庫預算 |
 
 ### 在真實硬件上
 
@@ -407,7 +409,7 @@ Sintel 預告片由 0:10 開始的三十秒，以預設設定烘焙：
 | [`src/`](src) 及 [`include/fmv/`](include/fmv) | 以 C 及組合語言寫成的 Z80 播放器，每個檔案一個模組 |
 | [`examples/cutscene/`](examples/cutscene) | 用產生的套件建置的遊戲，播放影片後繼續運行 |
 | [`tools/smsggmedia/`](tools/smsggmedia) | 烘焙器，每個階段一個模組 |
-| [`tools/scripts/`](tools/scripts) | 下載回歸測試影片、重建 fixture、檢查寫入時序、比較擷取畫面 |
+| [`tools/scripts/`](tools/scripts) | 下載回歸測試影片、檢查寫入時序、檢查卡帶標頭、執行 ROM 閘門、比較擷取畫面 |
 | [`tools/tests/`](tools/tests) | 編碼器測試套件，包括多片段閘門及 Z80 重播 |
 | [`fmv-core-python/`](https://github.com/gufranco/fmv-core-python) | 子模組：本系列共用的烘焙器及量度程式碼 |
 | [`readme/`](readme) | 示範 GIF |
@@ -440,8 +442,10 @@ uv --project tools run python tools/scripts/fetch_clips.py
 
 # 在版本固定的映像內執行的播放器閘門
 make rom
+make rom TARGET=gg
 make analyse
 make timing
+make timing TARGET=gg
 ```
 
 回歸測試集刻意烘焙六段不同類型的片段。它們不在儲存庫內，我們亦無權再分發，所以清單只記錄其身分，由上述腳本下載並驗證。沒有它們時，只有已提交的合成片段會運行，閘門亦弱得多。所有鳴謝及授權均列於 [`tools/clips.manifest.json`](tools/clips.manifest.json)。

@@ -5,7 +5,7 @@
 <strong>改造なしのSega Master SystemとGame Gearで、それぞれ本来のモードでフルスクリーン動画を再生し、<br>
 再生中にタイルをVRAMへページングします。</strong>
 
-[English](README.md) &nbsp;|&nbsp; 日本語 &nbsp;|&nbsp; [简体中文](README.zh-Hans.md) &nbsp;|&nbsp; [繁體中文（香港）](README.zh-HK.md)
+[English](README.md) | 日本語 | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/gufranco/smsgg-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/smsgg-media-player/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](RELEASES.md)
@@ -16,22 +16,22 @@
 </div>
 
 <p align="center">
-  <a href="#クイックスタート"><strong>クイックスタート</strong></a> &nbsp;|&nbsp;
-  <a href="#仕組み"><strong>仕組み</strong></a> &nbsp;|&nbsp;
-  <a href="#品質"><strong>画質</strong></a> &nbsp;|&nbsp;
-  <a href="#検証"><strong>検証</strong></a> &nbsp;|&nbsp;
+  <a href="#クイックスタート"><strong>クイックスタート</strong></a> |
+  <a href="#仕組み"><strong>仕組み</strong></a> |
+  <a href="#品質"><strong>画質</strong></a> |
+  <a href="#検証"><strong>検証</strong></a> |
   <a href="#ファミリー"><strong>ファミリー</strong></a>
 </p>
 
 <div align="center">
 
-<img src="readme/demo.gif" alt="ビルドしたMaster SystemカートリッジでSintelの予告編を6秒間再生した様子。mednafenでキャプチャしたものです" width="640">
+<img src="readme/demo.gif" alt="ビルドしたMaster SystemカートリッジでSintelの予告編を6秒間再生した様子。カートリッジのストリームから描画" width="640">
 
-<sub>Sintelの予告編の6秒間です。ビルドしたカートリッジをコンソール本来の256x192で実行するmednafenからキャプチャしました。同じ映像がNeo GeoプレイヤーのREADMEの冒頭にも使われています。SintelはBlender Foundationの作品で、ライセンスはCC BY 3.0です。</sub>
+<sub>ビルドしたMaster Systemカートリッジによる、コンソール本来の256x192でのSintelの予告編の6秒間です。同じ映像がNeo GeoプレイヤーのREADMEの冒頭にも使われています。SintelはBlender Foundationの作品で、ライセンスはCC BY 3.0です。</sub>
 
 <img src="readme/demo-gg.gif" alt="ビルドしたGame Gearカートリッジで再生するSintelの予告編の6秒間、カートリッジのストリームから描画" width="400">
 
-<sub>同じ6秒間を同じ設定でGame Gearのカートリッジ、<code>--target gg</code>向けにベイクしたものです。画面本来の160x144を同じ倍率で表示し、パレットは4096色から合わせています。プレイヤーは再生のたびに最初の3秒間位置バーを表示するため、カートリッジのストリームからリプレイオラクルで描画しました。バーの外側では、mednafenのGame Gearモードのキャプチャとピクセル単位で一致します。</sub>
+<sub>同じ6秒間をGame Gearのカートリッジ、<code>--target gg</code>で再生したものです。画面本来の160x144を同じ倍率で表示し、パレットは4096色から合わせています。2つのデモはどちらも<code>tools/scripts/make_demos.py</code>で作ります。同じ区間を同じ設定でベイクし、映像の1フレームをGIFの1フレームにするので、どちらも12 fpsで71フレームとなり、<i>n</i>番目のフレームは両方で同じ瞬間を示します。プレイヤーは再生のたびに最初の3秒間位置バーを表示するため、それぞれのカートリッジのストリームからリプレイオラクルで描画しました。バーが消えた後は、ヘッドレスのmednafenのキャプチャがそれぞれのストリームとピクセル単位で一致します。</sub>
 
 </div>
 
@@ -70,7 +70,7 @@ Master Systemには、タイル表示以外の映像用ハードウェアがあ�
 | 操作 | ループ再生します。再生、一時停止、ミュートの記号と経過時間、総時間を表示する再生位置バーが、開始時と、上、下、左、右、ボタン1のいずれかを押した後に約3秒間出て、その後は映像の邪魔にならないよう消えます。一時停止中は出たままです。ボタン1で最初から再生します。ボタン2で黒い画面で停止し、その後ボタン1、ボタン2、ポーズのいずれかで最初から再生します。ポーズボタン、ゲームギアではスタートボタンで一時停止と再開をします。下でいつでも診断情報を出し入れでき、一時停止中はボタン1でも同じです。フレーム数と総フレーム数、カートリッジのバンク、垂直帰線期間に間に合わず先送りしたフィールドの数です。上でサウンドをオフ、オンにします。サウンドは1秒以内に戻ります。左右でベイカーが10秒ごとに置くシーク地点へ移動します。間隔は`--seek-every`で変えられます。移動中はその地点の映像を読み込む間、約0.25秒黒くなります。ストリームが破損している場合は赤い画面で停止します |
 | フィールドレート | NTSCの毎秒59.92フィールドに合わせており、Game Gearも同じレートで動作します。プレイヤーは1フィールドに1チャンクを描画するため、50 HzのPALコンソールでは同じストリームが本来の速度の約6分の5で再生されます。PALコンソールでの確認はまだ行っていません |
 | Game Gear | `--target gg`でGame Gear専用のカートリッジを作ります。160x144の画面を20×18セルで使い、パレットは4096色から合わせ、ステレオのソースからPSGの各音をヘッドホンの左右へ振り分け、スタートボタンで一時停止します。mednafenのGame Gearモードで再生でき、そのキャプチャーはリプレイオラクルとピクセル単位で一致します。Game Gear本来のモードでの実機実行はまだです |
-| 回帰セット | 種類の異なる6本のクリップを、テスト実行のたびにMaster System向けにベイクします。Game Gearターゲットはまだ含まれていません |
+| 回帰セット | 種類の異なる6本のクリップを、テスト実行のたびにMaster System向けとGame Gear向けにそれぞれベイクします |
 | 実機での実行 | 2026-10-17にMaster SystemとGame Gearで実行し、不具合は見られませんでした。ここに載っている数値は引き続きエミュレーターかリスティングから得たものです |
 
 ## すべてのプレイヤーが備える機能
@@ -101,7 +101,7 @@ Master Systemには、タイル表示以外の映像用ハードウェアがあ�
 | 自作ゲームへの映像の組み込み | はい。`--bundle`がそのまま組み込めるライブラリを出力します | はい。`--bundle`がそのまま組み込めるライブラリを出力し、`examples/cutscene`がそれでゲームをビルドします | はい。`--bundle`と`--target gg`でGame Gear用のライブラリを出力します |
 | コンソールが描画する内容のプレビュー | はい。動画、またはソースと並べた4フレーム | はい。動画、またはソースと並べた4フレーム | はい。動画、またはソースと並べた4フレーム |
 | 全ビルドでの書き込みタイミングゲート | はい | はい | はい |
-| テスト実行ごとにベイクする回帰用の映像セット | はい。6本の映像 | はい。6本の映像 | 予定。6本の映像はMaster System向けにのみベイクしています |
+| テスト実行ごとにベイクする回帰用の映像セット | はい。6本の映像 | はい。6本の映像 | はい。同じ6本をGame Gearの表示範囲にベイクします |
 | 実機での動作 | はい。AESとMVS | はい。Master SystemとGame Gear | 予定。Master SystemのカートリッジはGame Gearで動作済みですが、ネイティブ版はまだです |
 
 ## 仕組み
@@ -194,7 +194,7 @@ git submodule update --init   # in a clone made without the flag
 ```bash
 uv --project tools run python -m smsggmedia.cartridge input.mp4 --start 300 --duration 5 \
     --preview build/preview.png
-make timing     # VDP write spacing, read out of the assembler's own listing
+make timing     # VDP write spacing, read out of the assembler's own listing; TARGET=gg for the Game Gear
 ```
 
 `--preview`は、映像全体から選んだ4フレームをコンソールが描くとおりに、それぞれソースと並べて書き出すので、エミュレーターなしでベイクの出来を判断できます。`.mp4`を指定すると、コンソールが描くすべてのフィールドを動画で書き出します。`build/report.json`のレポートには、自身のタイルの代わりにマージされたタイルを表示したセルである`cells_merged`と、最も多くを失ったフレームである`most_merged_frames`が載るので、結果が悪いときに原因のフレームまでたどれます。`frames_unshown_at_end`は、映像の終わりでデコードされたフレームのうち、空きスロットができる前に時計が過ぎてしまったものの数です。
@@ -377,13 +377,15 @@ mednafenで再生できます。
 |---|---|
 | リプレイオラクル | ベイカーのストリームモデルが、エンコーダーの意図した映像を小数点以下5桁まで再現すること |
 | mednafenのキャプチャ | mednafenからキャプチャしたフレームがリプレイオラクルとピクセル単位で一致し、オラクルが画面を代表できること |
-| `make timing` | コンパイル済みプレイヤーのすべてのVDP書き込みペアが29 Tステート、ガードされた垂直ブランク内のコピーでは16 Tステートを満たすこと。すべてのリスティングを1つのプログラムとしてたどります |
+| `make timing`、`make timing TARGET=gg` | 各機種のコンパイル済みプレイヤーのすべてのVDP書き込みペアが29 Tステート、ガードされた垂直ブランク内のコピーでは16 Tステートを満たすこと。すべてのリスティングを1つのプログラムとしてたどります |
 | `test_seek_on_z80.py` | ビルドしたプレイヤーが左右で正しいシーク地点を選び、移動でリプレイがその地点のバンクとオフセットに置かれること |
 | `test_diag_on_z80.py` | ビルドした診断表示をVDPモデル相手にZ80上で実行し、フレーム、バンク、先送りしたフィールドの行が再生位置オーバーレイのスプライトの後ろに書かれること |
 | `test_osd_on_z80.py` | ビルドした再生位置オーバーレイをVDPモデル相手にZ80上で実行し、経過時間と総時間、バー、状態の記号、そのパレットがスプライトの読む場所に書かれ、作業がフレーム割り込みを越えずに複数のフィールドへ分けられること |
 | `test_transport_on_z80.py` | ビルドした操作判定をZ80上で実行し、どのボタンが何をするか、オーバーレイが出ている長さ、停止中のプレイヤーを起こす操作が正しいこと |
-| `test_replay_on_z80.py` | ビルドしたリプレイを、Vカウンタを選んだラインに固定してZ80上で実行し、パレットのバイトや切り替えが期間外にVDPへ届かないこと |
-| 回帰セット | 種類の異なる6本の映像がテスト実行のたびにベイクされ、それぞれ測定済みの誤差とバンク数の予算に収まること |
+| `test_replay_on_z80.py`、`test_gg_build.py` | 各機種のビルドしたリプレイを、Vカウンタを選んだラインに固定してZ80上で実行し、パレットのバイト（Master Systemは32、Game Gearは64）や切り替えが期間外にVDPへ届かないこと |
+| `test_screen_on_z80.py` | 起動時と、映像の終了・停止・異常のたびに、どちらの機種でもPSGの全チャンネルを最大減衰にして画面を消すこと |
+| `check_rom.py` | 両カートリッジに`TMR SEGA`、機種のリージョン、本体と一致するチェックサムがあること |
+| 回帰セット | 種類の異なる6本の映像がテスト実行のたびに両機種向けにベイクされ、それぞれ測定済みの誤差とバンク数の予算に収まること |
 
 ### 実機での検証
 
@@ -408,7 +410,7 @@ VDPの書き込み間隔を強制するエミュレーターはないため、�
 | [`src/`](src)と[`include/fmv/`](include/fmv) | CとアセンブリによるZ80プレイヤー、1ファイルに1モジュール |
 | [`examples/cutscene/`](examples/cutscene) | 書き出したバンドルからビルドした、映像を再生してから続きへ進むゲーム |
 | [`tools/smsggmedia/`](tools/smsggmedia) | ベイカー、1工程に1モジュール |
-| [`tools/scripts/`](tools/scripts) | 回帰用の映像の取得、フィクスチャの再構築、書き込みタイミングの確認、キャプチャの比較 |
+| [`tools/scripts/`](tools/scripts) | 回帰用の映像の取得、書き込みタイミングの確認、カートリッジのヘッダーの確認、ROMゲートの実行、キャプチャの比較 |
 | [`tools/tests/`](tools/tests) | エンコーダーのテストスイート、複数クリップのゲートとZ80リプレイを含む |
 | [`fmv-core-python/`](https://github.com/gufranco/fmv-core-python) | サブモジュール。ファミリーが共有するベイカーと測定のコード |
 | [`readme/`](readme) | デモのGIF |
@@ -440,7 +442,11 @@ uv --project tools run python -m pytest tools/tests --cov=smsggmedia --cov=tools
 uv --project tools run python tools/scripts/fetch_clips.py
 
 # 固定したイメージ内でのプレイヤーのゲート
-make rom`、`make analyse`、`make timing
+make rom
+make rom TARGET=gg
+make analyse
+make timing
+make timing TARGET=gg
 ```
 
 回帰セットは、意図的に種類を変えた6本のクリップをベイクします。これらはリポジトリに含まれておらず、再配布できるものでもないため、マニフェストにはその識別情報を記録し、上のスクリプトで取得と検証を行います。それらがない場合はコミット済みの合成クリップだけが実行され、ゲートは大幅に弱くなります。クレジットとライセンスはすべて[`tools/clips.manifest.json`](tools/clips.manifest.json)にあります。

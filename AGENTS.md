@@ -20,7 +20,7 @@ Nothing here is verified by compiling. Run the gate.
 |---|---|
 | It builds | `make rom` |
 | The C holds | `make analyse` |
-| No VDP write pair is under its floor, and every blank copy is guarded | `make timing` and `SMSGGMEDIA_ROM_REQUIRED=1 pytest tools/tests/test_replay_on_z80.py`, after `make rom` |
+| No VDP write pair is under its floor, and every blank copy is guarded | `make timing`, `make timing TARGET=gg` and `SMSGGMEDIA_ROM_REQUIRED=1 pytest tools/tests/test_replay_on_z80.py tools/tests/test_gg_build.py`, after `make rom` and `make rom TARGET=gg` |
 | The baker holds | `uv --project tools run ruff format --check tools/`, `ruff check tools/`, `mypy tools/smsggmedia tools/scripts` |
 | The behaviour holds | `SMSGGMEDIA_CLIPS_REQUIRED=1 uv --project tools run python -m pytest tools/tests --cov=smsggmedia --cov=tools/scripts --cov-config=tools/pyproject.toml --cov-fail-under=95` |
 | A commit is clean | [`.githooks/pre-commit`](.githooks/pre-commit), installed once by `make hooks` |
@@ -41,7 +41,8 @@ alike as their hardware allows, and held to the requirements in
 mapper decodes, and its sound is tone synthesis on the PSG: the baker writes
 the changed tone, noise and attenuation registers once a field, and the replay
 sends them to port `$7F` 34 T-states apart before the field's picture. The
-player never enables the line interrupt, and it still silences the PSG at boot.
+player never enables the line interrupt, and it silences the PSG at boot and
+again whenever a film ends, stops or faults, through `fmv_screen_rest`.
 `--silent` leaves sound out. The sound path has played on a Master System and a Game Gear.
 
 Owner's instruction, 2026-10-15: never describe one member as a port, fork,
@@ -139,8 +140,19 @@ CRT returns: no composite model and no `--gamut-dither`.
   on game footage; the README has the numbers.
 - A mednafen capture matches the replay oracle pixel for pixel, so it is the
   view to judge by, at integer scale.
+- The reuse threshold is read in Master System terms and scaled per console,
+  `Lattice.reuse_scale`, 1/25 on the Game Gear, and on the Game Gear a
+  resident tile keeping less than half a cell's spread of lightness may not
+  stand in for it. Without both the Game Gear picture broke into flat 8 by 8
+  blocks in every dark area, which no score here registered; it took a
+  side-by-side render to see it.
+- The README demos come from one command,
+  `uv --project tools run python tools/scripts/make_demos.py <sintel window> --duration 6 --out readme`.
+  They match frame for frame by construction, and FAMILY.md requires making
+  them again after any change to the picture, once both consoles look alike.
 - `tools/tests/test_golden.py` pins the stream's size and the replayed
-  picture's blurred error for seeded frames, to 0.5%. It is not a byte hash:
+  picture's blurred error for seeded frames, to 0.5%, once for the Master
+  System's raster and once for the Game Gear's window. It is not a byte hash:
   numpy's float results depend on the CPU's vector features, so the same code
   emits different bytes on an M-series Mac, under QEMU and on a GitHub runner,
   while the picture agrees to a few parts in 100,000. A new value is blessed
@@ -188,8 +200,9 @@ T-states a byte, legal at any time, and they only touch slots and a name table
 the screen is not showing. The one run that must land in the vertical blank
 is the closing run, which writes the palettes and flips register 2 to the
 other name table. It is moved to the start of the next field's chunk, the
-player reads the V counter before it, and its 32 palette bytes go out with
-back-to-back `outi`, 16 T-states a byte, the documented blanking floor.
+player reads the V counter before it, and its 32 palette bytes, 64 on the
+Game Gear, go out with back-to-back `outi`, 16 T-states a byte, the
+documented blanking floor.
 
 Moving every write into the blank was built and measured first. A field then
 holds what fits between lines `C0` and `DF` at 272 T-states of overhead a run,
@@ -242,6 +255,10 @@ Rules that follow:
   all 32 bytes and the flip do, so it is a check that can fail. It also
   measures every control-port pair as executed. It skips when no ROM is
   built, so CI sets `SMSGGMEDIA_ROM_REQUIRED=1` and a missing ROM fails it.
+  `tools/tests/test_gg_build.py` holds the Game Gear ROM to the same window
+  with its 64-byte closing run, and `tools/tests/test_screen_on_z80.py`
+  checks on both ROMs that putting the console at rest silences every PSG
+  channel.
 - Every chunk keeps room for a deferred closing run, 34 bytes, so moving one
   into the next field never pushes that field past its budget.
 - No measurement available in this repository can validate a change to the
@@ -319,10 +336,10 @@ Each of these has been settled on hardware by another project, and each applies 
 | 2. Fixed loop bounds | Every loop has a compile-time or argument-bounded limit. Recorded exceptions below |
 | 3. No heap | No `malloc` anywhere. All state is static or automatic |
 | 4. Short functions | Every function fits on one screen |
-| 5. Two assertions per function | `FMV_ASSERT` twice minimum in every non-trivial function. Always compiled in: a failure stops the console on a coloured screen, and none sits between two VDP writes. A fact the compiler can see is a `static_assert` instead, since SDCC rejects a runtime check that can never fail as unreachable code |
+| 5. Two assertions per function | `FMV_ASSERT` twice minimum in every non-trivial function, one for each bound an index, a pointer or a counter relies on. Always compiled in: a failure stops the console on a coloured screen, and none sits between two VDP writes. A fact the compiler can see is a `static_assert` instead, since SDCC rejects a runtime check that can never fail as unreachable code. A getter, a setter and a one-call wrapper are trivial |
 | 6. Smallest scope | File-static where possible. No cross-module globals |
 | 7. Check return values | Every function that can fail returns `bool`, and every caller tests it. A function that cannot fail returns `void`, because a dead failure branch is a cppcheck error here |
-| 8. Sparse preprocessor | Include guards, `FMV_ASSERT`, and the SMSlib header macros. No conditional compilation in logic |
+| 8. Sparse preprocessor | Include guards, `FMV_ASSERT`, and the SMSlib header macros. No conditional compilation in logic: what differs between the consoles lives in `src/sms/` and `src/gg/`, as `target.inc`, `fmv_target.h` and `pause.c`, and the Makefile picks the directory |
 | 9. One pointer dereference, no function pointers | Structures are passed by pointer and read one level deep. No function pointers at all |
 | 10. All warnings on | `--Werror` on every compile, plus cppcheck in `make analyse` |
 
@@ -332,6 +349,13 @@ Each of these has been settled on hardware by another project, and each applies 
   program intended to run until the console is switched off.
 - `fmv_assert_fail()` in `src/assert.c` runs `for (;;)`. An assertion failure is
   a deliberate halt, and returning from it would defeat its purpose.
+- The fault branch of `main()` waits on red with `for (;;)`. A corrupt stream
+  has no way back to a film, and the red screen is how a viewer tells a fault
+  from a hang.
+- `mvloop` in `src/replay.s` runs until the stream ends the chunk. Every pass
+  consumes at least one byte, any byte the player does not know ends it with
+  `FMV_CHUNK_BAD`, and the baker ends every chunk inside the field's budget,
+  so the stream is the bound.
 - `wait_for_resume()` and `wait_for_wake()` in `src/main.c` wait, one vertical
   blank per pass, for the viewer to resume from a pause or to play again after
   a stop. A viewer may leave the console paused or stopped indefinitely, and
@@ -342,8 +366,8 @@ saying why.
 
 ### Recorded exceptions to rules 6 and 9
 
-- `movie_cursor`, `movie_bank`, `movie_kind`, `movie_last_bank` and
-  `movie_inks` in `src/mediaplayer.c` are globals shared with `src/replay.s`, because the
+- `movie_cursor`, `movie_bank`, `movie_kind`, `movie_last_bank`,
+  `movie_muted`, `movie_inks` and `movie_defers` in `src/mediaplayer.c` are globals shared with `src/replay.s`, because the
   replay is assembly and reads and writes them by symbol. Nothing else
   touches them.
 - The mapper register at `0xFFFF` is written through a cast `volatile`
@@ -365,7 +389,7 @@ VRAM and the mapper. The replay oracle refuses the same streams by name.
 The per-field transfer loop is the one function whose correctness is measured
 in T-states rather than in lines. It is paced at 30 T-states a byte with
 `outi; nop; jp nz`, and it stays a loop. Unrolling it is the defect that
-shipped once. The only unrolled copy is the 32-byte palette run between
+shipped once. The only unrolled copy is the palette run, 32 bytes or 64 on the Game Gear, between
 `fmvcopy` and `fmvdone`, legal because it runs inside the guarded vertical
 blank.
 
@@ -376,8 +400,9 @@ Dockerfile          toolchain image: SDCC, devkitSMS built from a pinned commit,
 Makefile            host target delegates to Docker; in-container target does the real build
 include/fmv/        public headers, one per module
 src/                implementation, one file per module
+src/sms/, src/gg/   what differs per console: target.inc, fmv_target.h, pause.c
 tools/smsggmedia/     the baker, one module per stage
-tools/scripts/      one-shot helpers: fetch the clips, rebuild the fixture
+tools/scripts/      one-shot helpers: fetch the clips, time the listings, check a ROM header, the ROM gate
 tools/tests/        the encoder suite, including the multi-clip gate
 tools/DESIGN.md     why each baker module, script and test is shaped as it is
 tools/clips.manifest.json  identity of the films the gate bakes, never the films
@@ -390,11 +415,11 @@ specs/              design notes, not committed
 ## Build commands
 
 ```
-make rom        build the ROM at build/smsggmedia.sms
-make analyse    static analysis, must exit 0
-make timing     VDP write spacing in the built listings, after make rom
+make rom        build the ROM at build/smsggmedia.sms; TARGET=gg builds build/smsggmedia.gg
+make analyse    static analysis of both consoles' builds, must exit 0
+make timing     VDP write spacing in the built listings, after make rom; TARGET=gg for the Game Gear
 make hooks      install the pre-commit hook: format, lint, types and tests, plus
-                rom, analyse, timing and the Z80 replay when the player changes
+                both ROMs, analyse, both timings and the Z80 tests when the player changes
 make shell      interactive shell inside the toolchain image
 make clean      remove build output
 make distclean  also remove the Docker image
@@ -484,6 +509,10 @@ uv --project tools run python tools/scripts/compare_capture.py \
     --capture /tmp/run.mov --source <film> --start <seconds> --sheet /tmp/worst.png
 ```
 
+A capture of the Game Gear cartridge, `build/smsggmedia.gg` recorded by
+mednafen's Game Gear module, takes `--target gg`: the oracle is cut to the
+160 by 144 panel and the floor is the Game Gear's 4096 colours.
+
 It first proves the capture repeats the replay oracle pixel for pixel, then
 reports what is on screen against the source at the same instant, each frame
 against its best-matching moment, the same after an identical blur on both
@@ -517,12 +546,22 @@ from the same command, and look at the sheet before quoting a number.
   summary; the pin moves after the golden test and the regression set pass
   against the newer core.
 - A release publishes a version tag and the release notes, never a ROM.
+- The ROM gate is one script, `tools/scripts/rom_gate.sh`, and CI and the
+  release both run it, so a release never checks less than CI: both
+  consoles' cartridges and bundles, analysis, timing, the Z80 tests and both
+  headers through `tools/scripts/check_rom.py`. Every checkout sets
+  `persist-credentials: false` except the publish job's.
 - A release runs its gates in a read-only job with no stored credential.
   Only the publish job holds a write token, and it installs the `release`
   dependency group alone, so no test dependency ever runs beside that token.
 
 ## Things that will bite you
 
+- SDCC 4.5 accepts `_Noreturn` and rejects `[[noreturn]]`, and cppcheck
+  honours only `[[noreturn]]`. `fmv_assert_fail` is declared `_Noreturn`, and
+  `make analyse` passes `-D_Noreturn=[[noreturn]]` to cppcheck; without it,
+  every `FMV_ASSERT` on an index reads to cppcheck as a guarded out-of-bounds
+  access. The mapping still reports an assertion too loose for its array.
 - `ihx2sms` treats each new block appearing at `0x8000` as a new ROM bank, so
   every bank segment needs its own `-Wl-b_BANKn=0x8000` flag.
 - Bank object files must be linked in ascending numeric order. An alphabetical
@@ -606,7 +645,10 @@ overlay is up. The report did not itemise each check, so a defect found later
 on any of them goes back on this list with what was seen.
 
 Still open: the owner's verdict on the dither default, and a listening verdict
-on the PSG sound. The next change to `src/replay.s`, the transfer loop or the
+on the PSG sound. The PSG now falls silent with the screen when a film ends,
+stops or faults; before, the last note sounded on over the black or red
+screen. That change to `src/main.c` and `src/screen.c` has not run on a
+console yet. The next change to `src/replay.s`, the transfer loop or the
 overlay's VDP writes is unverified again until it runs on a console.
 
 Since that run the overlay moved up: text at sprite y 145, the bar at 157 and
@@ -620,8 +662,8 @@ The Game Gear build, `--target gg` and `make rom TARGET=gg`, has run only in
 mednafen's Game Gear module. It compiles the same player with `TARGET_GG`,
 links `SMSlib_GG.lib` and writes header region `0x7C`. Its closing run copies
 64 CRAM bytes, two an entry through the Game Gear's latch, with the same 16
-T-state `outi` copy inside the same V counter guard; `make timing` walks its
-listings in `build/gg`. Start, bit 7 of port `$00`, pauses instead of the
+T-state `outi` copy inside the same V counter guard; `make timing TARGET=gg`
+walks its listings in `build/gg`. Start, bit 7 of port `$00`, pauses instead of the
 Pause NMI. None of this is verified until it runs on the Game Gear in its own
 mode: play with sound, press Start to pause and again to resume, and watch for
 shredded tiles and wrong colours.
@@ -720,7 +762,8 @@ three and a half times the winner's.
 Every encoder parameter here was once fitted to a single ten-second window of
 one film, and two defects reached the owner because of it. `tools/tests/
 test_multiclip.py` now bakes six clips of deliberately different kinds:
-synthetic, 3D animation, hand-drawn cartoon, live action, animals and people.
+synthetic, 3D animation, hand-drawn cartoon, live action, animals and people,
+each once for the Master System and once for the Game Gear.
 Per clip it holds that nothing is drawn outside the picture, that no cell is
 left showing the previous frame, that no pattern lands in a slot the picture
 still points at, that the bandwidth stays inside a measured per-clip rate, and

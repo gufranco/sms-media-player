@@ -40,6 +40,20 @@ class TestMachine:
         # Assert
         assert m.vram[0x100:0x103].tolist() == [1, 2, 3]
 
+    def test_an_empty_sound_run_is_refused_by_name(self):
+        # Arrange
+        machine = replay.Machine()
+        chunk = bytes([stream.PSG, 0, stream.END_FRAME])
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            machine.apply(chunk)
+
+        # Assert
+        assert str(refused.value) == (
+            "an empty sound run at byte 0, which the player would read as 256 writes"
+        )
+
     def test_an_unknown_kind_is_refused_by_name(self):
         # Arrange
         m = replay.Machine()

@@ -3,10 +3,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from smsggmedia import psgsound, replay, stream
+from smsggmedia import console, psgsound, replay, stream
 
 RATE = 22050
-FIELD_HZ = 59.9227
+FIELD_HZ = console.NTSC_FIELD_HZ
 
 
 def tone(hz: float, seconds: float, *, level: float = 0.5) -> np.ndarray:
@@ -97,6 +97,16 @@ class TestSynthesis:
 
         # Assert
         assert writes[60] == writes[0]
+
+    def test_a_held_tone_is_written_again_on_a_seek_point(self):
+        # Arrange
+        samples = tone(330.0, 1.0)
+
+        # Act
+        writes = psgsound.synthesize(samples, rate=RATE, fields=40, refresh_at=frozenset({25}))
+
+        # Assert
+        assert writes[25] == writes[0]
 
     def test_a_field_never_writes_more_than_the_reserve_allows(self):
         # Arrange

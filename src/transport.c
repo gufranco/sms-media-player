@@ -1,6 +1,7 @@
 #include "fmv/transport.h"
 
 #include "SMSlib.h"
+#include "fmv/assert.h"
 
 #define TRANSPORT_MUTE_KEYS    PORT_A_KEY_UP
 #define TRANSPORT_DIAG_KEYS    PORT_A_KEY_DOWN
@@ -76,6 +77,9 @@ void fmv_transport_begin(fmv_transport *transport)
 
 u16 fmv_transport_playing(fmv_transport *transport)
 {
+    FMV_ASSERT(transport->overlay_fields <= FMV_TRANSPORT_OVERLAY_FIELDS);
+    FMV_ASSERT(transport->tick_fields < FMV_TRANSPORT_TICK_FIELDS);
+
     const u16 keys = transport_keys(transport->pressed);
     const u16 overlay = transport_overlay(transport);
 
@@ -84,6 +88,9 @@ u16 fmv_transport_playing(fmv_transport *transport)
 
 u16 fmv_transport_paused(fmv_transport *transport)
 {
+    FMV_ASSERT(transport->overlay_fields <= FMV_TRANSPORT_OVERLAY_FIELDS);
+    FMV_ASSERT(transport->pause <= 1u);
+
     if (transport->pause != 0u) {
         transport->overlay_fields = FMV_TRANSPORT_OVERLAY_FIELDS;
         return FMV_ACT_RESUME;

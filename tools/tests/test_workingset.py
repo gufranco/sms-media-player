@@ -234,6 +234,39 @@ class TestMatchResidents:
         # Assert
         assert result.tolist() == [0, 0]
 
+    def test_a_flat_resident_cannot_stand_for_a_textured_cell(self):
+        # Arrange
+        cells = np.array([[0.20, 0.0, 0.0, 0.24, 0.0, 0.0]], dtype=np.float32)
+        residents = np.array([[0.22, 0.0, 0.0, 0.22, 0.0, 0.0]], dtype=np.float32)
+
+        # Act
+        result = workingset.match_residents(cells, residents, threshold=0.1, contrast=0.5)
+
+        # Assert
+        assert result.tolist() == [workingset.UNPLACED]
+
+    def test_without_the_guard_the_flat_resident_stands_in(self):
+        # Arrange
+        cells = np.array([[0.20, 0.0, 0.0, 0.24, 0.0, 0.0]], dtype=np.float32)
+        residents = np.array([[0.22, 0.0, 0.0, 0.22, 0.0, 0.0]], dtype=np.float32)
+
+        # Act
+        result = workingset.match_residents(cells, residents, threshold=0.1)
+
+        # Assert
+        assert result.tolist() == [0]
+
+    def test_a_resident_keeping_the_texture_still_stands_in(self):
+        # Arrange
+        cells = np.array([[0.20, 0.0, 0.0, 0.24, 0.0, 0.0]], dtype=np.float32)
+        residents = np.array([[0.21, 0.0, 0.0, 0.24, 0.0, 0.0]], dtype=np.float32)
+
+        # Act
+        result = workingset.match_residents(cells, residents, threshold=0.1, contrast=0.5)
+
+        # Assert
+        assert result.tolist() == [0]
+
     def test_a_distant_cell_matches_nothing(self):
         # Arrange
         cells = np.full((1, 4), 9.0, dtype=np.float64)

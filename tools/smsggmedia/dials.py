@@ -5,6 +5,7 @@ import logging
 from dataclasses import dataclass, replace
 from typing import Final
 
+from fmvcore import ffmpeg
 from fmvcore.arguments import AUTO
 
 from smsggmedia import bake, limits, rate, stream, tune
@@ -92,13 +93,22 @@ def room_per_frame(*, max_banks: int, frame_count: float, fields: int) -> float:
     return max(total - (fields - 1) * stream.TERMINATOR, 1.0)
 
 
+def has_sound(args: argparse.Namespace) -> bool:
+    return not args.silent and ffmpeg.has_audio(args.source)
+
+
+def picture_budget(args: argparse.Namespace) -> int:
+    reserve = limits.sound_reserve(args.target) if has_sound(args) else 0
+    return int(args.budget) - reserve
+
+
 def settle_dials(args: argparse.Namespace, *, geometry: bake.Geometry, wanted: float) -> Dials:
     footage = tune.Footage(
         args.source, start=args.start, duration=wanted, scaler=args.scaler, bars=args.bars
     )
     settings = tune.EncodeSettings(
         geometry,
-        budget=int(args.budget),
+        budget=picture_budget(args),
         cap=args.cap,
         reuse=bake.DEFAULT_REUSE if args.reuse == AUTO else float(args.reuse),
         upload_ceiling=args.upload_ceiling,

@@ -4,6 +4,7 @@ import argparse
 import json
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
@@ -14,34 +15,78 @@ from fmvcore.capture import Played
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from smsggmedia import capture, console, frames, limits, preview
+from smsggmedia import capture, console, frames, lattice, limits, preview, target
 
-CAPTURE_WIDTH: Final = 256
-CAPTURE_HEIGHT: Final = 240
-PICTURE_TOP: Final = 24
-PICTURE_HEIGHT: Final = 192
 SAMPLE_EVERY: Final = 8
 LAG_WINDOW: Final = 600
 
 
-def read_capture(path: Path) -> np.ndarray:
+@dataclass(frozen=True, slots=True)
+class Screen:
+    console: str
+    capture_width: int
+    capture_height: int
+    capture_top: int
+    top: int
+    left: int
+    width: int
+    height: int
+    space: lattice.Lattice
+
+    def crop(self, played: Played) -> Played:
+        fields = played.fields[
+            :, self.top : self.top + self.height, self.left : self.left + self.width
+        ]
+        return Played(fields=fields, completes=played.completes)
+
+
+SCREENS: Final = {
+    target.MASTER_SYSTEM.name: Screen(
+        console=target.MASTER_SYSTEM.console,
+        capture_width=256,
+        capture_height=240,
+        capture_top=24,
+        top=0,
+        left=0,
+        width=256,
+        height=192,
+        space=lattice.MASTER_SYSTEM,
+    ),
+    target.GAME_GEAR.name: Screen(
+        console=target.GAME_GEAR.console,
+        capture_width=160,
+        capture_height=144,
+        capture_top=0,
+        top=24,
+        left=48,
+        width=160,
+        height=144,
+        space=lattice.GAME_GEAR,
+    ),
+}
+
+
+def read_capture(path: Path, screen: Screen = SCREENS[target.MASTER_SYSTEM.name]) -> np.ndarray:
     raw = subprocess.run(
         ["ffmpeg", "-v", "error", "-i", str(path), "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
         capture_output=True,
         check=True,
     ).stdout
-    frame_bytes = CAPTURE_HEIGHT * CAPTURE_WIDTH * 3
+    frame_bytes = screen.capture_height * screen.capture_width * 3
     if not raw or len(raw) % frame_bytes:
         msg = (
-            f"{path} is not a {CAPTURE_WIDTH}x{CAPTURE_HEIGHT} mednafen recording "
-            "of the Master System picture"
+            f"{path} is not a {screen.capture_width}x{screen.capture_height} mednafen recording "
+            f"of the {screen.console} picture"
         )
         raise ValueError(msg)
-    whole = np.frombuffer(raw, dtype=np.uint8).reshape(-1, CAPTURE_HEIGHT, CAPTURE_WIDTH, 3)
-    return whole[:, PICTURE_TOP : PICTURE_TOP + PICTURE_HEIGHT]
+    shape = (-1, screen.capture_height, screen.capture_width, 3)
+    whole = np.frombuffer(raw, dtype=np.uint8).reshape(shape)
+    return whole[:, screen.capture_top : screen.capture_top + screen.height]
 
 
-def measure(played: Played, source: np.ndarray) -> dict[str, float]:
+def measure(
+    played: Played, source: np.ndarray, space: lattice.Lattice = lattice.MASTER_SYSTEM
+) -> dict[str, float]:
     usable = min(played.fields.shape[0], source.shape[0])
     sampled = range(played.completes[0], usable, SAMPLE_EVERY)
     lags = core.measured_lags(played.fields, source, completes=played.completes, window=LAG_WINDOW)
@@ -61,7 +106,7 @@ def measure(played: Played, source: np.ndarray) -> dict[str, float]:
         ),
         "frame_error": float(np.mean(matched)),
         "blurred_frame_error": float(np.mean(blurred)),
-        "lattice_floor": float(np.mean([capture.lattice_floor(source[i]) for i in sampled])),
+        "lattice_floor": float(np.mean([capture.lattice_floor(source[i], space) for i in sampled])),
         "mixed_share": core.mixed_share(played.fields, completes=played.completes),
         "lag_first_s": lags[0] / rate,
         "lag_median_s": float(np.median(lags)) / rate,
@@ -113,17 +158,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--lead", type=int, default=0)
     parser.add_argument("--json", type=Path, default=None)
     parser.add_argument("--sheet", type=Path, default=None)
+    parser.add_argument("--target", choices=sorted(SCREENS), default=target.MASTER_SYSTEM.name)
     return parser
 
 
-def decode_source(args: argparse.Namespace, played: Played) -> np.ndarray:
+def decode_source(args: argparse.Namespace, played: Played, screen: Screen) -> np.ndarray:
     seconds = played.fields.shape[0] / console.NTSC_FIELD_HZ
     source = np.stack(
         list(
             frames.decode(
                 args.source,
-                width=CAPTURE_WIDTH,
-                height=PICTURE_HEIGHT,
+                width=screen.width,
+                height=screen.height,
                 fps=console.NTSC_FIELD_HZ,
                 start=args.start,
                 duration=seconds,
@@ -138,8 +184,9 @@ def decode_source(args: argparse.Namespace, played: Played) -> np.ndarray:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    played = capture.replay_fields(args.stream.read_bytes())
-    found = core.align(read_capture(args.capture), played.fields)
+    screen = SCREENS[args.target]
+    played = screen.crop(capture.replay_fields(args.stream.read_bytes()))
+    found = core.align(read_capture(args.capture, screen), played.fields)
     report: dict[str, float] = {
         "emulator_offset": found.offset,
         "emulator_mismatches": found.mismatches,
@@ -152,8 +199,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    source = decode_source(args, played)
-    report |= measure(played, source)
+    source = decode_source(args, played, screen)
+    report |= measure(played, source, screen.space)
     if args.sheet is not None:
         write_sheet(args.sheet, played, source)
     text = json.dumps(report, indent=1)

@@ -30,7 +30,7 @@ LIBRARY_HEADERS: Final = (
     "console.h",
 )
 MAKEFILE: Final = "fmv.mk"
-TARGET_INCLUDE: Final = "target.inc"
+TARGET_FILES: Final = ("target.inc", "fmv_target.h")
 TARGET_MAKEFILE: Final = "target.mk"
 LIBRARIES: Final = {
     targets.MASTER_SYSTEM.name: "SMSlib.lib",
@@ -65,7 +65,7 @@ def write(
     system: targets.Target = targets.DEFAULT,
 ) -> Path:
     bundle.copy_files(LIBRARY_SOURCES, ROOT / "src", target / "src", required=True)
-    bundle.copy_files((TARGET_INCLUDE,), ROOT / "src" / system.name, target / "src", required=True)
+    bundle.copy_files(TARGET_FILES, ROOT / "src" / system.name, target / "src", required=True)
     bundle.copy_files(
         LIBRARY_HEADERS, ROOT / "include" / "fmv", target / "include" / "fmv", required=True
     )

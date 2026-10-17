@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import Final
 
-from smsggmedia import console, psgsound, smscolor, stream, target
+from fmvcore import dither
+
+from smsggmedia import console, psgsound, stream, target
 
 BANK_BYTES: Final = 16 * 1024
 
@@ -22,7 +24,7 @@ MEASURED_FIELD_BUDGET: Final = 1900
 DEFAULT_CAP: Final = 200
 DEFAULT_DITHER: Final = 1.0
 PALETTE_KEEP_MARGIN: Final = 0.3
-MAX_DITHER: Final = smscolor.MAX_DITHER
+MAX_DITHER: Final = dither.MAX_DITHER
 DEFAULT_SCALER: Final = "area"
 MAX_DENOISE: Final = 64.0
 MAX_SOURCE_SECONDS: Final = 4 * 60 * 60
@@ -41,3 +43,7 @@ def sound_reserve(system: target.Target) -> int:
 
 def close_reserve(system: target.Target) -> int:
     return stream.CLOSE_HEADER + stream.close_bytes(system.close_kind)
+
+
+def budget_floor(system: target.Target, *, sound: bool) -> int:
+    return close_reserve(system) * 2 + (sound_reserve(system) if sound else 0)

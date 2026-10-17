@@ -68,30 +68,7 @@ jobs:
           uv --project tools run python -m pytest tools/tests -m slow
 
       - name: The gate the ROM job runs
-        env:
-          SMSGGMEDIA_ROM_REQUIRED: "1"
-        run: |
-          set -euo pipefail
-          mkdir -p build
-          ffmpeg -y -loglevel error -f lavfi \
-            -i "testsrc2=size=320x240:rate=30:duration=3" \
-            -pix_fmt yuv420p build/ci-source.mp4
-          uv --project tools run python -m smsggmedia.cartridge \
-            build/ci-source.mp4 --duration 2 --fps 8 --bundle build/bundle
-          make analyse
-          make example
-          uv --project tools run python tools/scripts/check_vdp_timing.py
-          uv --project tools run python -m smsggmedia.cartridge \
-            build/ci-source.mp4 --duration 2 --fps 8 --target gg
-          uv --project tools run python tools/scripts/check_vdp_timing.py \
-            build/gg/*.lst
-          uv --project tools run python -m pytest \
-            tools/tests/test_replay_on_z80.py \
-            tools/tests/test_osd_on_z80.py \
-            tools/tests/test_diag_on_z80.py \
-            tools/tests/test_seek_on_z80.py \
-            tools/tests/test_transport_on_z80.py \
-            tools/tests/test_gg_build.py
+        run: tools/scripts/rom_gate.sh
 
   publish:
     name: Publish

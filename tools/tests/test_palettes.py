@@ -22,7 +22,7 @@ class TestChooseEntries:
         counts = np.ones(40, dtype=np.int64)
 
         # Act
-        result = palettes.choose_entries(present, counts, smscolor.oklab_palette(), 16)
+        result = palettes.choose_entries(present, counts, lattice.MASTER_SYSTEM.oklab(), 16)
 
         # Assert
         assert result.shape == (16,)
@@ -33,7 +33,7 @@ class TestChooseEntries:
         counts = np.array([10, 10, 10], dtype=np.int64)
 
         # Act
-        result = palettes.choose_entries(present, counts, smscolor.oklab_palette(), 16)
+        result = palettes.choose_entries(present, counts, lattice.MASTER_SYSTEM.oklab(), 16)
 
         # Assert
         assert set(result.tolist()) >= {0, 5, 63}
@@ -44,7 +44,7 @@ class TestChooseEntries:
         counts = np.ones(64, dtype=np.int64)
 
         # Act
-        result = palettes.choose_entries(present, counts, smscolor.oklab_palette(), 16)
+        result = palettes.choose_entries(present, counts, lattice.MASTER_SYSTEM.oklab(), 16)
 
         # Assert
         assert len(set(result.tolist())) == 16
@@ -53,7 +53,7 @@ class TestChooseEntries:
         # Arrange
         present = np.arange(64, dtype=np.uint8)
         counts = np.arange(1, 65, dtype=np.int64)
-        lab = smscolor.oklab_palette()
+        lab = lattice.MASTER_SYSTEM.oklab()
         first = palettes.choose_entries(present, counts, lab, 16)
 
         # Act
@@ -66,7 +66,7 @@ class TestChooseEntries:
         # Arrange
         present = np.array([0], dtype=np.uint8)
         counts = np.array([1], dtype=np.int64)
-        lab = smscolor.oklab_palette()
+        lab = lattice.MASTER_SYSTEM.oklab()
 
         # Act
         with pytest.raises(ValueError) as refused:
@@ -97,7 +97,7 @@ class TestFitFrame:
         result = fresh_fit(frame)
 
         # Assert
-        assert int(result.cram.max()) < smscolor.COLOUR_COUNT
+        assert int(result.cram.max()) < lattice.MASTER_SYSTEM.count
 
     def test_each_cell_picks_one_of_the_two_palettes(self):
         # Arrange
@@ -217,7 +217,7 @@ class TestOrderedDither:
         frame = np.full((8, 8, 3), 128, dtype=np.uint8)
 
         # Act
-        result = fresh_fit(frame, ordered_dither=smscolor.NO_DITHER)
+        result = fresh_fit(frame, ordered_dither=0.0)
 
         # Assert
         assert np.unique(result.indices).size == 1
@@ -252,7 +252,7 @@ class TestDitherAgainstThePalette:
         frame = more_colours_than_entries()
 
         # Act
-        fitted = fresh_fit(frame, ordered_dither=smscolor.NO_DITHER, space=lattice.GAME_GEAR)
+        fitted = fresh_fit(frame, ordered_dither=0.0, space=lattice.GAME_GEAR)
 
         # Assert
         assert cells_drawn_in_two_entries(fitted) == 0

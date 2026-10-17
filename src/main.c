@@ -1,5 +1,6 @@
 #include "SMSlib.h"
 #include "assets.h"
+#include "fmv/assert.h"
 #include "fmv/console.h"
 #include "fmv/diag.h"
 #include "fmv/mediaplayer.h"
@@ -69,8 +70,9 @@ static void seek(s8 direction)
     if (target == FMV_SEEK_NONE) {
         return;
     }
-    fmv_psg_silence();
-    fmv_screen_reset();
+    FMV_ASSERT(target < (u8)MOVIE_KEYS);
+    FMV_ASSERT(direction != 0);
+    fmv_screen_rest();
     fmv_movie_seek(&movie_keys[target]);
     view.where.elapsed_fields = movie_keys[target].field;
     fmv_osd_open();
@@ -143,12 +145,6 @@ static void toggle_sound(void)
     if (muted != 0u) {
         fmv_psg_silence();
     }
-}
-
-static void boot(void)
-{
-    fmv_psg_silence();
-    fmv_screen_reset();
 }
 
 static void apply_overlay(u16 actions)
@@ -252,7 +248,7 @@ static fmv_outcome play_once(void)
 
 void main(void)
 {
-    boot();
+    fmv_screen_rest();
 
     for (;;) {
         const fmv_outcome outcome = play_once();
@@ -260,7 +256,7 @@ void main(void)
         if (outcome == FMV_OUTCOME_ENDED) {
             hold_last_frame();
         }
-        fmv_screen_reset();
+        fmv_screen_rest();
         if (outcome == FMV_OUTCOME_FAULT) {
             fmv_screen_fault();
             for (;;) {

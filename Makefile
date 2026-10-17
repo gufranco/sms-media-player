@@ -32,12 +32,20 @@ SDCC         := sdcc
 SDCC_STD     := --std-c23
 SDCC_ARCH    := -mz80 --sdcccall 1 --no-std-crt0 --data-loc 0xC000
 SDCC_WARN    := --Werror --max-allocs-per-node 50000
-SDCC_INC     := -I$(INC_DIR) -I$(GEN_DIR) -I$(SMSLIB)/src
+SDCC_INC     := -I$(INC_DIR) -I$(SRC_DIR)/$(TARGET) -I$(GEN_DIR) -I$(SMSLIB)/src
 SDCC_FLAGS   := $(SDCC_ARCH) $(SDCC_STD) $(SDCC_WARN) $(SDCC_INC) $(TARGET_FLAGS)
 
+CPPCHECK     := cppcheck --std=c23 --enable=warning,style,performance,portability \
+                --check-level=exhaustive --inline-suppr --error-exitcode=1 --quiet \
+                --suppress=missingInclude --suppress=missingIncludeSystem \
+                --suppress=unmatchedSuppression '-D_Noreturn=[[noreturn]]' -I$(INC_DIR)
+
 SOURCES      := $(wildcard $(SRC_DIR)/*.c)
+TARGET_SOURCES := $(wildcard $(SRC_DIR)/$(TARGET)/*.c)
+TARGET_HDR   := $(SRC_DIR)/$(TARGET)/fmv_target.h
 ASM_SOURCES  := $(wildcard $(SRC_DIR)/*.s)
 OBJECTS      := $(patsubst $(SRC_DIR)/%.c,$(TARGET_DIR)/%.rel,$(SOURCES)) \
+                $(patsubst $(SRC_DIR)/$(TARGET)/%.c,$(TARGET_DIR)/%.rel,$(TARGET_SOURCES)) \
                 $(patsubst $(SRC_DIR)/%.s,$(TARGET_DIR)/%.rel,$(ASM_SOURCES))
 
 ifdef DEVKITSMS
@@ -65,7 +73,10 @@ $(VERSION_HDR): $(INC_DIR)/fmv/version.h
 	awk -F'[".]' '/^#define FMV_VERSION "/ { printf "#define FMV_VERSION_MAJOR %du\n#define FMV_VERSION_MINOR %du\n", $$2, $$3; found = 1 } END { exit !found }' $< > $@.tmp
 	mv $@.tmp $@
 
-$(TARGET_DIR)/%.rel: $(SRC_DIR)/%.c $(ASSET_HDR) $(HEADERS) $(VERSION_HDR) | $(TARGET_DIR)/.made
+$(TARGET_DIR)/%.rel: $(SRC_DIR)/%.c $(ASSET_HDR) $(HEADERS) $(TARGET_HDR) $(VERSION_HDR) | $(TARGET_DIR)/.made
+	$(SDCC) $(SDCC_FLAGS) -I$(ASSET_OUT) -c $< -o $@
+
+$(TARGET_DIR)/%.rel: $(SRC_DIR)/$(TARGET)/%.c $(ASSET_HDR) $(HEADERS) $(TARGET_HDR) $(VERSION_HDR) | $(TARGET_DIR)/.made
 	$(SDCC) $(SDCC_FLAGS) -I$(ASSET_OUT) -c $< -o $@
 
 $(TARGET_DIR)/%.rel: $(SRC_DIR)/%.s $(SRC_DIR)/$(TARGET)/target.inc | $(TARGET_DIR)/.made
@@ -92,11 +103,8 @@ example:
 	$(MAKE) --no-print-directory -C examples/cutscene FMV_DIR=$(EXAMPLE_FMV_DIR)
 
 analyse:
-	cppcheck --std=c23 --enable=warning,style,performance,portability \
-	    --check-level=exhaustive --inline-suppr --error-exitcode=1 --quiet \
-	    --suppress=missingInclude --suppress=missingIncludeSystem \
-	    --suppress=unmatchedSuppression \
-	    -I$(INC_DIR) $(SRC_DIR)
+	$(CPPCHECK) -I$(SRC_DIR)/sms $(SRC_DIR)/*.c $(SRC_DIR)/sms/*.c
+	$(CPPCHECK) -DTARGET_GG -I$(SRC_DIR)/gg $(SRC_DIR)/*.c $(SRC_DIR)/gg/*.c
 	@echo "static analysis clean"
 
 clean:
@@ -119,8 +127,7 @@ analyse: image
 	    make --no-print-directory analyse
 
 timing:
-	uv --project tools run python tools/scripts/check_vdp_timing.py
-	if [ -d build/gg ]; then uv --project tools run python tools/scripts/check_vdp_timing.py build/gg/*.lst; fi
+	uv --project tools run python tools/scripts/check_vdp_timing.py --target $(TARGET)
 
 example: image
 	docker run --rm --user $(DOCKER_USER) -e HOME=/tmp -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) \

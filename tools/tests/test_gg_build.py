@@ -1,7 +1,22 @@
 from __future__ import annotations
 
+from itertools import pairwise
+
 import pytest
-from test_replay_on_z80 import BAD, INSIDE, PAYLOAD, replay
+from replayz80 import (
+    ACTIVE,
+    ACTIVE_FLOOR,
+    BAD,
+    BLANK_FLOOR,
+    CONTROL_PORT,
+    DATA_PORT,
+    INSIDE,
+    LATE,
+    PAYLOAD,
+    control_stamps,
+    replay,
+    without_guard,
+)
 from z80vdp import call, load_gg
 
 from smsggmedia import console, stream
@@ -9,6 +24,7 @@ from smsggmedia import console, stream
 HEADER_REGION = 0x7FFF
 GG_INTERNATIONAL = 0x7
 WIDE_PALETTE = bytes(range(64))
+FLIP = 0x82
 INK_ADDRESS = 0x3C
 INK_WORDS = bytes([0x00, 0x00, 0xFF, 0x0F])
 
@@ -104,3 +120,51 @@ class TestThePanRun:
 
         # Assert
         assert vdp.pans == [0xFF]
+
+
+class TestTheWidePaletteKeepsToTheBlank:
+    @pytest.mark.parametrize("line", [ACTIVE, 0x00, 0xBF, 0xE0, LATE, 0xFF])
+    def test_the_palette_and_the_flip_wait_outside_the_window(self, built, line):
+        # Arrange
+        lines = [line]
+
+        # Act
+        ports, _, _ = replay(built, lines, data=wide_film())
+
+        # Assert
+        control = [value for _, port, value in ports.writes if port == CONTROL_PORT]
+        assert (ports.data(), FLIP in control) == (list(PAYLOAD), False)
+
+    def test_without_the_guard_all_64_bytes_land_in_the_active_display(self, built):
+        # Arrange
+        rom, names = built
+        unguarded = (without_guard(rom), names)
+
+        # Act
+        ports, _, _ = replay(unguarded, [ACTIVE], data=wide_film())
+
+        # Assert
+        assert ports.data() == list(PAYLOAD) + list(WIDE_PALETTE)
+
+    def test_the_64_palette_bytes_keep_the_blanking_floor(self, built):
+        # Arrange
+        lines = [INSIDE]
+
+        # Act
+        ports, _, _ = replay(built, lines, data=wide_film())
+
+        # Assert
+        stamps = [cycle for cycle, port, _ in ports.writes if port == DATA_PORT]
+        palette = stamps[len(PAYLOAD) : len(PAYLOAD) + len(WIDE_PALETTE)]
+        assert min(later - earlier for earlier, later in pairwise(palette)) >= BLANK_FLOOR
+
+    def test_every_control_write_keeps_the_active_display_floor(self, built):
+        # Arrange
+        lines = [INSIDE]
+
+        # Act
+        ports, _, _ = replay(built, lines, data=wide_film())
+
+        # Assert
+        stamps = control_stamps(ports)
+        assert min(later - earlier for earlier, later in pairwise(stamps)) >= ACTIVE_FLOOR

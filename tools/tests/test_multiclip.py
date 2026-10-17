@@ -17,17 +17,48 @@ from smsggmedia import (
     replay,
     schedule,
     stream,
+    target,
     tune,
 )
 
+pytestmark = pytest.mark.ffmpeg
+
+
+SYSTEMS = (target.MASTER_SYSTEM, target.GAME_GEAR)
+
+
+@pytest.fixture(scope="module", params=SYSTEMS, ids=[system.name for system in SYSTEMS])
+def system(request) -> target.Target:
+    return request.param
+
 
 @pytest.fixture(scope="module")
-def geometry() -> bake.Geometry:
-    return cartridge.geometry_for(limits.DEFAULT_COLUMNS, limits.DEFAULT_ROWS)
+def geometry(system) -> bake.Geometry:
+    return cartridge.geometry_for(system.columns, system.rows)
 
 
-def shipping_argv(clip: clips.Clip, path: Path, *, measured: bool = False) -> list[str]:
-    window = [str(path), "--start", str(clip.start), "--duration", str(clip.duration)]
+def ceilings(clip: clips.Clip, system: target.Target) -> tuple[float, float]:
+    if system is target.GAME_GEAR:
+        return clip.gg_max_error, clip.gg_max_banks_per_second
+    return clip.max_error, clip.max_banks_per_second
+
+
+def shipping_argv(
+    clip: clips.Clip,
+    path: Path,
+    *,
+    measured: bool = False,
+    system: target.Target = target.MASTER_SYSTEM,
+) -> list[str]:
+    window = [
+        str(path),
+        "--start",
+        str(clip.start),
+        "--duration",
+        str(clip.duration),
+        "--target",
+        system.name,
+    ]
     if measured:
         return window
     return [
@@ -48,7 +79,7 @@ def absent(clip: clips.Clip) -> None:
     pytest.skip(reason)
 
 
-def baked(clip: clips.Clip, geometry: bake.Geometry):
+def baked(clip: clips.Clip, geometry: bake.Geometry, system: target.Target):
     path = clips.resolve(clip)
     if path is None:
         absent(clip)
@@ -56,7 +87,7 @@ def baked(clip: clips.Clip, geometry: bake.Geometry):
     verdict = clips.verify(path, clip)
     assert verdict.ok, verdict.diagnosis
 
-    args = flags.build_parser().parse_args(shipping_argv(clip, path))
+    args = flags.build_parser().parse_args(shipping_argv(clip, path, system=system))
     settled = dials.settle_dials(args, geometry=geometry, wanted=clip.duration)
     baked = cartridge.bake_film(args, geometry=geometry, settled=settled)
     assert baked.decoded, f"{clip.key} decoded to nothing"
@@ -66,23 +97,24 @@ def baked(clip: clips.Clip, geometry: bake.Geometry):
 
 
 class Bakes:
-    def __init__(self, geometry: bake.Geometry) -> None:
+    def __init__(self, geometry: bake.Geometry, system: target.Target) -> None:
         self.geometry = geometry
+        self.system = system
         self.done: dict[str, tuple[clips.Clip, tuple]] = {}
         self.lags: dict[str, list[float]] = {}
 
     def __getitem__(self, key: str) -> tuple[clips.Clip, tuple]:
         if key not in self.done:
             clip = clips.by_key(key)
-            outcome, lags = baked(clip, self.geometry)
+            outcome, lags = baked(clip, self.geometry, self.system)
             self.done = {**self.done, key: (clip, outcome)}
             self.lags = {**self.lags, key: lags}
         return self.done[key]
 
 
 @pytest.fixture(scope="module")
-def bakes(geometry):
-    return Bakes(geometry)
+def bakes(geometry, system):
+    return Bakes(geometry, system)
 
 
 def result(bakes, key):
@@ -136,15 +168,16 @@ class TestEveryClip:
         # Assert
         assert collisions == 0
 
-    def test_the_stream_stays_inside_its_bandwidth_budget(self, bakes, key):
+    def test_the_stream_stays_inside_its_bandwidth_budget(self, bakes, system, key):
         # Arrange
         clip, (_, _, _, banks) = result(bakes, key)
+        _, budget = ceilings(clip, system)
 
         # Act
         banks_per_second = banks / clip.duration
 
         # Assert
-        assert banks_per_second <= clip.max_banks_per_second
+        assert banks_per_second <= budget
 
     def test_a_film_of_useful_length_would_still_fit(self, bakes, key):
         # Arrange
@@ -156,15 +189,16 @@ class TestEveryClip:
         # Assert
         assert seconds >= 10.0
 
-    def test_the_displayed_error_is_inside_the_clips_budget(self, bakes, key):
+    def test_the_displayed_error_is_inside_the_clips_budget(self, bakes, system, key):
         # Arrange
         clip, (encoded, _, _, _) = result(bakes, key)
+        ceiling, _ = ceilings(clip, system)
 
         # Act
         error = encoded.error
 
         # Assert
-        assert error <= clip.max_error
+        assert error <= ceiling
 
     def test_the_withheld_pattern_is_never_written(self, bakes, key):
         # Arrange
@@ -240,8 +274,8 @@ FRAMES_CHECKED_FOR_MIXING = 8
 
 def becomes_visible(chunk: bytes) -> bool:
     pos = 0
-    while pos < len(chunk) and chunk[pos] in (stream.VRAM, stream.CLOSE):
-        if chunk[pos] == stream.CLOSE:
+    while pos < len(chunk) and chunk[pos] in (stream.VRAM, *stream.CLOSE_KINDS):
+        if chunk[pos] in stream.CLOSE_KINDS:
             return True
         pos += 4 + chunk[pos + 3]
     return False
@@ -286,7 +320,10 @@ def brightest_frame(paced: list[list[bytes]], geometry: bake.Geometry) -> float:
             brightest,
             replay.lit_fraction(
                 machine.render(
-                    columns=geometry.columns, rows=geometry.rows, top_row=geometry.top_row
+                    columns=geometry.columns,
+                    rows=geometry.rows,
+                    top_row=geometry.top_row,
+                    left_column=geometry.left_column,
                 )
             ),
         )
@@ -340,8 +377,9 @@ def search_against_record(
 
 @pytest.mark.slow
 @pytest.mark.parametrize("key", KEYS)
-def test_the_recorded_dials_are_still_as_good_as_what_the_search_finds(geometry, key):
+def test_the_recorded_dials_are_still_as_good_as_what_the_search_finds(key):
     # Arrange
+    geometry = cartridge.geometry_for(limits.DEFAULT_COLUMNS, limits.DEFAULT_ROWS)
     clip = clips.by_key(key)
     path = clips.resolve(clip)
     if path is None:

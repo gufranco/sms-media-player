@@ -11,6 +11,8 @@ README under "Quality". This file carries the ones that cost time.
 
 ## Contents
 
+- [Flat blocks on the Game Gear](#flat-blocks-on-the-game-gear)
+- [The Game Gear joined every gate](#the-game-gear-joined-every-gate)
 - [Bars baked into a source are cropped](#bars-baked-into-a-source-are-cropped)
 - [Sound from the PSG](#sound-from-the-psg)
 - [Paths the timing gate never walked](#paths-the-timing-gate-never-walked)
@@ -31,6 +33,54 @@ README under "Quality". This file carries the ones that cost time.
 - [Four parameters checked against the conditions that changed](#four-parameters-checked-against-the-conditions-that-changed)
 - [The film was promising a frame rate it could not hold](#the-film-was-promising-a-frame-rate-it-could-not-hold)
 - [An unrolled loop that every check approved](#an-unrolled-loop-that-every-check-approved)
+
+## Flat blocks on the Game Gear
+
+The owner saw the Game Gear demo still far blockier than the Master System
+one. A render of one field settled the cause: every dark area was a
+patchwork of flat 8 by 8 cells. Merged stand-ins were not it, since the Game
+Gear bake merged fewer cells than the Master System one, 2,024 against 6,863.
+The reuse threshold was: it is an Oklab distance tuned on the Master System's
+four-level lattice, and on the Game Gear's sixteen levels a flat tile sits
+within it of a dimly textured cell. The reuse search could not tell, because
+every candidate scored within its 5% tie on working-set error, so it took
+the cheapest, 0.001.
+
+Scaling the threshold by the square of the colour step, 1/25, was not enough
+alone: the search then took its largest candidate and some flat cells came
+back. What removed them is the defect named directly: on the Game Gear a
+resident may not stand for a cell when it keeps less than half that cell's
+spread of lightness. The demo window grows from 22 to 28 banks and its error
+falls. On the Master System the same guard cost 5 banks with no difference a
+render could show, because its dither already textures nearly every tile, so
+it stays off there.
+
+## The Game Gear joined every gate
+
+An audit of the whole repository on 2026-10-17 found the Game Gear build
+outside most of the gates that hold the Master System one. No test ran its
+replay against the V counter window, though its closing run copies 64 bytes
+back to back, twice the Master System's. The pre-commit hook built only the
+Master System ROM, and `make timing` read `build/gg` whenever the directory
+existed, so it could pass on listings older than the source. The regression
+set, the golden stream and the capture comparison knew only the Master
+System. Each now runs for both consoles: the replay tests hold all 64 bytes
+inside the window and show them landing outside it with the guard patched
+out, the timing gate reads one console per run, the six films bake into the
+Game Gear window under their own measured ceilings, and a Game Gear capture
+is compared on its 160 by 144 panel.
+
+The same audit found the console still sounding after a film ended, stopped
+or faulted: the player reset the screen and waited on black or red with the
+last note held. `fmv_screen_rest` now silences the PSG and resets the screen
+together, at boot, after a seek and after every film. Not yet run on a
+console.
+
+A `--budget` the Game Gear cannot use passed the flag check, which knew only
+the Master System's 34-byte closing run, and then failed with a bare error;
+it is now refused by name. A header refusal during publish left the previous
+film in place for `make rom` to ship; publishing now clears it first. The
+release ran fewer ROM checks than CI; both now run one script.
 
 ## Bars baked into a source are cropped
 

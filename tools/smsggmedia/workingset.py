@@ -9,6 +9,7 @@ import numpy.typing as npt
 from smsggmedia import console, pattern
 
 PATTERN_BYTES: Final = console.PATTERN_BYTES
+OKLAB_AXES: Final = 3
 UNPLACED: Final = -1
 LLOYD_ROUNDS: Final = 6
 
@@ -100,6 +101,7 @@ def match_residents(
     residents: npt.NDArray[np.floating],
     *,
     threshold: float,
+    contrast: float = 0.0,
 ) -> npt.NDArray[np.intp]:
     if threshold < 0.0:
         msg = "a reuse threshold must not be negative"
@@ -119,7 +121,20 @@ def match_residents(
         best[closer] = row
 
     best[error > threshold] = UNPLACED
+    best[_flatter(cells, residents, best, contrast)] = UNPLACED
     return best
+
+
+def _flatter(
+    cells: npt.NDArray[np.floating],
+    residents: npt.NDArray[np.floating],
+    best: npt.NDArray[np.intp],
+    contrast: float,
+) -> npt.NDArray[np.bool_]:
+    found = best != UNPLACED
+    own = cells[:, ::OKLAB_AXES].std(axis=1)
+    standing = residents[:, ::OKLAB_AXES].std(axis=1)[np.where(found, best, 0)]
+    return found & (standing < contrast * own)
 
 
 def merge_to_cap(

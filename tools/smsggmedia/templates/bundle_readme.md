@@ -40,7 +40,7 @@ game.ihx: main.rel $(FMV_OBJECTS) $(FMV_ASSET_HDR)
 
 static void play_film(void)
 {{
-    fmv_screen_reset();
+    fmv_screen_rest();
     fmv_movie_start((u8)MOVIE_FIRST_BANK, (u8)MOVIE_BANKS);
     while (fmv_movie_frames() < MOVIE_FRAMES) {{
         SMS_waitForVBlank();
@@ -52,13 +52,13 @@ static void play_film(void)
 }}
 ```
 
-Call `fmv_movie_chunk` once a field, right after the vertical blank begins. `fmv_movie_seek` with an entry of `MOVIE_KEY_TABLE`, after `fmv_screen_reset`, resumes at a seek point.
+Call `fmv_movie_chunk` once a field, right after the vertical blank begins. `fmv_movie_seek` with an entry of `MOVIE_KEY_TABLE`, after `fmv_screen_rest`, resumes at a seek point. `fmv_screen_rest` silences the PSG and clears the screen; `fmv_screen_reset` clears the screen alone.
 
 ## What the film takes over
 
 - All of VRAM: patterns from `0x0000` to `0x2FFF`, name tables at `0x3000` and `0x3800`, the sprite table at `0x3F00`. Reload your own graphics when the film ends.
 - The mapper's slot 2 window at `0x8000` while it plays, and banks `FMV_FIRST_BANK` onwards.
-- The PSG, when the film has sound. Silence it with `fmv_psg_silence` when the film ends.
+- The PSG, when the film has sound. Call `fmv_screen_rest` when the film ends, or `fmv_psg_silence` to keep the screen, so the last note does not sound on.
 - Every cycle of each field: run no other VDP writes and no line interrupts while it plays.
 
 Nothing in this folder has run on hardware unless the player's own repository says so.

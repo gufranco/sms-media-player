@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import MISSING, dataclass, fields
 from pathlib import Path
 from typing import Final
 
@@ -38,6 +38,8 @@ class Clip:
     reuse: float
     max_error: float
     max_banks_per_second: float
+    gg_max_error: float
+    gg_max_banks_per_second: float
     bytes: int | None = None
     sha256: str | None = None
     sha1: str | None = None
@@ -47,7 +49,21 @@ class Clip:
 
 def load(manifest: Path = MANIFEST) -> list[Clip]:
     document = json.loads(manifest.read_text())
-    return [Clip(**entry) for entry in document["clips"]]
+    return [_clip(entry, manifest) for entry in document["clips"]]
+
+
+def _clip(entry: dict[str, object], manifest: Path) -> Clip:
+    known = {each.name for each in fields(Clip)}
+    needed = [each.name for each in fields(Clip) if each.default is MISSING]
+    missing = [name for name in needed if name not in entry]
+    unknown = sorted(set(entry) - known)
+    if missing or unknown:
+        msg = (
+            f"{manifest.name}: clip {entry.get('key', '?')} lacks {', '.join(missing) or 'nothing'}"
+            f" and carries unknown {', '.join(unknown) or 'nothing'}"
+        )
+        raise ValueError(msg)
+    return Clip(**entry)  # type: ignore[arg-type]
 
 
 def by_key(key: str, manifest: Path = MANIFEST) -> Clip:

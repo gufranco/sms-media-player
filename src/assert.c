@@ -3,7 +3,7 @@
 #include "SMSlib.h"
 #include "fmv/console.h"
 
-void fmv_assert_fail(u16 line)
+_Noreturn void fmv_assert_fail(u16 line)
 {
     const fmv_colour colour = (fmv_colour)((line & 0x03u) | FMV_COLOUR_ASSERT);
 

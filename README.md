@@ -5,7 +5,7 @@
 <strong>Full-screen video on a stock Sega Master System or Game Gear,<br>
 each in its own mode, its tiles paged through VRAM while the film plays.</strong>
 
-English &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; [简体中文](README.zh-Hans.md) &nbsp;|&nbsp; [繁體中文（香港）](README.zh-HK.md)
+English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/gufranco/smsgg-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/smsgg-media-player/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](RELEASES.md)
@@ -16,22 +16,22 @@ English &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; [简体中文](REA
 </div>
 
 <p align="center">
-  <a href="#quick-start"><strong>Quick start</strong></a> &nbsp;|&nbsp;
-  <a href="#how-it-works"><strong>How it works</strong></a> &nbsp;|&nbsp;
-  <a href="#quality"><strong>Quality</strong></a> &nbsp;|&nbsp;
-  <a href="#verification"><strong>Verification</strong></a> &nbsp;|&nbsp;
+  <a href="#quick-start"><strong>Quick start</strong></a> |
+  <a href="#how-it-works"><strong>How it works</strong></a> |
+  <a href="#quality"><strong>Quality</strong></a> |
+  <a href="#verification"><strong>Verification</strong></a> |
   <a href="#the-family"><strong>The family</strong></a>
 </p>
 
 <div align="center">
 
-<img src="readme/demo.gif" alt="Six seconds of the Sintel trailer playing from the built Master System cartridge, captured from mednafen" width="640">
+<img src="readme/demo.gif" alt="Six seconds of the Sintel trailer playing from the built Master System cartridge, drawn from the cartridge's stream" width="640">
 
-<sub>Six seconds of the Sintel trailer, captured from mednafen running the built cartridge at the console's own 256x192. The same film opens the Neo Geo player's README. Sintel is by the Blender Foundation, CC BY 3.0.</sub>
+<sub>Six seconds of the Sintel trailer from the built Master System cartridge at the console's own 256x192. The same film opens the Neo Geo player's README. Sintel is by the Blender Foundation, CC BY 3.0.</sub>
 
 <img src="readme/demo-gg.gif" alt="Six seconds of the Sintel trailer playing from the built Game Gear cartridge, drawn from the cartridge's stream" width="400">
 
-<sub>The same six seconds, baked the same way for the Game Gear cartridge, <code>--target gg</code>, at the panel's 160x144 and the same scale, with palettes from 4096 colours. Drawn by the replay oracle from the cartridge's stream, because the player shows its position bar for the first three seconds of every play; outside the bar a mednafen capture in Game Gear mode matches it pixel for pixel.</sub>
+<sub>The same six seconds from the Game Gear cartridge, <code>--target gg</code>, at the panel's 160x144 and the same scale, with palettes from 4096 colours. Both demos come from <code>tools/scripts/make_demos.py</code>: the same window baked with the same settings, one GIF frame per film frame, 71 frames at 12 fps in each, so frame <i>n</i> shows the same moment on both. Each is drawn by the replay oracle from its cartridge's stream, because the player shows its position bar for the first three seconds of every play; once the bar is gone a headless mednafen capture matches each stream pixel for pixel.</sub>
 
 </div>
 
@@ -81,7 +81,7 @@ and the controls.
 | Controls | Plays on a loop. A position bar with a play, pause and mute glyph and the elapsed and total time shows for about three seconds at the start and after any press of Up, Down, Left, Right or button 1, then gets out of the picture's way; while paused it stays up. Button 1 restarts. Button 2 stops on a black screen, and button 1, button 2 or Pause then plays from the beginning. Pause, or Start on a Game Gear, pauses and resumes. Down shows and hides the diagnostics at any time, and button 1 does too while paused: frame over total frames, the cartridge bank, and how many fields were deferred because the vertical blank was missed. Up turns sound off and on; sound returns within a second. Left and Right jump to the seek points the baker places every 10 seconds, `--seek-every` to change; a jump shows about a quarter of a second of black while the point's picture loads. A corrupt stream stops on a red one |
 | Field rate | Paced for NTSC, 59.92 fields a second, which the Game Gear also runs at. The player draws one chunk a field, so a 50 Hz PAL console plays the same stream at about five sixths of its intended speed. Nothing here has been checked on a PAL console |
 | Game Gear | `--target gg` builds a native Game Gear cartridge: the 160x144 panel as 20 by 18 cells, palettes fitted from 4096 colours, the PSG's voices routed left and right on the headphones from a stereo source, and Start to pause. It plays in mednafen's Game Gear mode, and its capture matches the replay oracle pixel for pixel. It has not run on a Game Gear in its own mode yet |
-| Regression set | Six clips of different kinds baked on every test run, for the Master System. The Game Gear target is not in the set yet |
+| Regression set | Six clips of different kinds baked on every test run, once for the Master System and once for the Game Gear |
 | Hardware run | Done on 2026-10-17 on a Master System and a Game Gear, with no defect seen. The figures here still come from an emulator or a listing |
 
 ## What every player does
@@ -114,7 +114,7 @@ feature a console cannot carry says "Not possible" with the hardware reason.
 | A film inside your own game | Yes, `--bundle` emits a drop-in library | Yes, `--bundle` emits a drop-in library and `examples/cutscene` builds a game from it | Yes, `--bundle` with `--target gg` emits a Game Gear library |
 | A preview of what the console will draw | Yes, a video, or four frames beside their source | Yes, a video, or four frames beside their source | Yes, a video, or four frames beside their source |
 | A write-timing gate on every build | Yes | Yes | Yes |
-| A regression set of films baked on every test run | Yes, six films | Yes, six films | Planned: the six films are baked for the Master System only |
+| A regression set of films baked on every test run | Yes, six films | Yes, six films | Yes, the same six films baked into the Game Gear window |
 | Run on the original hardware | Yes, AES and MVS | Yes, a Master System and a Game Gear | Planned: the Master System cartridge has run on a Game Gear, the native one has not yet |
 
 ## How it works
@@ -258,7 +258,7 @@ Bake a film from any video file and build the ROM in one command.
 ```bash
 uv --project tools run python -m smsggmedia.cartridge input.mp4 --start 300 --duration 5 \
     --preview build/preview.png
-make timing     # VDP write spacing, read out of the assembler's own listing
+make timing     # VDP write spacing, read out of the assembler's own listing; TARGET=gg for the Game Gear
 ```
 
 `--preview` writes four frames from across the film as the console will draw
@@ -524,13 +524,15 @@ replay oracle: a console run shows the picture holds, and measures nothing.
 |---|---|
 | Replay oracle | The baker's model of the stream replays to the picture the encoder meant, to five decimals |
 | mednafen capture | A frame captured from mednafen matches the replay oracle pixel for pixel, so the oracle stands for the screen |
-| `make timing` | Every VDP write pair in the compiled player clears 29 T-states, or 16 inside the guarded vertical-blank copy, walking every listing as one program |
+| `make timing`, `make timing TARGET=gg` | Every VDP write pair in each console's compiled player clears 29 T-states, or 16 inside the guarded vertical-blank copy, walking every listing as one program |
 | `test_seek_on_z80.py` | The built player picks the right seek point for Left and Right, and a jump puts the replay at that point's bank and offset |
 | `test_diag_on_z80.py` | The built diagnostics run on a Z80 against a VDP model, and write the frame, bank and deferred-field rows after the position overlay's sprites |
 | `test_osd_on_z80.py` | The built position overlay runs on a Z80 against a VDP model, writes the elapsed and total time, the bar, the state glyph and its palette where the sprites read them, and spreads its work over fields without passing the frame interrupt |
 | `test_transport_on_z80.py` | The built transport decides on a Z80 which press does what, how long the overlay stays up, and what wakes a stopped player |
-| `test_replay_on_z80.py` | The built replay runs on a Z80 with the V counter held at chosen lines, and no palette byte or flip reaches the VDP outside the window |
-| Regression set | Six films of different kinds bake on every test run, each held to a measured error and bank budget |
+| `test_replay_on_z80.py`, `test_gg_build.py` | The built replay of each console runs on a Z80 with the V counter held at chosen lines, and no palette byte or flip reaches the VDP outside the window, 32 bytes on the Master System and 64 on the Game Gear |
+| `test_screen_on_z80.py` | Putting either built console at rest, at boot and whenever a film ends, stops or faults, attenuates every PSG channel and clears the screen |
+| `check_rom.py` | Both cartridges carry `TMR SEGA`, their console's region and a checksum that matches the body |
+| Regression set | Six films of different kinds bake on every test run for both consoles, each held to a measured error and bank budget |
 
 ### On real hardware
 
@@ -559,7 +561,7 @@ numbers look.
 | [`src/`](src) and [`include/fmv/`](include/fmv) | The Z80 player in C and assembly, one module per file |
 | [`examples/cutscene/`](examples/cutscene) | A game that plays a film and carries on, built from an emitted bundle |
 | [`tools/smsggmedia/`](tools/smsggmedia) | The baker, one module per stage |
-| [`tools/scripts/`](tools/scripts) | Fetch the regression films, rebuild the fixture, check write timing, compare a capture |
+| [`tools/scripts/`](tools/scripts) | Fetch the regression films, check write timing, check a cartridge header, run the ROM gate, compare a capture |
 | [`tools/tests/`](tools/tests) | The encoder suite, including the multi-clip gate and the Z80 replay |
 | [`fmv-core-python/`](https://github.com/gufranco/fmv-core-python) | Submodule: the family's shared baker and measurement code |
 | [`readme/`](readme) | The demo GIF |
@@ -595,8 +597,10 @@ uv --project tools run python tools/scripts/fetch_clips.py
 
 # The player gates, in the pinned image
 make rom
+make rom TARGET=gg
 make analyse
 make timing
+make timing TARGET=gg
 ```
 
 The regression set bakes six clips of deliberately different kinds. They are

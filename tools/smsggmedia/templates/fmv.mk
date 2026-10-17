@@ -10,8 +10,8 @@ FMV_ASM_SOURCES := replay psg vdp
 FMV_OBJECTS := $(FMV_C_SOURCES:%=$(FMV_BUILD)/%.rel) $(FMV_ASM_SOURCES:%=$(FMV_BUILD)/%.rel)
 FMV_ASSETS := $(FMV_BUILD)/assets
 FMV_ASSET_HDR := $(FMV_ASSETS)/assets.h
-FMV_INCLUDES := -I$(FMV_DIR)/include -I$(FMV_DIR)/movie -I$(FMV_ASSETS)
-FMV_SDCC_FLAGS := -mz80 --sdcccall 1 --std-c23 $(FMV_INCLUDES) -I$(SMSLIB)/src $(FMV_TARGET_FLAGS)
+FMV_INCLUDES := -I$(FMV_DIR)/include -I$(FMV_DIR)/src -I$(FMV_DIR)/movie -I$(FMV_ASSETS)
+FMV_SDCC_FLAGS := -mz80 --sdcccall 1 --std-c23 --Werror $(FMV_INCLUDES) -I$(SMSLIB)/src $(FMV_TARGET_FLAGS)
 
 $(FMV_ASSET_HDR): $(FMV_DIR)/movie/assets/movie.bin
 	rm -rf $(FMV_ASSETS)
@@ -19,11 +19,11 @@ $(FMV_ASSET_HDR): $(FMV_DIR)/movie/assets/movie.bin
 	cd $(FMV_ASSETS) && assets2banks $(abspath $(FMV_DIR)/movie/assets) \
 	    --firstbank=$(FMV_FIRST_BANK) --singleheader=assets.h --compile --allowsplitting
 
-$(FMV_BUILD)/%.rel: $(FMV_DIR)/src/%.c $(FMV_ASSET_HDR)
+$(FMV_BUILD)/%.rel: $(FMV_DIR)/src/%.c $(FMV_DIR)/src/fmv_target.h $(FMV_ASSET_HDR)
 	mkdir -p $(FMV_BUILD)
 	sdcc $(FMV_SDCC_FLAGS) -c $< -o $@
 
-$(FMV_BUILD)/%.rel: $(FMV_DIR)/src/%.s
+$(FMV_BUILD)/%.rel: $(FMV_DIR)/src/%.s $(FMV_DIR)/src/target.inc
 	mkdir -p $(FMV_BUILD)
 	sdasz80 -l -I$(FMV_DIR)/src -o $@ $<
 

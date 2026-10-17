@@ -26,6 +26,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Every subject is a conventional commit
         env:
@@ -68,6 +69,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          persist-credentials: false
           submodules: true
 
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884
@@ -124,6 +126,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          persist-credentials: false
           submodules: true
 
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884
@@ -138,97 +141,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ffmpeg
 
-      - name: Bake and build a synthetic cartridge
-        run: |
-          set -euo pipefail
-          mkdir -p build
-          ffmpeg -y -loglevel error -f lavfi \
-            -i "testsrc2=size=320x240:rate=30:duration=3" \
-            -pix_fmt yuv420p build/ci-source.mp4
-          uv --project tools run python -m smsggmedia.cartridge \
-            build/ci-source.mp4 --duration 2 --fps 8 --bundle build/bundle
-
-      - name: Static analysis
-        run: make analyse
-
-      - name: Build a game from the bundle
-        run: make example
-
-      - name: VDP write spacing
-        run: uv --project tools run python tools/scripts/check_vdp_timing.py
-
-      - name: Bake and build a Game Gear cartridge
-        run: >-
-          uv --project tools run python -m smsggmedia.cartridge
-          build/ci-source.mp4 --duration 2 --fps 8 --target gg
-          --bundle build/bundle-gg
-
-      - name: Build a game from the Game Gear bundle
-        run: |
-          set -euo pipefail
-          rm -rf examples/cutscene/build
-          make example EXAMPLE_FMV_DIR=../../build/bundle-gg
-
-      - name: VDP write spacing in the Game Gear build
-        run: >-
-          uv --project tools run python tools/scripts/check_vdp_timing.py
-          build/gg/*.lst
-
-      - name: The replay writes only in the vertical blank
-        env:
-          SMSGGMEDIA_ROM_REQUIRED: "1"
-        run: >-
-          uv --project tools run python -m pytest
-          tools/tests/test_replay_on_z80.py
-          tools/tests/test_osd_on_z80.py
-          tools/tests/test_diag_on_z80.py
-          tools/tests/test_seek_on_z80.py
-          tools/tests/test_transport_on_z80.py
-          tools/tests/test_gg_build.py
-
-      - name: The ROM is real
-        run: |
-          set -euo pipefail
-          rom=build/smsggmedia.sms
-          test -s "$rom"
-          size=$(wc -c < "$rom")
-          echo "$rom is $size bytes"
-          if [ $((size % 16384)) -ne 0 ]; then
-            echo "a Master System ROM is a whole number of 16 KB banks" >&2
-            exit 1
-          fi
-
-      - name: The SEGA header carries a correct checksum
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          import sys
-
-          rom = Path("build/smsggmedia.sms").read_bytes()
-          if rom[0x7FF0:0x7FF8] != b"TMR SEGA":
-              sys.exit("no SEGA header at 0x7FF0")
-
-          size_code = rom[0x7FFF] & 0x0F
-          if size_code != 0x0C:
-              sys.exit(
-                  f"size code 0x{size_code:X} means the ROM outgrew 32 KB. "
-                  "The checksum range widens past 0x8000 for larger sizes, and "
-                  "this gate has only been confirmed against the 32 KB case. "
-                  "Confirm the wider range against a built ROM, "
-                  "then extend it here."
-              )
-
-          stored = int.from_bytes(rom[0x7FFA:0x7FFC], "little")
-          computed = sum(rom[:0x7FF0]) & 0xFFFF
-          print(f"stored 0x{stored:04X} computed 0x{computed:04X}")
-          if stored != computed:
-              sys.exit("checksum does not match the ROM body")
-          print("SEGA header and checksum agree")
-          PY
+      - name: The ROM gate, both consoles
+        run: tools/scripts/rom_gate.sh
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: rom
-          path: build/smsggmedia.sms
+          path: |
+            build/smsggmedia.sms
+            build/smsggmedia.gg
           retention-days: 14

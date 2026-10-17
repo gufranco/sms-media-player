@@ -12,6 +12,7 @@ from smsggmedia import clips, dials, flags, rate, tune
 SMALL = tune.bake.Geometry(columns=8, rows=6, top_row=0)
 FULL = tune.bake.Geometry(columns=32, rows=24, top_row=0)
 FAST = ["--duration", "1"]
+needs_ffmpeg = pytest.mark.ffmpeg
 
 
 @pytest.fixture(scope="module")
@@ -49,6 +50,7 @@ def parsed(source, *extra: str):
     return flags.build_parser().parse_args([str(source), *FAST, *extra])
 
 
+@needs_ffmpeg
 class TestSettle:
     def test_given_values_are_taken_as_given(self, source):
         # Arrange
@@ -87,6 +89,7 @@ class TestSettle:
         assert "reuse auto" in caplog.text
 
 
+@needs_ffmpeg
 class TestReuseThatCannotFit:
     def test_it_says_nothing_fit_and_takes_the_cheapest(self, source, caplog):
         # Arrange
@@ -108,6 +111,7 @@ class TestReuseThatCannotFit:
         assert "none fit" in caplog.text
 
 
+@needs_ffmpeg
 class TestTheRateSearch:
     def test_a_rate_nothing_can_hold_falls_to_the_slowest(self, source):
         # Arrange
@@ -174,6 +178,7 @@ class TestScoringNothing:
         # Assert
         assert str(refused.value) == "no frames decoded while scoring"
 
+    @needs_ffmpeg
     def test_denoise_past_the_end_is_refused(self, source):
         # Arrange
         start = 600.0
@@ -190,6 +195,7 @@ class TestScoringNothing:
         # Assert
         assert str(refused.value) == "no frames decoded while scoring denoise 0.0"
 
+    @needs_ffmpeg
     def test_reuse_past_the_end_is_refused(self, source):
         # Arrange
         start = 600.0

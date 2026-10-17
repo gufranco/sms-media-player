@@ -112,7 +112,7 @@ def fit_or_keep(
     *,
     margin: float,
     chroma_weight: float = 1.0,
-    ordered_dither: float = smscolor.NO_DITHER,
+    ordered_dither: float = dither.NO_DITHER,
     space: lattice.Lattice = lattice.MASTER_SYSTEM,
 ) -> FramePalettes:
     if margin < 0.0:

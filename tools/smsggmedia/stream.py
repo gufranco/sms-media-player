@@ -183,6 +183,9 @@ def pace(chunks: list[bytes], *, fields: int) -> list[bytes]:
 
 
 def psg_run(data: bytes) -> bytes:
+    if not data:
+        msg = "a sound run holds at least one write; the player would send 256 for an empty one"
+        raise ValueError(msg)
     if len(data) > MAX_RUN:
         msg = f"a sound run holds at most {MAX_RUN} writes, got {len(data)}"
         raise ValueError(msg)
