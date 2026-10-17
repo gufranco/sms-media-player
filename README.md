@@ -13,7 +13,7 @@ its tiles paged through VRAM while the film plays.</strong>
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](RELEASES.md)
 [![Licence](https://img.shields.io/badge/licence-MIT-blue?style=flat-square)](LICENSE)
 [![Target](https://img.shields.io/badge/target-Sega%20Master%20System-red?style=flat-square)](#hardware-ceilings)
-[![Hardware](https://img.shields.io/badge/hardware-console%20run%20pending-yellow?style=flat-square)](#verification)
+[![Hardware](https://img.shields.io/badge/hardware-Master%20System%20%2B%20Game%20Gear-brightgreen?style=flat-square)](#verification)
 
 </div>
 
@@ -71,12 +71,12 @@ and the controls.
 | Encoder and working-set policy | Working, with a replay oracle that agrees with it to five decimals |
 | Picture | 256x192, the whole raster. A source of another shape is cropped to fill it |
 | Z80 replay loop | Working. Pattern and name runs at 30 cycles a byte against Sega's documented floor of 29; the palette and name table flip at 16 inside a V counter guard in the vertical blank. Held by a build gate and by running the built replay on a Z80 |
-| Sound | Tone synthesis on the PSG, written once a field before the picture. `--silent` leaves it out. Not yet run on a console |
+| Sound | Tone synthesis on the PSG, written once a field before the picture. `--silent` leaves it out. Played on a Master System and a Game Gear |
 | Subtitles | A SubRip `.srt` named with `--subtitles`, or one beside the source under the same name, is burned into the bottom of the picture in the family's 8x8 font, white on a black edge, at most two lines of 32 columns |
 | Controls | Plays on a loop. A position bar with a play, pause and mute glyph and the elapsed and total time shows for about three seconds at the start and after any press of Up, Down, Left, Right or button 1, then gets out of the picture's way; while paused it stays up. Button 1 restarts. Button 2 stops on a black screen, and button 1, button 2 or Pause then plays from the beginning. Pause, or Start on a Game Gear, pauses and resumes. Down shows and hides the diagnostics at any time, and button 1 does too while paused: frame over total frames, the cartridge bank, and how many fields were deferred because the vertical blank was missed. Up turns sound off and on; sound returns within a second. Left and Right jump to the seek points the baker places every 10 seconds, `--seek-every` to change; a jump shows about a quarter of a second of black while the point's picture loads. A corrupt stream stops on a red one |
 | Field rate | Paced for NTSC, 59.92 fields a second, which the Game Gear also runs at. The player draws one chunk a field, so a 50 Hz PAL console plays the same stream at about five sixths of its intended speed. Nothing here has been checked on a PAL console |
 | Regression set | Six clips of different kinds baked on every test run |
-| Hardware run | Not done. Every figure here comes from an emulator or a listing |
+| Hardware run | Done on 2026-10-17 on a Master System and a Game Gear, with no defect seen. The figures here still come from an emulator or a listing |
 
 ## What every player does
 
@@ -109,7 +109,7 @@ feature a console cannot carry says "Not possible" with the hardware reason.
 | A preview of what the console will draw | Yes, a video, or four frames beside their source | Yes, a video, or four frames beside their source |
 | A write-timing gate on every build | Yes | Yes |
 | A regression set of films baked on every test run | Yes, six films | Yes, six films |
-| Run on the original hardware | Yes, AES and MVS | Not yet. A Game Gear run is pending |
+| Run on the original hardware | Yes, AES and MVS | Yes, a Master System and a Game Gear |
 
 ## How it works
 
@@ -172,8 +172,8 @@ the field's picture, 34 T-states apart, and the transfer loop is untouched.
 Speech and dense mixes come out as tones; music with a clear melody survives
 best. `--silent` leaves sound out and gives its 15 bytes a field back to the
 picture. The player never enables the line interrupt, so the whole field,
-active display included, stays free for the transfer loop. None of this has
-run on a console yet.
+active display included, stays free for the transfer loop. It has played on a
+Master System and a Game Gear.
 
 It still writes the PSG once, at boot: full attenuation on all four channels.
 A console powers up with its tone channels audible, so leaving the chip alone
@@ -503,12 +503,13 @@ Thirty seconds of the Sintel trailer from 0:10, baked with the defaults:
 | Sound | 8,931 PSG writes |
 | Displayed error | 0.02072 |
 
-It plays in mednafen. It has not run on a console.
+It plays in mednafen.
 
 ## Verification
 
-Nothing here has run on a console yet. Every figure comes from an emulator, a
-listing or the replay oracle, and the owner's Game Gear is the hardware check.
+The player ran on a Master System and a Game Gear on 2026-10-17 with no
+defect seen. Every figure here still comes from an emulator, a listing or the
+replay oracle: a console run shows the picture holds, and measures nothing.
 
 | Check | What it settles |
 |---|---|
@@ -524,19 +525,20 @@ listing or the replay oracle, and the owner's Game Gear is the hardware check.
 
 ### On real hardware
 
-Nothing here has run on a console yet. The owner's Game Gear with an Everdrive
-is the check, and it settles less than a Master System would:
+On 2026-10-17 the owner ran the player on a Master System and on a Game Gear
+with an Everdrive, and saw no defect. The two consoles settle different things:
 
-| Claim | What a Game Gear run settles |
-|---|---|
-| VDP write spacing in the transfer loop | Yes: the same VDP core at the same clock |
-| The overlay and diagnostics drawn during play | Yes: their writes go through the same paced paths |
-| Sound from the PSG | Yes: the same chip |
-| Colour | No: the Game Gear remaps the palette onto its own |
-| The screen edges | No: in Master System mode it shows only the centre 160x144 |
+| Claim | Master System | Game Gear |
+|---|---|---|
+| VDP write spacing in the transfer loop | Yes | Yes: the same VDP core at the same clock |
+| The overlay and diagnostics drawn during play | Yes | Yes: their writes go through the same paced paths |
+| Sound from the PSG | Yes | Yes: the same chip |
+| Colour | Yes | No: the Game Gear remaps the palette onto its own |
+| The screen edges | Yes | No: in Master System mode it shows only the centre 160x144 |
 
-No emulator enforces the VDP write spacing, so a change to the transfer loop is
-unverified until it has run on hardware, however good the local numbers look.
+No emulator enforces the VDP write spacing, so the next change to the transfer
+loop is unverified until it runs on hardware again, however good the local
+numbers look.
 
 ## Repository layout
 

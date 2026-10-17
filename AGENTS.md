@@ -42,7 +42,7 @@ mapper decodes, and its sound is tone synthesis on the PSG: the baker writes
 the changed tone, noise and attenuation registers once a field, and the replay
 sends them to port `$7F` 34 T-states apart before the field's picture. The
 player never enables the line interrupt, and it still silences the PSG at boot.
-`--silent` leaves sound out. The sound path has not run on a console.
+`--silent` leaves sound out. The sound path has played on a Master System and a Game Gear.
 
 Owner's instruction, 2026-10-15: never describe one member as a port, fork,
 translation or derivative of another, in a README, a commit, a comment or any
@@ -582,35 +582,21 @@ still matters, because the library half places a smaller picture.
 
 ## What is not done
 
-**Nothing has been confirmed on hardware since the outi revert.**
-`roms/downloads-30s-hwsafe.sms` is built and waiting for a console test. Every
-figure in this repository comes from an emulator, a model, or static analysis.
+**The player ran on hardware on 2026-10-17.** The owner ran the current build
+on a Master System and on a Game Gear with an Everdrive and reported no defect
+so far. That covers every player change listed here before it: the replay's
+refusal of run kind `0x03`, the backdrop on an assertion halt, the cursor
+assertion below `0xC000`, the sound run written to the PSG 34 T-states apart,
+pause on the Pause NMI, the position bar and diagnostics, deferred-field
+counting, seek on Left and Right, muting, the overlay drawn during play with its
+play, pause and mute glyph, Down for the diagnostics, the resumable stop on
+button 2, and the black and white sprite entries the replay writes while the
+overlay is up. The report did not itemise each check, so a defect found later
+on any of them goes back on this list with what was seen.
 
-These player changes since that ROM are unverified on hardware for the same
-reason: the replay refuses run kind `0x03` instead of copying the palettes
-outside the V counter guard, an assertion halt paints the backdrop entry so it
-shows with the display off, the replay cursor is asserted below `0xC000`, the
-replay writes the sound run, kind `0x06`, to the PSG 34 T-states apart, and
-the player pauses on the Pause NMI, draws a position bar in sprites while paused and the diagnostics on button 1, counts deferred fields in the replay, seeks on Left and Right through `fmv_movie_seek` after a screen reset, and skips sound runs while muted.
-The overlay now also draws during play, for 180 fields at the start and after
-any press of Up, Down, Left, Right or button 1, with a play, pause and mute
-glyph; Down toggles the diagnostics during play; button 2 stops on black and
-button 1, button 2 or Pause plays again. While the overlay or the diagnostics
-are up, the replay writes black and white into sprite palette entries 30 and
-31 right after the guarded palette copy, through a paced `outi`, `nop`,
-`jp nz` loop and a padded address setup, which is a change to `src/replay.s`.
-The overlay's own writes go through `fmv_vdp_copy` at 30 T-states a byte, and
-its work is split into steps, each started only when the V counter shows
-enough lines left before the frame interrupt; the line cost of each step was
-measured on the Z80 model and carries 6 lines of margin.
-A fresh ROM carrying them needs one Game Gear run: play through with sound,
-press Start to pause, check the white elapsed and total time and the bar near the bottom, press button 1 for the diagnostics rows above them and again to hide them, press Start again to resume, press Up to mute and again to hear
-the tones return within a second, press Right and Left to seek and check the picture returns whole after a moment of black, press button 1 to restart and button 2 to
-stop on black, press button 1 to play again, press Down during play for the
-diagnostics and again to hide them, check the overlay appears for about three
-seconds after each press and disappears, check its play glyph turns to pause
-while paused and gains the mute mark while muted, and watch for shredded tiles
-and for film colours flickering in the overlay.
+Still open: the owner's verdict on the dither default, and a listening verdict
+on the PSG sound. The next change to `src/replay.s`, the transfer loop or the
+overlay's VDP writes is unverified again until it runs on a console.
 
 Start pausing on a Game Gear rests on the SMS Power Start Button page, which
 says that in Master System mode the Start button acts identically to the
