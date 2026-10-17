@@ -6,7 +6,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 
-from smsmedia import lattice, pattern, smscolor
+from smsggmedia import lattice, pattern, smscolor
 
 LLOYD_ROUNDS: Final = 8
 ASSIGN_ROUNDS: Final = 6

@@ -7,7 +7,7 @@
 
 [English](README.md) &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; 简体中文 &nbsp;|&nbsp; [繁體中文（香港）](README.zh-HK.md)
 
-[![CI](https://img.shields.io/github/actions/workflow/status/gufranco/sms-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/sms-media-player/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/gufranco/smsgg-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/smsgg-media-player/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](RELEASES.md)
 [![Licence](https://img.shields.io/badge/licence-MIT-blue?style=flat-square)](LICENSE)
 [![Target](https://img.shields.io/badge/target-Sega%20Master%20System-red?style=flat-square)](#硬件上限)
@@ -32,8 +32,8 @@
 </div>
 
 ```bash
-uv --project tools run python -m smsmedia.cartridge ~/Movies/my-film.mkv --duration 5
-# build/smsmedia.sms
+uv --project tools run python -m smsggmedia.cartridge ~/Movies/my-film.mkv --duration 5
+# build/smsggmedia.sms
 ```
 
 ---
@@ -172,7 +172,7 @@ Master System **在 16 KB VRAM 中可寻址 512 个图案**，而 512 个图案�
 烘焙器通过 [fmv-core-python](https://github.com/gufranco/fmv-core-python) 子模块与 Neo Geo 播放器共享解码、颜色、影片和捕获代码，因此克隆时要带上子模块。通过下载按钮得到的源代码归档无法包含子模块，也无法运行。
 
 ```bash
-git clone --recurse-submodules https://github.com/gufranco/sms-media-player.git
+git clone --recurse-submodules https://github.com/gufranco/smsgg-media-player.git
 git submodule update --init   # in a clone made without the flag
 ```
 
@@ -181,7 +181,7 @@ git submodule update --init   # in a clone made without the flag
 一条命令即可从任意视频文件烘焙影片并构建 ROM。`--bake-only` 会在烘焙之后、构建 ROM 之前停止：
 
 ```bash
-uv --project tools run python -m smsmedia.cartridge input.mp4 --start 300 --duration 5 \
+uv --project tools run python -m smsggmedia.cartridge input.mp4 --start 300 --duration 5 \
     --preview build/preview.png
 make timing     # VDP write spacing, read out of the assembler's own listing
 ```
@@ -190,10 +190,10 @@ make timing     # VDP write spacing, read out of the assembler's own listing
 
 ### 运行
 
-在硬件上，把 `build/smsmedia.sms` 复制到烧录卡带。在模拟器下，以窗口模式运行，绝不要全屏：
+在硬件上，把 `build/smsggmedia.sms` 复制到烧录卡带。在模拟器下，以窗口模式运行，绝不要全屏：
 
 ```bash
-mednafen -video.fs 0 -sound 0 build/smsmedia.sms
+mednafen -video.fs 0 -sound 0 build/smsggmedia.sms
 ```
 
 ### 工具链
@@ -201,7 +201,7 @@ mednafen -video.fs 0 -sound 0 build/smsmedia.sms
 每次 ROM 构建都通过 Docker 进行，没有宿主机工具链路径。[`Dockerfile`](Dockerfile) 按软件包版本固定 SDCC，按提交和归档文件的 SHA-256 固定 devkitSMS，按摘要固定基础镜像，构建以调用者的用户身份运行。
 
 ```bash
-make rom        # build/smsmedia.sms
+make rom        # build/smsggmedia.sms
 make analyse    # cppcheck at exhaustive level, must exit 0
 make shell      # a shell inside the toolchain image
 make clean
@@ -212,7 +212,7 @@ make clean
 `--bundle DIR` 会写出一个可直接接入你自己的 devkitSMS 游戏的文件夹：源代码形式的播放器库、影片、`fmv.mk` 片段，以及按你烘焙的影片写成的指南。[`examples/cutscene/`](examples/cutscene) 是用它构建的游戏，运行 `make example` 即可。
 
 ```bash
-uv --project tools run python -m smsmedia.cartridge my-film.mp4 --bundle build/bundle
+uv --project tools run python -m smsggmedia.cartridge my-film.mp4 --bundle build/bundle
 make example
 ```
 
@@ -394,7 +394,7 @@ Sintel 预告片从 0:10 开始的三十秒，使用默认设置烘焙：
 |---|---|
 | [`src/`](src) 和 [`include/fmv/`](include/fmv) | 用 C 和汇编编写的 Z80 播放器，每个文件一个模块 |
 | [`examples/cutscene/`](examples/cutscene) | 用生成的库包构建的游戏，播放影片后继续运行 |
-| [`tools/smsmedia/`](tools/smsmedia) | 烘焙器，每个阶段一个模块 |
+| [`tools/smsggmedia/`](tools/smsggmedia) | 烘焙器，每个阶段一个模块 |
 | [`tools/scripts/`](tools/scripts) | 获取回归影片、重建测试夹具、检查写入时序、比较捕获结果 |
 | [`tools/tests/`](tools/tests) | 编码器测试套件，包括多片段门禁和 Z80 回放 |
 | [`fmv-core-python/`](https://github.com/gufranco/fmv-core-python) | 子模块：家族共享的烘焙器和测量代码 |
@@ -418,10 +418,10 @@ uv --project tools run ruff format tools/
 uv --project tools run ruff check tools/
 
 # 类型检查门禁
-uv --project tools run mypy tools/smsmedia tools/scripts
+uv --project tools run mypy tools/smsggmedia tools/scripts
 
 # 测试，带 95% 覆盖率下限
-uv --project tools run python -m pytest tools/tests --cov=smsmedia --cov=tools/scripts --cov-config=tools/pyproject.toml --cov-fail-under=95
+uv --project tools run python -m pytest tools/tests --cov=smsggmedia --cov=tools/scripts --cov-config=tools/pyproject.toml --cov-fail-under=95
 
 # 获取并校验回归影片
 uv --project tools run python tools/scripts/fetch_clips.py
@@ -460,9 +460,9 @@ make rom`、`make analyse`、`make timing
 
 | 接口 | 承诺 |
 |:--------|:--------|
-| `python -m smsmedia.cartridge <source>` | 唯一的命令。它的参数保持名称和含义不变 |
+| `python -m smsggmedia.cartridge <source>` | 唯一的命令。它的参数保持名称和含义不变 |
 | `--bundle DIR` | 输出一个可直接接入的文件夹，其结构保持名称不变：`DIR/src/`、`DIR/include/fmv/`、`DIR/movie/`、`DIR/fmv.mk`、`DIR/README.md` |
-| `build/smsmedia.sms` | 卡带输出的位置及其名称 |
+| `build/smsggmedia.sms` | 卡带输出的位置及其名称 |
 | 退出码 | 成功为 0，失败为非 0 |
 
 C 库对外的接口是 [`include/fmv/`](include/fmv) 中的头文件。[`src/`](src) 下的一切都是内部实现，可能随时变动而不另行通知。
@@ -512,7 +512,7 @@ PSG 有三个方波音调通道和一个噪声通道，没有采样通道。烘�
 | 成员 | 简介 |
 |:--|:--|
 | [neogeo-media-player](https://github.com/gufranco/neogeo-media-player) | 在 Neo Geo AES 或 MVS 上全屏播放带声音的影片，以及一个在其他游戏内部播放影片的库 |
-| [sms-media-player](https://github.com/gufranco/sms-media-player) | 本仓库 |
+| [smsgg-media-player](https://github.com/gufranco/smsgg-media-player) | 本仓库 |
 | [fmv-core-python](https://github.com/gufranco/fmv-core-python) | 各播放器共享的烘焙器和测量代码 |
 
 ## 许可证与致谢

@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from smsmedia import rate, target, tune
+from smsggmedia import rate, target, tune
 
 needs_ffmpeg = pytest.mark.ffmpeg
 

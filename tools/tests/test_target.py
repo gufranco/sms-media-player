@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from smsmedia import target
+from smsggmedia import target
 
 
 class TestTheMasterSystem:

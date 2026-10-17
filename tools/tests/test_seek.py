@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from fmvcore.testing import SEED
 
-from smsmedia import bake, cartridge, output, replay, schedule, stream
+from smsggmedia import bake, cartridge, output, replay, schedule, stream
 
 GEOMETRY = bake.Geometry(columns=8, rows=6, top_row=0)
 FPS = 10.0

@@ -5,8 +5,8 @@ from typing import Final
 
 import numpy as np
 
-from smsmedia import console
-from smsmedia.tune import (
+from smsggmedia import console
+from smsggmedia.tune import (
     Choice,
     EncodeSettings,
     Footage,

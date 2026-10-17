@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from smsmedia import bake, preview, stream
+from smsggmedia import bake, preview, stream
 
 GEOMETRY = bake.Geometry(columns=32, rows=24, top_row=0)
 LATTICE_COLOURS = ((170, 85, 0), (0, 85, 255), (255, 255, 255))

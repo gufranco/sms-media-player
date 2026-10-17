@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from fmvcore import colour
 
-from smsmedia import smscolor
+from smsggmedia import smscolor
 
 
 class TestLevelToByte:

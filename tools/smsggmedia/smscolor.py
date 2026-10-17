@@ -6,7 +6,7 @@ import numpy as np
 import numpy.typing as npt
 from fmvcore import colour
 
-from smsmedia import target
+from smsggmedia import target
 
 LEVELS: Final = target.MASTER_SYSTEM.channel_levels
 RGB_CHANNELS: Final = 3

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from fmvcore.testing import seeded
 
-from smsmedia import cartridge, target
+from smsggmedia import cartridge, target
 
 ROOT = Path(__file__).resolve().parents[2]
 FAKE = seeded()
@@ -153,4 +153,4 @@ class TestTheRomBuild:
         named = f"ROM_NAME     := {SMS_ROM.stem}\n" in makefile
 
         # Assert
-        assert (named, SMS_ROM) == (True, Path("build") / "smsmedia.sms")
+        assert (named, SMS_ROM) == (True, Path("build") / "smsggmedia.sms")

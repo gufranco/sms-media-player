@@ -6,7 +6,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 
-from smsmedia import (
+from smsggmedia import (
     console,
     fidelity,
     lattice,

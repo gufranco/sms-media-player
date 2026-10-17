@@ -8,7 +8,7 @@ import numpy as np
 import numpy.typing as npt
 from fmvcore import colour
 
-from smsmedia import smscolor, target
+from smsggmedia import smscolor, target
 
 BYTE_MAX: Final = 255
 MIN_LEVELS: Final = 2

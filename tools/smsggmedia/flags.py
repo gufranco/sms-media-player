@@ -7,7 +7,7 @@ from typing import Final
 from fmvcore import arguments, ffmpeg
 from fmvcore.arguments import AUTO
 
-from smsmedia import bake, limits, target
+from smsggmedia import bake, limits, target
 
 SEEK_EVERY_SECONDS: Final = 10.0
 
@@ -187,7 +187,7 @@ def add_output_flags(parser: argparse.ArgumentParser) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="smsmedia",
+        prog="smsggmedia",
         description="Bake a movie and build the cartridge that plays it.",
     )
     parser.add_argument("source", type=Path, help="the video file to put on the cartridge")

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from smsmedia import stepdown
+from smsggmedia import stepdown
 
 Rung = stepdown.Rung
 

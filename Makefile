@@ -1,5 +1,5 @@
-PROJECT      := sms-media-player
-ROM_NAME     := smsmedia
+PROJECT      := smsgg-media-player
+ROM_NAME     := smsggmedia
 TARGET       ?= sms
 ifeq ($(TARGET),gg)
 TARGET_DIR   := build/gg

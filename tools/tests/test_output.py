@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from smsmedia import output
+from smsggmedia import output
 
 
 class TestNearestRank:

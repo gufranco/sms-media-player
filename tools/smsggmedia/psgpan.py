@@ -6,7 +6,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 
-from smsmedia import psgsound
+from smsggmedia import psgsound
 
 STEREO: Final = 2
 CHANNELS: Final = psgsound.TONE_CHANNELS + 1

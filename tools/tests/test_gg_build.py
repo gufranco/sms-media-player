@@ -4,7 +4,7 @@ import pytest
 from test_replay_on_z80 import BAD, INSIDE, PAYLOAD, replay
 from z80vdp import call, load_gg
 
-from smsmedia import console, stream
+from smsggmedia import console, stream
 
 HEADER_REGION = 0x7FFF
 GG_INTERNATIONAL = 0x7

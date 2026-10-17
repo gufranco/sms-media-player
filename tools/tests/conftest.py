@@ -1,7 +1,7 @@
 import pytest
 from fmvcore import testing
 
-FFMPEG_REQUIRED_ENV = "SMSMEDIA_FFMPEG_REQUIRED"
+FFMPEG_REQUIRED_ENV = "SMSGGMEDIA_FFMPEG_REQUIRED"
 DECODERS = ("ffmpeg", "ffprobe")
 
 

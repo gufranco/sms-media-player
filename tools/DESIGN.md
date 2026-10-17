@@ -4,11 +4,11 @@ Why each part of the baker, its scripts and its tests is shaped as it is, with t
 
 ## The baker
 
-### [`smsmedia/__init__.py`](smsmedia/__init__.py)
+### [`smsggmedia/__init__.py`](smsggmedia/__init__.py)
 
 Offline baker that turns a video file into a Sega Master System movie ROM.
 
-### [`smsmedia/bake.py`](smsmedia/bake.py)
+### [`smsggmedia/bake.py`](smsggmedia/bake.py)
 
 Turn decoded frames into the command stream the on-cart player replays.
 
@@ -74,7 +74,7 @@ frame's pattern for a field and are served on the next. They are drawn
 with the new frame's palettes, because CRAM is rewritten every frame, and
 the displayed error charges them for it.
 
-### [`smsmedia/capture.py`](smsmedia/capture.py)
+### [`smsggmedia/capture.py`](smsggmedia/capture.py)
 
 Compare what the screen showed, field by field, with the film it came from.
 
@@ -104,11 +104,11 @@ one field after the end marker that closes its transfer. Streams from
 before the second table have no flip, and there the end marker is the
 moment the frame shows.
 
-### [`smsmedia/cartridge.py`](smsmedia/cartridge.py)
+### [`smsggmedia/cartridge.py`](smsggmedia/cartridge.py)
 
 One command: point it at a video file and get the ROM. It bakes the film,
 then builds through `make rom`, the same Docker path a manual build takes,
-and names the ROM after the package, `build/smsmedia.sms`. `--bake-only`
+and names the ROM after the package, `build/smsggmedia.sms`. `--bake-only`
 stops after the bake. A source with no audio track is announced, so a
 silent cartridge never comes as a surprise.
 
@@ -135,7 +135,7 @@ Shortening a film is the owner's decision. The baker reports the figure
 that would fit and stops, which is the same contract the Neo Geo project
 holds: no path shortens a movie to make it fit.
 
-### [`smsmedia/clips.py`](smsmedia/clips.py)
+### [`smsggmedia/clips.py`](smsggmedia/clips.py)
 
 The films the gate bakes, and how to know a copy is the right one.
 
@@ -162,18 +162,18 @@ The check itself, size first and then SHA-256, is
 the Master System's manifest schema, where the films live, and the budgets
 each film is held to.
 
-### [`smsmedia/bundle.py`](smsmedia/bundle.py)
+### [`smsggmedia/bundle.py`](smsggmedia/bundle.py)
 
 Write a drop-in folder that plays the baked film inside another devkitSMS
 project: the replay and the player library as source, their headers, the
-film and its header, the `fmv.mk` fragment from `smsmedia/templates/`, and a
+film and its header, the `fmv.mk` fragment from `smsggmedia/templates/`, and a
 guide rendered against the film's own figures. The copying and rendering are
 `fmvcore.bundle`, which the Neo Geo player shares. The fragment links the
 film's bank objects in ascending numeric order, because `ihx2sms` drops banks
 linked alphabetically, and it restores the including Makefile's default goal.
 `examples/cutscene` is a game built from a fresh bundle, and CI builds it.
 
-### [`smsmedia/captions.py`](smsmedia/captions.py)
+### [`smsggmedia/captions.py`](smsggmedia/captions.py)
 
 Burn subtitles into the decoded picture before it is encoded.
 
@@ -187,7 +187,7 @@ one-pixel black edge so it stays readable over any picture, at most two
 lines of one column per 8 pixels, centred, 8 pixels above the bottom.
 The price is that burned subtitles cannot be switched off.
 
-### [`smsmedia/console.py`](smsmedia/console.py)
+### [`smsggmedia/console.py`](smsggmedia/console.py)
 
 The console's memory map, and the state the player leaves it in.
 
@@ -220,7 +220,7 @@ Source: Charles MacDonald's VDP documentation.
 The second table costs the pattern slots it sits on, so patterns now end at
 0x3000: 384 slots instead of 448.
 
-### [`smsmedia/dials.py`](smsmedia/dials.py)
+### [`smsggmedia/dials.py`](smsggmedia/dials.py)
 
 The three settings measured per bake, settled in the order they depend on.
 
@@ -249,7 +249,7 @@ at a probe rate and baking at another tunes for a film that is not made.
 The rate search runs with the given values, or with fixed stand-ins where
 those are still to be measured.
 
-### [`smsmedia/fidelity.py`](smsmedia/fidelity.py)
+### [`smsggmedia/fidelity.py`](smsggmedia/fidelity.py)
 
 How far what the console shows is from the frame it was asked to show.
 
@@ -300,15 +300,15 @@ decide which cells can share a pattern, and appearance is what that
 question is about, so the feature is the colour each pixel resolves to
 rather than the index that names it.
 
-### [`smsmedia/flags.py`](smsmedia/flags.py)
+### [`smsggmedia/flags.py`](smsggmedia/flags.py)
 
-The command line of [`smsmedia/cartridge.py`](smsmedia/cartridge.py). Every
+The command line of [`smsggmedia/cartridge.py`](smsggmedia/cartridge.py). Every
 numeric flag is range-checked by `fmvcore.arguments` at parse time, so a
 value outside its range stops the run before anything is decoded. The scout
 reuses the picture flags from here, so both commands read a picture the same
 way.
 
-### [`smsmedia/frames.py`](smsmedia/frames.py)
+### [`smsggmedia/frames.py`](smsggmedia/frames.py)
 
 Build the filter chain that turns a film into frames at the console's raster
 and rate, and hand it to the decode path in
@@ -327,7 +327,7 @@ baked into the frames would be worse than they look, because the encoder
 would spend pattern slots and transfer budget on them all the way to the
 screen.
 
-### [`smsmedia/limits.py`](smsmedia/limits.py)
+### [`smsggmedia/limits.py`](smsggmedia/limits.py)
 
 The measured limits every bake is held to.
 
@@ -381,7 +381,7 @@ cartoon and from 0.0695 to 0.0437 on the game footage between none and 1.0,
 and the owner picked 1.0 from the rendered sheets. Above 1.0 the threshold
 passes half a step and moves a value already on a level.
 
-### [`smsmedia/output.py`](smsmedia/output.py)
+### [`smsggmedia/output.py`](smsggmedia/output.py)
 
 What a bake leaves on disk, and how it avoids leaving the wrong thing.
 
@@ -390,7 +390,7 @@ after an earlier one succeeded would otherwise leave that earlier film in
 place, and `make rom` would ship it without a word, so a failure removes it
 and a success replaces each file in one rename.
 
-### [`smsmedia/palettes.py`](smsmedia/palettes.py)
+### [`smsggmedia/palettes.py`](smsggmedia/palettes.py)
 
 Fit the two hardware palettes to one frame, and assign a palette per cell.
 
@@ -438,7 +438,7 @@ particular entries cover its pixels. Alternating assignment and refitting
 is Lloyd's algorithm over the two palettes, and it is where most of the
 per-cell error can actually be recovered.
 
-### [`smsmedia/pattern.py`](smsmedia/pattern.py)
+### [`smsggmedia/pattern.py`](smsggmedia/pattern.py)
 
 Pack 8x8 four-bit tiles into the VDP's pattern format, and build name
 table entries.
@@ -459,7 +459,7 @@ The bit order within a plane byte is the one place a wrong reading would not
 raise. It shows instead as every 8-pixel cell being mirrored left to right,
 which is unmistakable on a rendered frame and is checked there.
 
-### [`smsmedia/placement.py`](smsmedia/placement.py)
+### [`smsggmedia/placement.py`](smsggmedia/placement.py)
 
 Decide which VRAM slot every cell of a frame draws from.
 
@@ -490,7 +490,7 @@ depends on this frame's palettes. Its appearance is therefore recomputed
 against the current CRAM rather than remembered, and a cell is matched
 only against residents rendered under the palette that cell chose.
 
-### [`smsmedia/rate.py`](smsmedia/rate.py)
+### [`smsggmedia/rate.py`](smsggmedia/rate.py)
 
 Choose the frame rate a film can actually hold, by measuring it.
 
@@ -523,7 +523,7 @@ holds, because a slower one cannot be preferred once a faster one keeps
 time. When nothing holds, the slowest wins: the unevenness only grows with
 the rate.
 
-### [`smsmedia/replay.py`](smsmedia/replay.py)
+### [`smsggmedia/replay.py`](smsggmedia/replay.py)
 
 Replay a baked stream into a model of the console, and render what it shows.
 
@@ -555,7 +555,7 @@ the film plays and any light here is light the player put there. That
 makes the measurement a constant rather than a budget: the answer is
 zero, and any other answer is the defect.
 
-### [`smsmedia/schedule.py`](smsmedia/schedule.py)
+### [`smsggmedia/schedule.py`](smsggmedia/schedule.py)
 
 Choose which frame to show next by the clock, so the picture keeps time.
 
@@ -598,7 +598,7 @@ patterns than the slots beside the frame on screen could hold, and left
 cells unplaced on every film in the regression set. The
 oracle test replays from each point after a reset and requires the same
 picture as continuous play from the field the keyframe closes on.
-### [`smsmedia/scout.py`](smsmedia/scout.py)
+### [`smsggmedia/scout.py`](smsggmedia/scout.py)
 
 Find the passage of a film that encodes best, which is the largest lever.
 
@@ -620,7 +620,7 @@ The numbers it reports are estimates from samples, not a bake. A window it
 likes still has to be baked, and the baker remains the thing that decides
 whether a film fits.
 
-### [`smsmedia/target.py`](smsmedia/target.py)
+### [`smsggmedia/target.py`](smsggmedia/target.py)
 
 What differs between the consoles a cartridge is baked for, as one profile.
 
@@ -633,7 +633,7 @@ entry and close kind `0x07`, so the replay and the oracle both read the run's
 size from its kind rather than from a flag. Every module that differs between
 the two reads the profile, and nothing branches on a console name.
 
-### [`smsmedia/lattice.py`](smsmedia/lattice.py)
+### [`smsggmedia/lattice.py`](smsggmedia/lattice.py)
 
 The grid of colours a target can show, and the CRAM bytes for an entry.
 
@@ -654,7 +654,7 @@ A sixteen-level fit costs the same as a four-level one, 0.12 s for a noisy
 present in the frame, never on the whole lattice. On that gradient the mean
 absolute error fell from 22.3 to 14.2.
 
-### [`smsmedia/smscolor.py`](smsmedia/smscolor.py)
+### [`smsggmedia/smscolor.py`](smsggmedia/smscolor.py)
 
 The Master System colour space, and distance within it.
 
@@ -726,7 +726,7 @@ The chroma weight reaches the decision here, which is the only place it
 can change anything: with per-channel rounding the choice is made before
 any perceptual metric is consulted, so weighting it had no effect at all.
 
-### [`smsmedia/psgpan.py`](smsmedia/psgpan.py)
+### [`smsggmedia/psgpan.py`](smsggmedia/psgpan.py)
 
 Route each PSG channel to the left, the right or both, for the Game Gear.
 
@@ -756,7 +756,7 @@ carries it. On a Master System an even port below `$40` reaches the memory
 control register, so the Master System player refuses the kind as corrupt
 rather than write it.
 
-### [`smsmedia/psgsound.py`](smsmedia/psgsound.py)
+### [`smsggmedia/psgsound.py`](smsggmedia/psgsound.py)
 
 Turn a soundtrack into the PSG register writes the player sends once a field.
 
@@ -794,7 +794,7 @@ This is tone synthesis, not sample playback: speech and dense mixes come out
 as tones. Sample playback through the attenuators is the alternative the
 sound plan measures, and it would rewrite the replay's timing.
 
-### [`smsmedia/stepdown.py`](smsmedia/stepdown.py)
+### [`smsggmedia/stepdown.py`](smsggmedia/stepdown.py)
 
 Step a bake down until it fits the cartridge.
 
@@ -808,7 +808,7 @@ Neo Geo player uses for its tiers, finds the best rung that fits while baking
 as few as it can, and each rung is baked at most once. A frame rate given with
 `--fps` is never stepped down: the bake refuses with the shortfall instead.
 
-### [`smsmedia/stream.py`](smsmedia/stream.py)
+### [`smsggmedia/stream.py`](smsggmedia/stream.py)
 
 The command stream the on-cart player replays.
 
@@ -867,7 +867,7 @@ A frame that already needs more fields than the target is left alone.
 Dropping its work to hit a deadline would be the encoder deciding to
 show a worse picture than the one it was asked for.
 
-### [`smsmedia/tablewrites.py`](smsmedia/tablewrites.py)
+### [`smsggmedia/tablewrites.py`](smsggmedia/tablewrites.py)
 
 Turn uploads and name table changes into the fewest, longest runs.
 
@@ -884,7 +884,7 @@ unchanged entry between two changes makes the frame smaller and spares
 the player an address setup. Only cells whose entries sit at consecutive
 addresses are joined.
 
-### [`smsmedia/tune.py`](smsmedia/tune.py)
+### [`smsggmedia/tune.py`](smsggmedia/tune.py)
 
 Choose encoder settings by measuring them, rather than by guessing.
 
@@ -963,7 +963,7 @@ fraction of a percent of them is invisible while several percent is a
 smear on motion. The error number barely registers either, so the share is
 carried separately and gates the pool the search chooses from.
 
-### [`smsmedia/vdptiming.py`](smsmedia/vdptiming.py)
+### [`smsggmedia/vdptiming.py`](smsggmedia/vdptiming.py)
 
 Measure the spacing between VDP port writes in the code that shipped.
 
@@ -1037,7 +1037,7 @@ Listings older than the source they were assembled from.
 A failed or partial build leaves the previous listing in place, and
 measuring it would pass code that is not the code being shipped.
 
-### [`smsmedia/workingset.py`](smsmedia/workingset.py)
+### [`smsggmedia/workingset.py`](smsggmedia/workingset.py)
 
 What lives in VRAM right now, and what it costs to change that.
 
@@ -1118,7 +1118,7 @@ Compare an emulator capture with the film it was baked from, field by field.
 Record the ROM first, windowed and without sound, then run from the repository
 root:
 
-    mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/smsmedia.sms
+    mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/smsggmedia.sms
     uv --project tools run python tools/scripts/compare_capture.py \
         --capture /tmp/run.mov --source film.mp4 --start 60 --json /tmp/report.json
 

@@ -14,7 +14,7 @@ from fmvcore.capture import Played
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from smsmedia import capture, console, frames, limits, preview
+from smsggmedia import capture, console, frames, limits, preview
 
 CAPTURE_WIDTH: Final = 256
 CAPTURE_HEIGHT: Final = 240

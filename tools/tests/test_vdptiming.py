@@ -6,7 +6,7 @@ import textwrap
 import pytest
 from fmvcore import sdccz80
 
-from smsmedia import vdptiming
+from smsggmedia import vdptiming
 
 PACED_LOOP = """
     0000002A F3               [ 4]   92 \tdi
@@ -269,7 +269,7 @@ class TestTheShippedPlayer:
         listings = vdptiming.built_listings()
         if not listings:
             reason = "run `make rom` first; this reads the assembler's own output"
-            if os.environ.get("SMSMEDIA_ROM_REQUIRED") == "1":
+            if os.environ.get("SMSGGMEDIA_ROM_REQUIRED") == "1":
                 pytest.fail(reason)
             pytest.skip(reason)
 

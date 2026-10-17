@@ -10,7 +10,7 @@ import numpy.typing as npt
 from fmvcore import colour
 from fmvcore import source as bar_analysis
 
-from smsmedia import bake, capture, frames, limits, pattern, stream, target
+from smsggmedia import bake, capture, frames, limits, pattern, stream, target
 
 DEFAULT_CANDIDATES: Final = (0.0, 2.0, 4.0, 8.0)
 DEFAULT_REUSE_CANDIDATES: Final = (0.016, 0.008, 0.004, 0.002, 0.001)

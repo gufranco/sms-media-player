@@ -7,7 +7,7 @@
 
 [English](README.md) &nbsp;|&nbsp; 日本語 &nbsp;|&nbsp; [简体中文](README.zh-Hans.md) &nbsp;|&nbsp; [繁體中文（香港）](README.zh-HK.md)
 
-[![CI](https://img.shields.io/github/actions/workflow/status/gufranco/sms-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/sms-media-player/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/gufranco/smsgg-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/smsgg-media-player/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](RELEASES.md)
 [![Licence](https://img.shields.io/badge/licence-MIT-blue?style=flat-square)](LICENSE)
 [![Target](https://img.shields.io/badge/target-Sega%20Master%20System-red?style=flat-square)](#ハードウェアの上限)
@@ -32,8 +32,8 @@
 </div>
 
 ```bash
-uv --project tools run python -m smsmedia.cartridge ~/Movies/my-film.mkv --duration 5
-# build/smsmedia.sms
+uv --project tools run python -m smsggmedia.cartridge ~/Movies/my-film.mkv --duration 5
+# build/smsggmedia.sms
 ```
 
 ---
@@ -173,7 +173,7 @@ Master Systemが扱えるのは**16 KBのVRAMに512パターン**で、1パタ�
 ベイカーは、デコード、色、映像、キャプチャのコードを[fmv-core-python](https://github.com/gufranco/fmv-core-python)サブモジュールを通じてNeo Geoプレイヤーと共有しているため、サブモジュールを含めてクローンしてください。ダウンロードボタンから得られるソースアーカイブにはサブモジュールが含まれず、動作しません。
 
 ```bash
-git clone --recurse-submodules https://github.com/gufranco/sms-media-player.git
+git clone --recurse-submodules https://github.com/gufranco/smsgg-media-player.git
 git submodule update --init   # in a clone made without the flag
 ```
 
@@ -182,7 +182,7 @@ git submodule update --init   # in a clone made without the flag
 任意の動画ファイルから映像をベイクし、同じコマンドでROMまでビルドします。`--bake-only`を付けると、ベイクの後、ROMのビルドの前で停止します。
 
 ```bash
-uv --project tools run python -m smsmedia.cartridge input.mp4 --start 300 --duration 5 \
+uv --project tools run python -m smsggmedia.cartridge input.mp4 --start 300 --duration 5 \
     --preview build/preview.png
 make timing     # VDP write spacing, read out of the assembler's own listing
 ```
@@ -191,10 +191,10 @@ make timing     # VDP write spacing, read out of the assembler's own listing
 
 ### 実行方法
 
-実機では、`build/smsmedia.sms`をフラッシュカートリッジにコピーします。エミュレーターではウィンドウモードで実行し、フルスクリーンにはしないでください。
+実機では、`build/smsggmedia.sms`をフラッシュカートリッジにコピーします。エミュレーターではウィンドウモードで実行し、フルスクリーンにはしないでください。
 
 ```bash
-mednafen -video.fs 0 -sound 0 build/smsmedia.sms
+mednafen -video.fs 0 -sound 0 build/smsggmedia.sms
 ```
 
 ### ツールチェーン
@@ -202,7 +202,7 @@ mednafen -video.fs 0 -sound 0 build/smsmedia.sms
 すべてのROMビルドはDockerを通り、ホストのツールチェーンを使う経路はありません。[`Dockerfile`](Dockerfile)はSDCCをパッケージのバージョンで、devkitSMSをコミットとアーカイブのSHA-256で、ベースイメージをダイジェストで固定しており、ビルドは呼び出したユーザーとして実行されます。
 
 ```bash
-make rom        # build/smsmedia.sms
+make rom        # build/smsggmedia.sms
 make analyse    # cppcheck at exhaustive level, must exit 0
 make shell      # a shell inside the toolchain image
 make clean
@@ -213,7 +213,7 @@ make clean
 `--bundle DIR`は、自作のdevkitSMSゲームにそのまま組み込めるフォルダーを書き出します。ソースのままのプレイヤーライブラリ、映像、`fmv.mk`フラグメント、ベイクした映像に合わせて書かれたガイドが入ります。[`examples/cutscene/`](examples/cutscene)はそれからビルドしたゲームで、`make example`で作れます。
 
 ```bash
-uv --project tools run python -m smsmedia.cartridge my-film.mp4 --bundle build/bundle
+uv --project tools run python -m smsggmedia.cartridge my-film.mp4 --bundle build/bundle
 make example
 ```
 
@@ -395,7 +395,7 @@ VDPの書き込み間隔を強制するエミュレーターはないため、�
 |---|---|
 | [`src/`](src)と[`include/fmv/`](include/fmv) | CとアセンブリによるZ80プレイヤー、1ファイルに1モジュール |
 | [`examples/cutscene/`](examples/cutscene) | 書き出したバンドルからビルドした、映像を再生してから続きへ進むゲーム |
-| [`tools/smsmedia/`](tools/smsmedia) | ベイカー、1工程に1モジュール |
+| [`tools/smsggmedia/`](tools/smsggmedia) | ベイカー、1工程に1モジュール |
 | [`tools/scripts/`](tools/scripts) | 回帰用の映像の取得、フィクスチャの再構築、書き込みタイミングの確認、キャプチャの比較 |
 | [`tools/tests/`](tools/tests) | エンコーダーのテストスイート、複数クリップのゲートとZ80リプレイを含む |
 | [`fmv-core-python/`](https://github.com/gufranco/fmv-core-python) | サブモジュール。ファミリーが共有するベイカーと測定のコード |
@@ -419,10 +419,10 @@ uv --project tools run ruff format tools/
 uv --project tools run ruff check tools/
 
 # 型ゲート
-uv --project tools run mypy tools/smsmedia tools/scripts
+uv --project tools run mypy tools/smsggmedia tools/scripts
 
 # テスト、カバレッジ下限95%
-uv --project tools run python -m pytest tools/tests --cov=smsmedia --cov=tools/scripts --cov-config=tools/pyproject.toml --cov-fail-under=95
+uv --project tools run python -m pytest tools/tests --cov=smsggmedia --cov=tools/scripts --cov-config=tools/pyproject.toml --cov-fail-under=95
 
 # 回帰用の映像の取得と検証
 uv --project tools run python tools/scripts/fetch_clips.py
@@ -461,9 +461,9 @@ make rom`、`make analyse`、`make timing
 
 | 対象 | 約束 |
 |:--------|:--------|
-| `python -m smsmedia.cartridge <source>` | 唯一のコマンド。フラグの名前と意味は変わりません |
+| `python -m smsggmedia.cartridge <source>` | 唯一のコマンド。フラグの名前と意味は変わりません |
 | `--bundle DIR` | 組み込み用フォルダーを出力し、その構成の名前は変わりません。`DIR/src/`、`DIR/include/fmv/`、`DIR/movie/`、`DIR/fmv.mk`、`DIR/README.md` |
-| `build/smsmedia.sms` | カートリッジの出力先とその名前 |
+| `build/smsggmedia.sms` | カートリッジの出力先とその名前 |
 | 終了コード | 成功時は0、失敗時は0以外 |
 
 Cライブラリとして公開するのは[`include/fmv/`](include/fmv)のヘッダーです。[`src/`](src)以下はすべて内部用で、予告なく変わります。
@@ -513,7 +513,7 @@ PSGには矩形波のトーンチャンネルが3つとノイズチャンネル�
 | メンバー | 内容 |
 |:--|:--|
 | [neogeo-media-player](https://github.com/gufranco/neogeo-media-player) | Neo Geo AESまたはMVSでのサウンド付きフルスクリーン映像と、別のゲームの中で映像を再生するライブラリ |
-| [sms-media-player](https://github.com/gufranco/sms-media-player) | このリポジトリ |
+| [smsgg-media-player](https://github.com/gufranco/smsgg-media-player) | このリポジトリ |
 | [fmv-core-python](https://github.com/gufranco/fmv-core-python) | 各プレイヤーが共有するベイカーと測定のコード |
 
 ## ライセンスとクレジット

@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from smsmedia import console, pattern
+from smsggmedia import console, pattern
 
 
 class TestMemoryMap:

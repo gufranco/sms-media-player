@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from fmvcore.testing import seeded
 
-from smsmedia import clips
+from smsggmedia import clips
 
 FAKE = seeded()
 PRETEND_FILM = FAKE.binary(length=12)

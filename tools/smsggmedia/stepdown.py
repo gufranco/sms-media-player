@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from fmvcore import ladder
 
-from smsmedia import rate
+from smsggmedia import rate
 
 
 @dataclass(frozen=True, slots=True)

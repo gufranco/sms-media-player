@@ -8,7 +8,7 @@ import numpy as np
 import numpy.typing as npt
 from fmvcore import ffmpeg
 
-from smsmedia import bake, capture, console, pattern
+from smsggmedia import bake, capture, console, pattern
 
 PREVIEW_FRAMES: Final = 4
 VIDEO_SUFFIXES: Final = frozenset({".mp4", ".mkv", ".mov"})

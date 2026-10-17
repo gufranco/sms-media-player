@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from smsmedia import pattern
+from smsggmedia import pattern
 
 
 def solid(value: int) -> np.ndarray:

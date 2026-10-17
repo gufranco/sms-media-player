@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from fmvcore.testing import SEED
 
-from smsmedia import captions, cartridge
+from smsggmedia import captions, cartridge
 
 HEIGHT = 48
 WIDTH = 64

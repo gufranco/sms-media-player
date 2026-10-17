@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from fmvcore import colour
 
-from smsmedia import bake, console, lattice, limits, palettes, replay, stream, target
+from smsggmedia import bake, console, lattice, limits, palettes, replay, stream, target
 
 
 def gradient_frame(height: int, width: int, shift: int = 0) -> np.ndarray:

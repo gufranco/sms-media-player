@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from smsmedia import lattice, smscolor, target
+from smsggmedia import lattice, smscolor, target
 
 SMS = lattice.MASTER_SYSTEM
 GG = lattice.GAME_GEAR

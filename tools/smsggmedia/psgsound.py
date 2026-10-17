@@ -9,7 +9,7 @@ import numpy as np
 import numpy.typing as npt
 from fmvcore import ffmpeg
 
-from smsmedia import console
+from smsggmedia import console
 
 PSG_CLOCK_HZ: Final = console.NTSC_CPU_HZ
 TONE_DIVISOR: Final = 32

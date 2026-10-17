@@ -9,11 +9,11 @@ import pytest
 from z80 import Cpu, Memory
 from z80vdp import call
 
-from smsmedia import console, stream
+from smsggmedia import console, stream
 
 ROOT = Path(__file__).resolve().parents[2]
-ROM = ROOT / "build" / "smsmedia.sms"
-SYMBOLS = ROOT / "build" / "smsmedia.noi"
+ROM = ROOT / "build" / "smsggmedia.sms"
+SYMBOLS = ROOT / "build" / "smsggmedia.noi"
 WINDOW = 0x8000
 RETURN = 0xFFF0
 STACK = 0xDFF0
@@ -34,7 +34,7 @@ PALETTE = bytes(range(32))
 BAD = 0x80
 RETIRED_KINDS = (0x03, 0x04)
 FIRST_BANK = 2
-ROM_REQUIRED_ENV = "SMSMEDIA_ROM_REQUIRED"
+ROM_REQUIRED_ENV = "SMSGGMEDIA_ROM_REQUIRED"
 ACTIVE_FLOOR = 29
 BLANK_FLOOR = 16
 GUARD = bytes([0xDB, V_COUNTER, 0xFE, 0xC0, 0x38])

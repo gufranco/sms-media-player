@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from smsmedia import (
+from smsggmedia import (
     bake,
     cartridge,
     clips,
@@ -369,7 +369,7 @@ class TestTheSetItself:
     def test_every_manifest_clip_is_present_when_required(self):
         # Arrange
         if not clips.required():
-            pytest.skip("set SMSMEDIA_CLIPS_REQUIRED=1 to demand the whole set")
+            pytest.skip("set SMSGGMEDIA_CLIPS_REQUIRED=1 to demand the whole set")
         manifest = clips.load()
 
         # Act
@@ -381,7 +381,7 @@ class TestTheSetItself:
     def test_more_than_one_kind_of_content_is_covered(self):
         # Arrange
         if not clips.required():
-            pytest.skip("set SMSMEDIA_CLIPS_REQUIRED=1 to demand the whole set")
+            pytest.skip("set SMSGGMEDIA_CLIPS_REQUIRED=1 to demand the whole set")
         minimum = 2
 
         # Act

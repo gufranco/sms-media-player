@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from fmvcore import capture as core
 
-from smsmedia import bake, capture, stream
+from smsggmedia import bake, capture, stream
 
 GEOMETRY = bake.Geometry(columns=32, rows=24, top_row=0)
 

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from fmvcore.testing import seeded
 
-from smsmedia import bake, cartridge, dials, flags, limits, output, tune
+from smsggmedia import bake, cartridge, dials, flags, limits, output, tune
 
 FAKE = seeded()
 FILM = FAKE.file_name(extension="mp4")
@@ -624,7 +624,7 @@ class TestTheFieldBudget:
 class TestTheCommand:
     def test_running_the_module_reaches_the_baker(self):
         # Arrange
-        command = [sys.executable, "-m", "smsmedia.cartridge", "--help"]
+        command = [sys.executable, "-m", "smsggmedia.cartridge", "--help"]
 
         # Act
         result = subprocess.run(command, capture_output=True, text=True, check=False)
@@ -635,7 +635,7 @@ class TestTheCommand:
 
     def test_running_the_module_without_a_source_fails(self):
         # Arrange
-        command = [sys.executable, "-m", "smsmedia.cartridge"]
+        command = [sys.executable, "-m", "smsggmedia.cartridge"]
 
         # Act
         result = subprocess.run(command, capture_output=True, text=True, check=False)

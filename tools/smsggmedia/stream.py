@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
-from smsmedia import console, smscolor, target
+from smsggmedia import console, smscolor, target
 
 END_CHUNK: Final = 0x00
 END_FRAME: Final = 0x01

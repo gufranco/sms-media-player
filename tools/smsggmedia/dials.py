@@ -7,7 +7,7 @@ from typing import Final
 
 from fmvcore.arguments import AUTO
 
-from smsmedia import bake, limits, rate, stream, tune
+from smsggmedia import bake, limits, rate, stream, tune
 
 LOG: Final = logging.getLogger(__name__)
 

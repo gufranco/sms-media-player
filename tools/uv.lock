@@ -902,7 +902,7 @@ wheels = [
 ]
 
 [[package]]
-name = "smsmedia"
+name = "smsggmedia"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

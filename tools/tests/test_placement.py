@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from smsmedia import fidelity, palettes, pattern, placement, workingset
+from smsggmedia import fidelity, palettes, pattern, placement, workingset
 
 
 def fresh_fit(frame, **options):

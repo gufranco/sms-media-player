@@ -12,7 +12,7 @@ GATES = Gates(
     always=(
         Check("format", (*UV, "ruff", "format", "--check", "tools/")),
         Check("lint", (*UV, "ruff", "check", "tools/")),
-        Check("types", (*UV, "mypy", "tools/smsmedia", "tools/scripts")),
+        Check("types", (*UV, "mypy", "tools/smsggmedia", "tools/scripts")),
         Check(
             "tests",
             (
@@ -21,7 +21,7 @@ GATES = Gates(
                 "-m",
                 "pytest",
                 "tools/tests",
-                "--cov=smsmedia",
+                "--cov=smsggmedia",
                 "--cov=tools/scripts",
                 "--cov-config=tools/pyproject.toml",
                 "--cov-fail-under=95",
@@ -51,11 +51,11 @@ GATES = Gates(
         "include/",
         "Makefile",
         "Dockerfile",
-        "tools/smsmedia/vdptiming.py",
+        "tools/smsggmedia/vdptiming.py",
         "tools/scripts/check_vdp_timing.py",
     ),
-    always_required={"SMSMEDIA_FFMPEG_REQUIRED": "1"},
-    player_required={"SMSMEDIA_FFMPEG_REQUIRED": "1", "SMSMEDIA_ROM_REQUIRED": "1"},
+    always_required={"SMSGGMEDIA_FFMPEG_REQUIRED": "1"},
+    player_required={"SMSGGMEDIA_FFMPEG_REQUIRED": "1", "SMSGGMEDIA_ROM_REQUIRED": "1"},
 )
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from smsmedia import bake, capture, stream
+from smsggmedia import bake, capture, stream
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "tools" / "scripts" / "compare_capture.py"

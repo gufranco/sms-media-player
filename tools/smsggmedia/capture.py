@@ -4,7 +4,7 @@ import numpy as np
 from fmvcore import colour
 from fmvcore.capture import Frames, Played
 
-from smsmedia import replay, smscolor
+from smsggmedia import replay, smscolor
 
 
 def replay_fields(blob: bytes) -> Played:

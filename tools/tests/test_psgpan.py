@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from smsmedia import limits, psgpan, psgsound, stream, target
+from smsggmedia import limits, psgpan, psgsound, stream, target
 
 RATE = 22050
 FIELD_HZ = 59.9227

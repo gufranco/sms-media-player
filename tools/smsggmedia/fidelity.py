@@ -4,7 +4,7 @@ import numpy as np
 import numpy.typing as npt
 from fmvcore import colour
 
-from smsmedia import palettes, pattern, smscolor, workingset
+from smsggmedia import palettes, pattern, smscolor, workingset
 
 
 def displayed_error(

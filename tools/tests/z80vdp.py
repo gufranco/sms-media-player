@@ -7,13 +7,13 @@ import pytest
 from z80 import Cpu, Memory, core
 
 ROOT = Path(__file__).resolve().parents[2]
-ROM = ROOT / "build" / "smsmedia.sms"
-SYMBOLS = ROOT / "build" / "smsmedia.noi"
-GG_ROM = ROOT / "build" / "smsmedia.gg"
-GG_SYMBOLS = ROOT / "build" / "gg" / "smsmedia.noi"
+ROM = ROOT / "build" / "smsggmedia.sms"
+SYMBOLS = ROOT / "build" / "smsggmedia.noi"
+GG_ROM = ROOT / "build" / "smsggmedia.gg"
+GG_SYMBOLS = ROOT / "build" / "gg" / "smsggmedia.noi"
 CRAM_BYTES = 32
 GG_CRAM_BYTES = 64
-ROM_REQUIRED_ENV = "SMSMEDIA_ROM_REQUIRED"
+ROM_REQUIRED_ENV = "SMSGGMEDIA_ROM_REQUIRED"
 CODE_WINDOW = 0x8000
 RETURN = 0xFFF0
 STACK = 0xDFF0

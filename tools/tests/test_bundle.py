@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from fmvcore.testing import seeded
 
-from smsmedia import bundle
+from smsggmedia import bundle
 
 FAKE = seeded()
 

@@ -8,12 +8,12 @@ from typing import Final
 
 from fmvcore import clips as core
 
-from smsmedia import limits
+from smsggmedia import limits
 
 ROOT: Final = Path(__file__).resolve().parents[2]
 MANIFEST: Final = ROOT / "tools" / "clips.manifest.json"
-DIRECTORY_ENV: Final = "SMSMEDIA_CLIPS_DIR"
-REQUIRE_ENV: Final = "SMSMEDIA_CLIPS_REQUIRED"
+DIRECTORY_ENV: Final = "SMSGGMEDIA_CLIPS_DIR"
+REQUIRE_ENV: Final = "SMSGGMEDIA_CLIPS_REQUIRED"
 BANK_CEILING: Final = limits.DEFAULT_MAX_BANKS
 OPENING_SECONDS: Final = 5.0
 FETCH_COMMAND: Final = "uv --project tools run python tools/scripts/fetch_clips.py"

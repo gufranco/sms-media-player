@@ -14,7 +14,7 @@ import numpy.typing as npt
 from fmvcore import ffmpeg, source
 from fmvcore.arguments import AUTO
 
-from smsmedia import (
+from smsggmedia import (
     bake,
     bundle,
     captions,
@@ -39,7 +39,7 @@ BAR_ANALYSIS_SECONDS: Final = 8.0
 
 
 def rom_for(system: target.Target) -> Path:
-    return Path("build") / f"smsmedia{system.extension}"
+    return Path("build") / f"smsggmedia{system.extension}"
 
 
 def fits(*, banks: int, max_banks: int) -> bool:

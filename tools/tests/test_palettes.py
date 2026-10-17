@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from smsmedia import lattice, palettes, pattern, smscolor
+from smsggmedia import lattice, palettes, pattern, smscolor
 
 
 def fresh_fit(frame, **options):

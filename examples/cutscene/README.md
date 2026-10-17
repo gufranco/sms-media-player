@@ -23,7 +23,7 @@ film and keeps running on its own loop.
 ## Building it
 
 ```bash
-uv --project tools run python -m smsmedia.cartridge my-film.mp4 \
+uv --project tools run python -m smsggmedia.cartridge my-film.mp4 \
     --bundle build/bundle
 
 make example

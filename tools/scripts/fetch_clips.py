@@ -10,9 +10,9 @@ from fmvcore import fetch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from smsmedia import clips
+from smsggmedia import clips
 
-USER_AGENT: Final = "sms-media-player-clips/1.0 (+https://github.com/gufranco/sms-media-player)"
+USER_AGENT: Final = "smsgg-media-player-clips/1.0 (+https://github.com/gufranco/smsgg-media-player)"
 DOWNLOAD: Final = fetch.downloader(USER_AGENT)
 
 

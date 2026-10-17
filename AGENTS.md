@@ -20,9 +20,9 @@ Nothing here is verified by compiling. Run the gate.
 |---|---|
 | It builds | `make rom` |
 | The C holds | `make analyse` |
-| No VDP write pair is under its floor, and every blank copy is guarded | `make timing` and `SMSMEDIA_ROM_REQUIRED=1 pytest tools/tests/test_replay_on_z80.py`, after `make rom` |
-| The baker holds | `uv --project tools run ruff format --check tools/`, `ruff check tools/`, `mypy tools/smsmedia tools/scripts` |
-| The behaviour holds | `SMSMEDIA_CLIPS_REQUIRED=1 uv --project tools run python -m pytest tools/tests --cov=smsmedia --cov=tools/scripts --cov-config=tools/pyproject.toml --cov-fail-under=95` |
+| No VDP write pair is under its floor, and every blank copy is guarded | `make timing` and `SMSGGMEDIA_ROM_REQUIRED=1 pytest tools/tests/test_replay_on_z80.py`, after `make rom` |
+| The baker holds | `uv --project tools run ruff format --check tools/`, `ruff check tools/`, `mypy tools/smsggmedia tools/scripts` |
+| The behaviour holds | `SMSGGMEDIA_CLIPS_REQUIRED=1 uv --project tools run python -m pytest tools/tests --cov=smsggmedia --cov=tools/scripts --cov-config=tools/pyproject.toml --cov-fail-under=95` |
 | A commit is clean | [`.githooks/pre-commit`](.githooks/pre-commit), installed once by `make hooks` |
 | It runs on a console | the Game Gear, reported by the owner; nothing on this machine settles it |
 
@@ -88,7 +88,7 @@ The tile cap is tied to this. A frame may only mint as many fresh patterns as
 there are slots the displayed frame is not still pointing at, and 768 cells
 reference far more of the 383 usable slots than 576 did. Any change to the
 picture size re-opens that number; the sweep that set the one in
-`tools/smsmedia/limits.py` is recorded under that module in
+`tools/smsggmedia/limits.py` is recorded under that module in
 [tools/DESIGN.md](tools/DESIGN.md).
 
 A smaller picture is still supported through `--rows` and `--columns`, and it
@@ -234,7 +234,7 @@ Rules that follow:
   no flip reaches the VDP outside the window; with its branches patched out
   all 32 bytes and the flip do, so it is a check that can fail. It also
   measures every control-port pair as executed. It skips when no ROM is
-  built, so CI sets `SMSMEDIA_ROM_REQUIRED=1` and a missing ROM fails it.
+  built, so CI sets `SMSGGMEDIA_ROM_REQUIRED=1` and a missing ROM fails it.
 - Every chunk keeps room for a deferred closing run, 34 bytes, so moving one
   into the next field never pushes that field past its budget.
 - No measurement available in this repository can validate a change to the
@@ -369,7 +369,7 @@ Dockerfile          toolchain image: SDCC, devkitSMS built from a pinned commit,
 Makefile            host target delegates to Docker; in-container target does the real build
 include/fmv/        public headers, one per module
 src/                implementation, one file per module
-tools/smsmedia/     the baker, one module per stage
+tools/smsggmedia/     the baker, one module per stage
 tools/scripts/      one-shot helpers: fetch the clips, rebuild the fixture
 tools/tests/        the encoder suite, including the multi-clip gate
 tools/DESIGN.md     why each baker module, script and test is shaped as it is
@@ -383,7 +383,7 @@ specs/              design notes, not committed
 ## Build commands
 
 ```
-make rom        build the ROM at build/smsmedia.sms
+make rom        build the ROM at build/smsggmedia.sms
 make analyse    static analysis, must exit 0
 make timing     VDP write spacing in the built listings, after make rom
 make hooks      install the pre-commit hook: format, lint, types and tests, plus
@@ -398,8 +398,8 @@ The encoder runs on the host, not in the image:
 ```
 uv --project tools run ruff format tools/
 uv --project tools run ruff check tools/
-uv --project tools run mypy tools/smsmedia tools/scripts
-uv --project tools run python -m pytest tools/tests --cov=smsmedia --cov=tools/scripts \
+uv --project tools run mypy tools/smsggmedia tools/scripts
+uv --project tools run python -m pytest tools/tests --cov=smsggmedia --cov=tools/scripts \
     --cov-config=tools/pyproject.toml --cov-fail-under=95
 
 uv --project tools run python tools/scripts/fetch_clips.py     # the regression films
@@ -420,14 +420,14 @@ evidence comes from mednafen or Emulicious, and the [family standard](FAMILY.md)
 says the same for every member.
 
 ```
-mednafen -video.fs 0 -sound 0 build/smsmedia.sms
+mednafen -video.fs 0 -sound 0 build/smsggmedia.sms
 ```
 
 For an unattended capture, record and pull the frame out afterwards rather than
 watching it:
 
 ```
-mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/smsmedia.sms
+mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/smsggmedia.sms
 ffmpeg -i /tmp/run.mov -vf "select=eq(n\,90)" -vframes 1 /tmp/frame.png
 ```
 
@@ -472,7 +472,7 @@ A change to what the picture looks like is judged frame by frame against the
 source, with one command:
 
 ```
-mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/smsmedia.sms
+mednafen -video.fs 0 -sound 0 -qtrecord /tmp/run.mov build/smsggmedia.sms
 uv --project tools run python tools/scripts/compare_capture.py \
     --capture /tmp/run.mov --source <film> --start <seconds> --sheet /tmp/worst.png
 ```
@@ -502,9 +502,9 @@ from the same command, and look at the sheet before quoting a number.
   comes from the seeded Faker in the core, `fmvcore.testing`. Frame content
   stays on seeded numpy generators.
 - Tests that decode through ffmpeg carry the `ffmpeg` marker. Without
-  ffmpeg they skip, unless `SMSMEDIA_FFMPEG_REQUIRED=1`, which CI and the
+  ffmpeg they skip, unless `SMSGGMEDIA_FFMPEG_REQUIRED=1`, which CI and the
   pre-commit hook set, turns the skip into a failure. The listing and Z80
-  tests do the same with `SMSMEDIA_ROM_REQUIRED=1`.
+  tests do the same with `SMSGGMEDIA_ROM_REQUIRED=1`.
 - Every checkout takes the `fmv-core-python` submodule. A weekly job writes
   how many core commits the pin is behind, and lists them, to its run
   summary; the pin moves after the golden test and the regression set pass
@@ -534,8 +534,8 @@ from the same command, and look at the sheet before quoting a number.
 - After the `fmv-core-python` submodule moves, mypy's incremental cache can
   report a new core module as missing; delete `.mypy_cache` and run it again.
 - Running mypy on [`tools/scripts`](tools/scripts) alone poisons `.mypy_cache`:
-  the next full run reports `Module "smsmedia" has no attribute ...` for
-  imports that are fine. Always pass both `tools/smsmedia tools/scripts`, and
+  the next full run reports `Module "smsggmedia" has no attribute ...` for
+  imports that are fine. Always pass both `tools/smsggmedia tools/scripts`, and
   if the error appears, delete `.mypy_cache` rather than chasing it.
 - mednafen refuses to start while another instance holds its lockfile, and the
   message names the base directory rather than the lock. Kill the stale process

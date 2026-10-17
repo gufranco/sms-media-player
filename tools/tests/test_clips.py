@@ -6,7 +6,7 @@ import subprocess
 
 import pytest
 
-from smsmedia import clips
+from smsggmedia import clips
 
 
 class TestTheManifestIsWellFormed:

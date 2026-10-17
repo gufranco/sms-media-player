@@ -6,7 +6,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 
-from smsmedia import bake, console, stream
+from smsggmedia import bake, console, stream
 
 FIELD_HZ: Final = console.NTSC_FIELD_HZ
 

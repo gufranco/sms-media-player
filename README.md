@@ -7,7 +7,7 @@ its tiles paged through VRAM while the film plays.</strong>
 
 English &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; [简体中文](README.zh-Hans.md) &nbsp;|&nbsp; [繁體中文（香港）](README.zh-HK.md)
 
-[![CI](https://img.shields.io/github/actions/workflow/status/gufranco/sms-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/sms-media-player/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/gufranco/smsgg-media-player/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/gufranco/smsgg-media-player/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue?style=flat-square)](RELEASES.md)
 [![Licence](https://img.shields.io/badge/licence-MIT-blue?style=flat-square)](LICENSE)
 [![Target](https://img.shields.io/badge/target-Sega%20Master%20System-red?style=flat-square)](#hardware-ceilings)
@@ -32,8 +32,8 @@ English &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; [简体中文](REA
 </div>
 
 ```bash
-uv --project tools run python -m smsmedia.cartridge ~/Movies/my-film.mkv --duration 5
-# build/smsmedia.sms
+uv --project tools run python -m smsggmedia.cartridge ~/Movies/my-film.mkv --duration 5
+# build/smsggmedia.sms
 ```
 
 ---
@@ -235,7 +235,7 @@ submodule, so clone with submodules. A source archive from the download button
 cannot carry a submodule and does not run.
 
 ```bash
-git clone --recurse-submodules https://github.com/gufranco/sms-media-player.git
+git clone --recurse-submodules https://github.com/gufranco/smsgg-media-player.git
 git submodule update --init   # in a clone made without the flag
 ```
 
@@ -245,7 +245,7 @@ Bake a film from any video file and build the ROM in one command.
 `--bake-only` stops after the bake, before the ROM build:
 
 ```bash
-uv --project tools run python -m smsmedia.cartridge input.mp4 --start 300 --duration 5 \
+uv --project tools run python -m smsggmedia.cartridge input.mp4 --start 300 --duration 5 \
     --preview build/preview.png
 make timing     # VDP write spacing, read out of the assembler's own listing
 ```
@@ -261,11 +261,11 @@ the clock passed before a slot was free for them.
 
 ### Running it
 
-On hardware, copy `build/smsmedia.sms` to a flash cartridge. Under an
+On hardware, copy `build/smsggmedia.sms` to a flash cartridge. Under an
 emulator, run it windowed, never fullscreen:
 
 ```bash
-mednafen -video.fs 0 -sound 0 build/smsmedia.sms
+mednafen -video.fs 0 -sound 0 build/smsggmedia.sms
 ```
 
 ### Toolchain
@@ -276,7 +276,7 @@ and archive SHA-256, and the base image by digest. The build runs as the
 calling user.
 
 ```bash
-make rom        # build/smsmedia.sms
+make rom        # build/smsggmedia.sms
 make analyse    # cppcheck at exhaustive level, must exit 0
 make shell      # a shell inside the toolchain image
 make clean
@@ -290,7 +290,7 @@ against the film you baked. [`examples/cutscene/`](examples/cutscene) is a game
 built from one, with `make example`.
 
 ```bash
-uv --project tools run python -m smsmedia.cartridge my-film.mp4 --bundle build/bundle
+uv --project tools run python -m smsggmedia.cartridge my-film.mp4 --bundle build/bundle
 make example
 ```
 
@@ -544,7 +544,7 @@ numbers look.
 |---|---|
 | [`src/`](src) and [`include/fmv/`](include/fmv) | The Z80 player in C and assembly, one module per file |
 | [`examples/cutscene/`](examples/cutscene) | A game that plays a film and carries on, built from an emitted bundle |
-| [`tools/smsmedia/`](tools/smsmedia) | The baker, one module per stage |
+| [`tools/smsggmedia/`](tools/smsggmedia) | The baker, one module per stage |
 | [`tools/scripts/`](tools/scripts) | Fetch the regression films, rebuild the fixture, check write timing, compare a capture |
 | [`tools/tests/`](tools/tests) | The encoder suite, including the multi-clip gate and the Z80 replay |
 | [`fmv-core-python/`](https://github.com/gufranco/fmv-core-python) | Submodule: the family's shared baker and measurement code |
@@ -571,10 +571,10 @@ uv --project tools run ruff format tools/
 uv --project tools run ruff check tools/
 
 # Type gate
-uv --project tools run mypy tools/smsmedia tools/scripts
+uv --project tools run mypy tools/smsggmedia tools/scripts
 
 # Tests, with the 95% coverage floor
-uv --project tools run python -m pytest tools/tests --cov=smsmedia --cov=tools/scripts --cov-config=tools/pyproject.toml --cov-fail-under=95
+uv --project tools run python -m pytest tools/tests --cov=smsggmedia --cov=tools/scripts --cov-config=tools/pyproject.toml --cov-fail-under=95
 
 # Fetch and verify the regression films
 uv --project tools run python tools/scripts/fetch_clips.py
@@ -620,9 +620,9 @@ They are the surfaces that will be promised from 1.0:
 
 | Surface | Promise |
 |:--------|:--------|
-| `python -m smsmedia.cartridge <source>` | The one command. Its flags keep their names and meanings |
+| `python -m smsggmedia.cartridge <source>` | The one command. Its flags keep their names and meanings |
 | `--bundle DIR` | Emits a drop-in folder whose shape keeps its names: `DIR/src/`, `DIR/include/fmv/`, `DIR/movie/`, `DIR/fmv.mk`, `DIR/README.md` |
-| `build/smsmedia.sms` | Where the cartridge lands, and what it is called |
+| `build/smsggmedia.sms` | Where the cartridge lands, and what it is called |
 | Exit codes | 0 on success, and non-zero on failure |
 
 The C library surface is the headers in [`include/fmv/`](include/fmv).
@@ -690,7 +690,7 @@ force lives once in the core.
 | Member | What it is |
 |:--|:--|
 | [neogeo-media-player](https://github.com/gufranco/neogeo-media-player) | A full-screen film with sound on a Neo Geo AES or MVS, and a library that plays one inside another game |
-| [sms-media-player](https://github.com/gufranco/sms-media-player) | This repository |
+| [smsgg-media-player](https://github.com/gufranco/smsgg-media-player) | This repository |
 | [fmv-core-python](https://github.com/gufranco/fmv-core-python) | The baker and measurement code the players share |
 
 ## Licence and credits

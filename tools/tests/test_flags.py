@@ -1,7 +1,7 @@
 import pytest
 from fmvcore.testing import seeded
 
-from smsmedia import cartridge, flags, frames, limits, scout
+from smsggmedia import cartridge, flags, frames, limits, scout
 
 FAKE = seeded()
 FILM = FAKE.file_name(extension="mp4")

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from smsmedia import console
+from smsggmedia import console
 
 ROOT = Path(__file__).resolve().parents[2]
 SCREEN_HEADER = ROOT / "include" / "fmv" / "screen.h"

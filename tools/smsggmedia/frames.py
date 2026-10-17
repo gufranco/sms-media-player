@@ -10,7 +10,7 @@ import numpy.typing as npt
 from fmvcore import ffmpeg
 from fmvcore import source as source_mod
 
-from smsmedia import limits, pattern, smscolor
+from smsggmedia import limits, pattern, smscolor
 
 CHANNELS: Final = smscolor.RGB_CHANNELS
 MAX_FRAMES: Final = math.ceil(limits.MAX_SOURCE_SECONDS * limits.NTSC_FIELD_HZ)

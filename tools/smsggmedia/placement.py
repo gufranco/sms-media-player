@@ -6,7 +6,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 
-from smsmedia import fidelity, palettes, pattern, smscolor, workingset
+from smsggmedia import fidelity, palettes, pattern, smscolor, workingset
 
 BADLY_OFF: Final = 0.25
 DISTANCE_CHUNK: Final = 16

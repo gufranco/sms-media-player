@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from smsmedia import fidelity, palettes, pattern, smscolor
+from smsggmedia import fidelity, palettes, pattern, smscolor
 
 CELL = pattern.TILE_PX
 
