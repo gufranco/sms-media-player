@@ -541,6 +541,10 @@ from the same command, and look at the sheet before quoting a number.
   message names the base directory rather than the lock. Kill the stale process
   before recording. A run killed with SIGTERM leaves the `.mov` unfinalised at
   32 bytes, which reads as a failed emulator rather than a truncated capture.
+- `np.argpartition` does not order equal values the same way on x86 and Arm
+  NumPy builds, so a tie broken by its order gives one output on this Mac
+  and another in CI. Pick a nearest with `np.argmin` and rank with
+  `np.argsort(kind="stable")` wherever a tie can change what is baked.
 
 ## The bands framing a smaller picture
 
