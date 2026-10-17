@@ -533,3 +533,50 @@ class TestARunInsideItsBudget:
 
         # Assert
         assert chunks == [bytes([stream.CLOSE, 0xFF]) + bytes(32) + bytes([stream.END_FRAME])]
+
+
+class TestRefusedInputs:
+    def test_a_negative_address_is_refused(self):
+        # Arrange
+        address = -1
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            stream.Write(stream.VRAM, address, b"\x00")
+
+        # Assert
+        assert str(refused.value) == "address -1 is negative"
+
+    @pytest.mark.parametrize("length", [0, stream.MAX_RUN + 1])
+    def test_a_run_length_outside_one_byte_is_refused(self, length):
+        # Arrange
+        writes = [vram(0, 4)]
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            stream.split_runs(writes, max_run=length)
+
+        # Assert
+        assert str(refused.value) == f"a run length must lie in 1 to {stream.MAX_RUN}"
+
+    def test_a_bank_too_small_for_a_chunk_and_a_marker_is_refused(self):
+        # Arrange
+        frames = [[bytes([stream.END_FRAME])]]
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            stream.pack_frames(frames, bank_size=1)
+
+        # Assert
+        assert str(refused.value) == "a bank must hold at least a chunk and a marker"
+
+    def test_a_sound_run_past_one_length_byte_is_refused(self):
+        # Arrange
+        data = bytes(stream.MAX_RUN + 1)
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            stream.psg_run(data)
+
+        # Assert
+        assert str(refused.value) == f"a sound run holds at most {stream.MAX_RUN} writes, got 256"

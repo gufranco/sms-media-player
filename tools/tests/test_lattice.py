@@ -122,3 +122,38 @@ class TestTheGameGearLattice:
 
         # Assert
         assert str(refused.value) == "channel levels must lie in 0 to 15"
+
+
+class TestRefusals:
+    def test_levels_that_do_not_divide_a_byte_evenly_are_refused(self):
+        # Arrange
+        levels = 3
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            lattice.Lattice(levels)
+
+        # Assert
+        assert str(refused.value) == "3 levels do not divide a byte into equal steps"
+
+    def test_levels_without_a_trailing_rgb_axis_are_refused(self):
+        # Arrange
+        levels = np.array([1, 2], dtype=np.uint8)
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            GG.pack(levels)
+
+        # Assert
+        assert str(refused.value) == "expected a trailing RGB axis, got shape (2,)"
+
+    def test_a_negative_chroma_weight_is_refused(self):
+        # Arrange
+        weight = -0.5
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            GG.oklab(weight)
+
+        # Assert
+        assert str(refused.value) == "chroma weight must not be negative"

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from smsggmedia import fidelity, palettes, pattern, smscolor
+from smsggmedia import fidelity, palettes, pattern, smscolor, workingset
 
 CELL = pattern.TILE_PX
 
@@ -112,3 +112,58 @@ class TestWhatACellShows:
 
         # Assert
         assert str(refused.value) == f"cell 1 shows slot {slot}, which holds no resident pattern"
+
+
+def patterned(shown: list[int]) -> dict[str, object]:
+    arguments = two_cells(shown)
+    fitted = arguments["fitted"]
+    arguments["fitted"] = palettes.FramePalettes(
+        cram=np.arange(32, dtype=np.uint16),
+        choice=fitted.choice,
+        indices=fitted.indices,
+        rows=fitted.rows,
+        columns=fitted.columns,
+    )
+    arguments["data"] = np.random.default_rng(7).integers(
+        0, 256, (2, pattern.PATTERN_BYTES), dtype=np.uint8
+    )
+    return arguments
+
+
+class TestFlippedCells:
+    @pytest.mark.parametrize(("which", "axis"), [(0, 1), (1, 0)])
+    def test_a_flipped_cell_shows_its_tile_mirrored(self, which, axis):
+        # Arrange
+        plain = fidelity._shown_cells(**patterned([1, 4]))
+        arguments = patterned([1, 4])
+        flips = [np.zeros(2, dtype=np.bool_), np.zeros(2, dtype=np.bool_)]
+        flips[which][1] = True
+        arguments["flips"] = (flips[0], flips[1])
+
+        # Act
+        shown = fidelity._shown_cells(**arguments)
+
+        # Assert
+        assert np.array_equal(shown[1], np.flip(plain[1], axis=axis))
+
+
+class TestNothingResident:
+    def test_a_frame_with_no_resident_pattern_cannot_be_scored(self):
+        # Arrange
+        arguments = two_cells([1, 4])
+        cache = workingset.WorkingSet(capacity=8, reserved=1)
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            fidelity.displayed_error(
+                np.zeros((8, 16, 3), dtype=np.uint8),
+                arguments["fitted"],
+                shown_slot=arguments["shown_slot"],
+                cache=cache,
+                chroma_weight=1.0,
+                flips=arguments["flips"],
+                floor=np.zeros((2, 192), dtype=np.float32),
+            )
+
+        # Assert
+        assert str(refused.value) == "no pattern is resident, so nothing on screen can be scored"
