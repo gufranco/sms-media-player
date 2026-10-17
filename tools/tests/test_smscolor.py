@@ -364,3 +364,56 @@ class TestNearestColour:
 
         # Assert
         assert str(refused.value) == "expected a trailing RGB axis, got shape (4, 2)"
+
+
+class TestWideEntries:
+    def test_white_widens_to_every_nibble_lit(self):
+        # Arrange
+        indices = np.array([0x3F], dtype=np.uint8)
+
+        # Act
+        wide = smscolor.widen(indices)
+
+        # Assert
+        assert wide == bytes([0xFF, 0x0F])
+
+    def test_each_channel_lands_in_its_own_nibble(self):
+        # Arrange
+        indices = np.array([0x03, 0x0C, 0x30], dtype=np.uint8)
+
+        # Act
+        wide = smscolor.widen(indices)
+
+        # Assert
+        assert wide == bytes([0x0F, 0x00, 0xF0, 0x00, 0x00, 0x0F])
+
+    def test_a_middle_level_keeps_its_place_on_the_wider_scale(self):
+        # Arrange
+        indices = np.array([0x01], dtype=np.uint8)
+
+        # Act
+        wide = smscolor.widen(indices)
+
+        # Assert
+        assert wide == bytes([0x05, 0x00])
+
+    def test_a_wide_entry_reads_back_as_the_same_colour(self):
+        # Arrange
+        wide = bytes([0x05, 0x0A])
+
+        # Act
+        rgb = smscolor.wide_to_rgb(np.frombuffer(wide, dtype=np.uint8))
+
+        # Assert
+        assert rgb.tolist() == [[85, 0, 170]]
+
+    def test_an_odd_number_of_bytes_is_refused(self):
+        # Arrange
+        wide = np.zeros(3, dtype=np.uint8)
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            smscolor.wide_to_rgb(wide)
+
+        # Assert
+        assert str(refused.value) == "a wide palette holds two bytes an entry, got 3 bytes"

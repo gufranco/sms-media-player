@@ -19,7 +19,9 @@ BLACK_LEVEL: Final = 16
 class Machine:
     def __init__(self) -> None:
         self.vram = console.boot_vram()
-        self.cram = console.boot_cram()
+        self.cram = np.zeros(stream.WIDE_CLOSE_BYTES, dtype=np.uint8)
+        self.cram[:CRAM_BYTES] = console.boot_cram()
+        self.wide = False
         self.table = NAME_TABLE_BASE
         self.flips = 0
         self.psg: list[int] = []
@@ -42,20 +44,30 @@ class Machine:
         if kind == stream.VRAM:
             address = chunk[body] | (chunk[body + 1] << 8)
             return self._copy(self.vram, address, chunk, body + stream.VRAM_HEADER - 1, VRAM_BYTES)
-        if kind == stream.CLOSE:
-            self.flips += 1
-            self.table = console.table_at(chunk[body])
-            start = body + stream.CLOSE_HEADER - 1
-            self.cram[:CRAM_BYTES] = np.frombuffer(
-                chunk[start : start + CRAM_BYTES], dtype=np.uint8
-            )
-            return start + CRAM_BYTES
+        if kind in stream.CLOSE_KINDS:
+            return self._close(kind, chunk, body)
         if kind == stream.PSG:
             length = chunk[body]
             start = body + stream.PSG_HEADER - 1
             self.psg = [*self.psg, *chunk[start : start + length]]
             return start + length
         raise ValueError(unknown_kind(kind, pos))
+
+    def _close(self, kind: int, chunk: bytes, body: int) -> int:
+        self.flips += 1
+        self.table = console.table_at(chunk[body])
+        self.wide = kind == stream.CLOSE_WIDE
+        size = stream.close_bytes(kind)
+        start = body + stream.CLOSE_HEADER - 1
+        self.cram[:size] = np.frombuffer(chunk[start : start + size], dtype=np.uint8)
+        return start + size
+
+    def palette_rgb(self) -> npt.NDArray[np.uint8]:
+        if self.wide:
+            rgb = smscolor.wide_to_rgb(self.cram)
+        else:
+            rgb = smscolor.colour_to_rgb(self.cram[:CRAM_BYTES])
+        return rgb.reshape(smscolor.PALETTE_COUNT, smscolor.PALETTE_ENTRIES, 3)
 
     @staticmethod
     def _copy(
@@ -78,7 +90,7 @@ class Machine:
                 -1, pattern.PATTERN_BYTES
             )
         )
-        table = self.cram.reshape(smscolor.PALETTE_COUNT, smscolor.PALETTE_ENTRIES)
+        table = self.palette_rgb()
 
         out = np.zeros((rows * pattern.TILE_PX, columns * pattern.TILE_PX, 3), dtype=np.uint8)
         for row in range(rows):
@@ -106,7 +118,7 @@ def _entry_pixels(
     if entry & pattern.VFLIP_BIT:
         cell = cell[::-1, :]
     palette = table[1 if entry & pattern.PALETTE_BIT else 0]
-    return smscolor.colour_to_rgb(palette[cell])
+    return palette[cell]
 
 
 def framing(
@@ -160,8 +172,8 @@ def frames_of(blob: bytes, *, bank_size: int = limits.BANK_BYTES) -> list[bytes]
             continue
         if kind == stream.VRAM:
             size = stream.VRAM_HEADER + blob[pos + 3]
-        elif kind == stream.CLOSE:
-            size = stream.CLOSE_HEADER + CRAM_BYTES
+        elif kind in stream.CLOSE_KINDS:
+            size = stream.CLOSE_HEADER + stream.close_bytes(kind)
         elif kind == stream.PSG:
             size = stream.PSG_HEADER + blob[pos + 1]
         else:

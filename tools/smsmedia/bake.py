@@ -13,8 +13,10 @@ from smsmedia import (
     palettes,
     pattern,
     placement,
+    smscolor,
     stream,
     tablewrites,
+    target,
     workingset,
 )
 
@@ -100,6 +102,7 @@ class Encoder:
     upload_ceiling: int | None = None
     dither: float = DEFAULT_DITHER
     palette_margin: float = PALETTE_KEEP_MARGIN
+    system: target.Target = target.DEFAULT
     cram: npt.NDArray[np.uint8] | None = field(default=None, init=False)
     cache: workingset.WorkingSet = field(init=False)
     committed: npt.NDArray[np.int64] = field(init=False)
@@ -115,10 +118,11 @@ class Encoder:
         if self.upload_ceiling is not None and self.upload_ceiling < 1:
             msg = f"an upload ceiling of {self.upload_ceiling} would never draw a pattern"
             raise ValueError(msg)
-        if self.budget <= limits.CLOSE_RESERVE + stream.VRAM_HEADER + stream.TERMINATOR:
+        reserve = limits.close_reserve(self.system)
+        if self.budget <= reserve + stream.VRAM_HEADER + stream.TERMINATOR:
             msg = (
                 f"a budget of {self.budget} bytes leaves no room for a run beside the "
-                f"{limits.CLOSE_RESERVE} every chunk keeps for a deferred closing run"
+                f"{reserve} every chunk keeps for a deferred closing run"
             )
             raise ValueError(msg)
         self.cache = workingset.WorkingSet(capacity=self.capacity, reserved=self.reserved)
@@ -141,7 +145,8 @@ class Encoder:
         writes, shown, stats = self._encode(frame, fitted, back_base, keyframe=keyframe)
         self.back, self.committed, self.front = self.committed, shown, back_base
         self.unknown_tables = max(0, self.unknown_tables - 1)
-        chunks = stream.encode_chunks(writes, budget=self.budget, reserve=limits.CLOSE_RESERVE)
+        reserve = limits.close_reserve(self.system)
+        chunks = stream.encode_chunks(writes, budget=self.budget, reserve=reserve)
         self._record(chunks, stats)
         return chunks
 
@@ -163,7 +168,7 @@ class Encoder:
         writes = [
             *tablewrites.merge_uploads(uploads),
             *_entry_writes(shown, self._known_back(), geometry=self.geometry, base=back_base),
-            _closing(fitted, back_base),
+            _closing(fitted, back_base, self.system),
         ]
         error, working_set = self._measure(frame, fitted, placed.cell_slot, features)
         self.committed_slot = next_slot
@@ -277,6 +282,7 @@ def encode_frames(
     reuse_threshold: float = DEFAULT_REUSE,
     upload_ceiling: int | None = None,
     dither: float = DEFAULT_DITHER,
+    system: target.Target = target.DEFAULT,
 ) -> Encoded:
     if not frames:
         msg = "a movie needs at least one frame"
@@ -291,6 +297,7 @@ def encode_frames(
         reuse_threshold=reuse_threshold,
         upload_ceiling=upload_ceiling,
         dither=dither,
+        system=system,
     )
     for frame in frames:
         encoder.add(frame)
@@ -329,11 +336,12 @@ def _entry_writes(
     return tablewrites.merge_entries(entries)
 
 
-def _closing(fitted: palettes.FramePalettes, back_base: int) -> stream.Write:
+def _closing(fitted: palettes.FramePalettes, back_base: int, system: target.Target) -> stream.Write:
+    wide = system.close_kind == stream.CLOSE_WIDE
     return stream.Write(
-        target=stream.CLOSE,
+        target=system.close_kind,
         address=console.TABLE_REGISTER[back_base],
-        data=bytes(fitted.cram.tolist()),
+        data=smscolor.widen(fitted.cram) if wide else bytes(fitted.cram.tolist()),
     )
 
 

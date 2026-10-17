@@ -224,3 +224,57 @@ class TestTheHelp:
 
         # Assert
         assert helps[flag] == text
+
+
+class TestTheTarget:
+    def test_the_master_system_is_the_default(self):
+        # Arrange
+        parser = flags.build_parser()
+
+        # Act
+        args = parser.parse_args([FILM])
+
+        # Assert
+        assert args.target.name == "sms"
+
+    def test_a_game_gear_bake_draws_its_window_by_default(self):
+        # Arrange
+        args = flags.build_parser().parse_args([FILM, "--target", "gg"])
+
+        # Act
+        size = flags.picture_size(args)
+
+        # Assert
+        assert size == (20, 18)
+
+    def test_a_master_system_bake_draws_the_whole_raster_by_default(self):
+        # Arrange
+        args = flags.build_parser().parse_args([FILM])
+
+        # Act
+        size = flags.picture_size(args)
+
+        # Assert
+        assert size == (32, 24)
+
+    def test_columns_and_rows_given_outright_win_over_the_target(self):
+        # Arrange
+        args = flags.build_parser().parse_args(
+            [FILM, "--target", "gg", "--columns", "16", "--rows", "12"]
+        )
+
+        # Act
+        size = flags.picture_size(args)
+
+        # Assert
+        assert size == (16, 12)
+
+    def test_an_unknown_target_is_refused(self):
+        # Arrange
+        parser = flags.build_parser()
+
+        # Act
+        code = refusal_code(parser, [FILM, "--target", "nes"])
+
+        # Assert
+        assert code == 2

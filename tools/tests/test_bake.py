@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from fmvcore import colour
 
-from smsmedia import bake, console, limits, palettes, replay, stream
+from smsmedia import bake, console, limits, palettes, replay, smscolor, stream, target
 
 
 def gradient_frame(height: int, width: int, shift: int = 0) -> np.ndarray:
@@ -602,7 +602,7 @@ def write_kinds(chunks: list[bytes]) -> list[int]:
 def write_targets(chunks: list[bytes]) -> list[str]:
     names = []
     for kind, address in _walk(chunks):
-        if kind == stream.CLOSE:
+        if kind in stream.CLOSE_KINDS:
             names.append("palette")
         else:
             names.append("names" if address >= console.BACK_TABLE_BASE else "patterns")
@@ -613,14 +613,14 @@ def _walk(chunks: list[bytes]) -> list[tuple[int, int]]:
     found = []
     for chunk in chunks:
         pos = 0
-        while pos < len(chunk) and chunk[pos] in (stream.VRAM, stream.CLOSE):
+        while pos < len(chunk) and chunk[pos] in (stream.VRAM, *stream.CLOSE_KINDS):
             kind = chunk[pos]
             if kind == stream.VRAM:
                 found.append((kind, chunk[pos + 1] | (chunk[pos + 2] << 8)))
                 pos += 4 + chunk[pos + 3]
             else:
                 found.append((kind, chunk[pos + 1]))
-                pos += 2 + console.CRAM_BYTES
+                pos += 2 + stream.close_bytes(kind)
     return found
 
 
@@ -726,3 +726,44 @@ class TestMergeReport:
 
         # Assert
         assert result.per_frame_merged == [6 * 8 - 8, 6 * 8 - 8]
+
+
+class TestTheGameGearTarget:
+    def test_a_frame_closes_with_a_wide_palette_run(self):
+        # Arrange
+        frames = [gradient_frame(48, 64)]
+        geometry = bake.Geometry(columns=8, rows=6, top_row=0)
+
+        # Act
+        result = bake.encode_frames(
+            frames, geometry=geometry, budget=600, cap=40, system=target.GAME_GEAR
+        )
+
+        # Assert
+        assert stream.CLOSE_WIDE in write_kinds(result.frames[0])
+
+    def test_its_palette_run_carries_every_entry_widened(self):
+        # Arrange
+        frames = [gradient_frame(48, 64)]
+        geometry = bake.Geometry(columns=8, rows=6, top_row=0)
+        encoder = bake.Encoder(geometry=geometry, budget=600, cap=40, system=target.GAME_GEAR)
+
+        # Act
+        chunks = encoder.add(frames[0])
+
+        # Assert
+        assert chunks[-1][-(64 + 1) : -1] == smscolor.widen(encoder.cram)
+
+    def test_its_budget_floor_keeps_room_for_the_wider_run(self):
+        # Arrange
+        geometry = bake.Geometry(columns=8, rows=6, top_row=0)
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            bake.Encoder(geometry=geometry, budget=70, cap=40, system=target.GAME_GEAR)
+
+        # Assert
+        assert str(refused.value) == (
+            "a budget of 70 bytes leaves no room for a run beside the "
+            "66 every chunk keeps for a deferred closing run"
+        )

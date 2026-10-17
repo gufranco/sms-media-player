@@ -16,6 +16,11 @@ PALETTE_ENTRIES: Final = 16
 PALETTE_COUNT: Final = 2
 CRAM_BYTES: Final = PALETTE_ENTRIES * PALETTE_COUNT * target.MASTER_SYSTEM.cram_entry_bytes
 COLOUR_COUNT: Final = LEVELS**3
+NIBBLE: Final = 4
+NIBBLE_MASK: Final = (1 << NIBBLE) - 1
+WIDE_ENTRY_BYTES: Final = target.GAME_GEAR.cram_entry_bytes
+WIDE_STEP: Final = NIBBLE_MASK // CHANNEL_MAX
+WIDE_TO_BYTE: Final = 255 // NIBBLE_MASK
 
 _LEVEL_TO_BYTE: Final = np.array([0, 85, 170, 255], dtype=np.uint8)
 
@@ -81,6 +86,22 @@ def unpack_colour(byte: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:
 
 def colour_to_rgb(byte: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:
     return level_to_byte(unpack_colour(byte))
+
+
+def widen(indices: npt.NDArray[np.uint8]) -> bytes:
+    nibbles = unpack_colour(indices).astype(np.uint16) * WIDE_STEP
+    words = nibbles[..., 0] | (nibbles[..., 1] << NIBBLE) | (nibbles[..., 2] << (2 * NIBBLE))
+    return words.astype("<u2").tobytes()
+
+
+def wide_to_rgb(wide: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:
+    if wide.shape[-1] % WIDE_ENTRY_BYTES:
+        msg = f"a wide palette holds two bytes an entry, got {wide.shape[-1]} bytes"
+        raise ValueError(msg)
+    low = wide[0::WIDE_ENTRY_BYTES].astype(np.uint16)
+    high = wide[1::WIDE_ENTRY_BYTES].astype(np.uint16)
+    channels = np.stack([low & NIBBLE_MASK, low >> NIBBLE, high & NIBBLE_MASK], axis=-1)
+    return (channels * WIDE_TO_BYTE).astype(np.uint8)
 
 
 def oklab_palette(chroma_weight: float = 1.0) -> npt.NDArray[np.float32]:

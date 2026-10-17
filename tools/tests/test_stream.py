@@ -351,6 +351,56 @@ class TestDeferCloses:
         assert result[0][0] == bytes([stream.VRAM, 0x20, 0x00, 2, 7, 7, stream.END_FRAME])
 
 
+def wide_closing(register: int = 0xFD) -> stream.Write:
+    return stream.Write(
+        target=stream.CLOSE_WIDE, address=register, data=bytes(stream.WIDE_CLOSE_BYTES)
+    )
+
+
+class TestTheWideCloseRun:
+    def test_it_carries_two_cram_bytes_an_entry(self):
+        # Arrange
+        kind = stream.CLOSE_WIDE
+
+        # Act
+        size = stream.close_bytes(kind)
+
+        # Assert
+        assert size == 64
+
+    def test_it_is_emitted_under_its_own_kind(self):
+        # Arrange
+        run = wide_closing()
+
+        # Act
+        chunks = stream.encode_chunks([run], budget=600)
+
+        # Assert
+        assert chunks == [bytes([0x07, 0xFD]) + bytes(64) + bytes([stream.END_FRAME])]
+
+    def test_it_moves_whole_to_the_next_field(self):
+        # Arrange
+        first = stream.encode_chunks([wide_closing()], budget=600)
+        second = stream.encode_chunks([stream.Write(stream.VRAM, 0, bytes(4))], budget=600)
+
+        # Act
+        result = stream.defer_closes([first, second])
+
+        # Assert
+        assert result[1][0][: 2 + 64] == bytes([0x07, 0xFD]) + bytes(64)
+
+    def test_a_sound_run_follows_it_rather_than_splitting_it(self):
+        # Arrange
+        close = bytes([stream.CLOSE_WIDE, 0xFD]) + bytes(64)
+        fields = [[close + bytes([stream.END_FRAME])]]
+
+        # Act
+        sounded = stream.add_sound(fields, [b"\x9f"])
+
+        # Assert
+        assert sounded[0][0] == close + bytes([stream.PSG, 1, 0x9F, stream.END_FRAME])
+
+
 class TestTheReserve:
     def test_only_the_first_chunk_keeps_room_for_a_closing_run(self):
         # Arrange

@@ -5,13 +5,14 @@ from pathlib import Path
 import pytest
 from fmvcore.testing import seeded
 
-from smsmedia import cartridge
+from smsmedia import cartridge, target
 
 ROOT = Path(__file__).resolve().parents[2]
 FAKE = seeded()
 DOCKER_LOG = "docker.log"
 MEDIA_TOOLS = ("ffmpeg", "ffprobe")
 SYSTEM_PATH = ("/usr/bin", "/bin")
+SMS_ROM = cartridge.rom_for(target.MASTER_SYSTEM)
 MAKE_FAILED = 2
 REFUSED = 2
 
@@ -85,7 +86,7 @@ class TestTheRomBuild:
     def test_a_good_bake_is_built_through_make_rom(self, clip, checkout, monkeypatch, capsys):
         # Arrange
         log = fake_docker(monkeypatch, checkout)
-        rom = checkout / cartridge.ROM
+        rom = checkout / SMS_ROM
         rom.parent.mkdir(parents=True)
         rom.write_bytes(bytes(FAKE.random_int(1, 64)))
 
@@ -95,7 +96,7 @@ class TestTheRomBuild:
         # Assert
         assert code == 0
         assert "make --no-print-directory rom" in log.read_text()
-        assert f"{cartridge.ROM}  {rom.stat().st_size} bytes" in capsys.readouterr().out
+        assert f"{SMS_ROM}  {rom.stat().st_size} bytes" in capsys.readouterr().out
 
     def test_a_failed_build_returns_its_status(self, clip, checkout, monkeypatch, capsys):
         # Arrange
@@ -107,7 +108,7 @@ class TestTheRomBuild:
 
         # Assert
         assert code == MAKE_FAILED
-        assert str(cartridge.ROM) not in capsys.readouterr().out
+        assert str(SMS_ROM) not in capsys.readouterr().out
 
     def test_bake_only_stops_before_the_build(self, clip, checkout, monkeypatch, capsys):
         # Arrange
@@ -149,7 +150,7 @@ class TestTheRomBuild:
         makefile = (ROOT / "Makefile").read_text()
 
         # Act
-        named = f"ROM_NAME     := {cartridge.ROM.stem}\n" in makefile
+        named = f"ROM_NAME     := {SMS_ROM.stem}\n" in makefile
 
         # Assert
-        assert (named, cartridge.ROM) == (True, Path("build") / "smsmedia.sms")
+        assert (named, SMS_ROM) == (True, Path("build") / "smsmedia.sms")

@@ -3,12 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
-from smsmedia import console, smscolor
+from smsmedia import console, smscolor, target
 
 END_CHUNK: Final = 0x00
 END_FRAME: Final = 0x01
 VRAM: Final = 0x02
-CLOSE: Final = 0x05
+CLOSE: Final = target.NARROW_CLOSE
+CLOSE_WIDE: Final = target.WIDE_CLOSE
 PSG: Final = 0x06
 NEXT_BANK: Final = 0xFF
 
@@ -19,6 +20,8 @@ PSG_HEADER: Final = 2
 TERMINATOR: Final = 1
 
 CLOSE_BYTES: Final = smscolor.CRAM_BYTES
+WIDE_CLOSE_BYTES: Final = smscolor.CRAM_BYTES * target.GAME_GEAR.cram_entry_bytes
+CLOSE_KINDS: Final = (CLOSE, CLOSE_WIDE)
 REGISTER_VALUES: Final = 0x100
 SMALLEST_BANK: Final = 2
 
@@ -30,7 +33,7 @@ class Write:
     data: bytes
 
     def __post_init__(self) -> None:
-        if self.target not in (VRAM, CLOSE):
+        if self.target not in (VRAM, *CLOSE_KINDS):
             msg = f"target {self.target} is not a destination the player knows"
             raise ValueError(msg)
         if self.address < 0:
@@ -42,10 +45,14 @@ class Write:
             raise ValueError(msg)
 
 
-def header_bytes(target: int) -> int:
-    if target == VRAM:
+def header_bytes(kind: int) -> int:
+    if kind == VRAM:
         return VRAM_HEADER
     return CLOSE_HEADER
+
+
+def close_bytes(kind: int) -> int:
+    return WIDE_CLOSE_BYTES if kind == CLOSE_WIDE else CLOSE_BYTES
 
 
 def split_runs(writes: list[Write], *, max_run: int = MAX_RUN) -> list[Write]:
@@ -107,8 +114,8 @@ def _split_close(chunk: bytes) -> tuple[bytes, bytes]:
     pos = 0
     while pos < len(chunk):
         kind = chunk[pos]
-        if kind == CLOSE:
-            size = CLOSE_HEADER + CLOSE_BYTES
+        if kind in CLOSE_KINDS:
+            size = CLOSE_HEADER + close_bytes(kind)
             return chunk[:pos] + chunk[pos + size :], chunk[pos : pos + size]
         if kind != VRAM:
             break
@@ -160,7 +167,7 @@ def _emit(run: Write) -> bytes:
         return (
             bytes([VRAM, run.address & 0xFF, (run.address >> 8) & 0xFF, len(run.data)]) + run.data
         )
-    return bytes([CLOSE, run.address & 0xFF]) + run.data
+    return bytes([run.target, run.address & 0xFF]) + run.data
 
 
 def pace(chunks: list[bytes], *, fields: int) -> list[bytes]:
@@ -196,5 +203,5 @@ def add_sound(frames: list[list[bytes]], writes: list[bytes]) -> list[list[bytes
 def _with_sound(chunk: bytes, data: bytes) -> bytes:
     if not data:
         return chunk
-    carried = CLOSE_HEADER + CLOSE_BYTES if chunk and chunk[0] == CLOSE else 0
+    carried = CLOSE_HEADER + close_bytes(chunk[0]) if chunk and chunk[0] in CLOSE_KINDS else 0
     return chunk[:carried] + psg_run(data) + chunk[carried:]

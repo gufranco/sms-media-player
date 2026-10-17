@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
+NARROW_CLOSE: Final = 0x05
+WIDE_CLOSE: Final = 0x07
+
 
 @dataclass(frozen=True, slots=True)
 class Target:
@@ -12,6 +15,7 @@ class Target:
     rows: int
     channel_levels: int
     cram_entry_bytes: int
+    close_kind: int
     region: int
     extension: str
 
@@ -23,11 +27,24 @@ MASTER_SYSTEM: Final = Target(
     rows=24,
     channel_levels=4,
     cram_entry_bytes=1,
+    close_kind=NARROW_CLOSE,
     region=0x4,
     extension=".sms",
 )
 
-TARGETS: Final = {MASTER_SYSTEM.name: MASTER_SYSTEM}
+GAME_GEAR: Final = Target(
+    name="gg",
+    console="Game Gear",
+    columns=20,
+    rows=18,
+    channel_levels=4,
+    cram_entry_bytes=2,
+    close_kind=WIDE_CLOSE,
+    region=0x7,
+    extension=".gg",
+)
+
+TARGETS: Final = {each.name: each for each in (MASTER_SYSTEM, GAME_GEAR)}
 DEFAULT: Final = MASTER_SYSTEM
 
 

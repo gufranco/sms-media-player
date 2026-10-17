@@ -7,7 +7,7 @@ from typing import Final
 from fmvcore import arguments, ffmpeg
 from fmvcore.arguments import AUTO
 
-from smsmedia import bake, limits
+from smsmedia import bake, limits, target
 
 SEEK_EVERY_SECONDS: Final = 10.0
 
@@ -49,17 +49,38 @@ def add_picture_flags(parser: argparse.ArgumentParser) -> None:
 
 def add_size_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
+        "--target",
+        type=_named_target,
+        default=target.DEFAULT,
+        help=f"the console to build for: {', '.join(sorted(target.TARGETS))}. "
+        f"Default: {target.DEFAULT.name}",
+    )
+    parser.add_argument(
         "--columns",
         type=arguments.count(low=1, high=limits.DEFAULT_COLUMNS, name="--columns"),
-        default=limits.DEFAULT_COLUMNS,
-        help=f"picture width in 8-pixel cells. Default: {limits.DEFAULT_COLUMNS}",
+        default=None,
+        help="picture width in 8-pixel cells. Default: the target's whole screen",
     )
     parser.add_argument(
         "--rows",
         type=arguments.count(low=1, high=bake.VISIBLE_ROWS, name="--rows"),
-        default=limits.DEFAULT_ROWS,
-        help=f"picture height in 8-pixel cells. Default: {limits.DEFAULT_ROWS}",
+        default=None,
+        help="picture height in 8-pixel cells. Default: the target's whole screen",
     )
+
+
+def picture_size(args: argparse.Namespace) -> tuple[int, int]:
+    system: target.Target = args.target
+    columns = args.columns if args.columns is not None else system.columns
+    rows = args.rows if args.rows is not None else system.rows
+    return columns, rows
+
+
+def _named_target(name: str) -> target.Target:
+    try:
+        return target.named(name)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(str(error)) from error
 
 
 def add_window_flags(parser: argparse.ArgumentParser) -> None:

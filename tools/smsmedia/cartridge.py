@@ -35,7 +35,10 @@ from smsmedia import (
 P90: Final = 0.9
 MOST_MERGED_SHOWN: Final = 3
 BAR_ANALYSIS_SECONDS: Final = 8.0
-ROM: Final = Path("build") / f"smsmedia{target.DEFAULT.extension}"
+
+
+def rom_for(system: target.Target) -> Path:
+    return Path("build") / f"smsmedia{system.extension}"
 
 
 def fits(*, banks: int, max_banks: int) -> bool:
@@ -153,6 +156,7 @@ def bake_film(args: argparse.Namespace, *, geometry: bake.Geometry, settled: dia
         reuse_threshold=settled.reuse,
         upload_ceiling=args.upload_ceiling,
         dither=args.dither,
+        system=args.target,
     )
     timed = schedule.by_clock(
         decoded,
@@ -229,23 +233,25 @@ def main(argv: list[str] | None = None) -> int:
     if args.bake_only:
         print(f"baked into {args.assets}", file=sys.stderr)
         return 0
-    return _build_cartridge()
+    return _build_cartridge(args.target)
 
 
-def _build_cartridge() -> int:
-    print("building the cartridge", file=sys.stderr)
-    completed = subprocess.run(["make", "--no-print-directory", "rom"], check=False)
+def _build_cartridge(system: target.Target) -> int:
+    print(f"building the {system.console} cartridge", file=sys.stderr)
+    command = ["make", "--no-print-directory", "rom", f"TARGET={system.name}"]
+    completed = subprocess.run(command, check=False)
     if completed.returncode != 0:
         return completed.returncode
-    if ROM.exists():
-        print(f"{ROM}  {ROM.stat().st_size} bytes")
+    rom = rom_for(system)
+    if rom.exists():
+        print(f"{rom}  {rom.stat().st_size} bytes")
     return 0
 
 
 def bake_cartridge(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
     show_dial_reports()
     info = ffmpeg.probe(args.source)
-    geometry = geometry_for(args.columns, args.rows)
+    geometry = geometry_for(*flags.picture_size(args))
     _describe_source(args.source, info=info, geometry=geometry)
     _announce_silence(args)
 

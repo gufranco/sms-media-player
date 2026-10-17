@@ -229,7 +229,7 @@ def main(argv: list[str] | None = None) -> int:
         args.source, start=args.begin, duration=end - args.begin, scaler=args.scaler
     )
     settings = tune.EncodeSettings(
-        cartridge.geometry_for(args.columns, args.rows),
+        cartridge.geometry_for(*flags.picture_size(args)),
         budget=limits.DEFAULT_BUDGET,
         cap=args.cap,
         reuse=args.reuse,

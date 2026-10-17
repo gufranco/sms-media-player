@@ -11,6 +11,7 @@ FIELD_CYCLES: Final = console.NTSC_LINES * CYCLES_PER_LINE
 VDP_WRITE_CYCLES: Final = 30
 FIELD_PAYLOAD_BYTES: Final = FIELD_CYCLES // VDP_WRITE_CYCLES
 CLOSE_RESERVE: Final = stream.CLOSE_HEADER + stream.CLOSE_BYTES
+
 SOUND_WRITE_CYCLES: Final = 34
 SOUND_RESERVE: Final = -(
     -(stream.PSG_HEADER + psgsound.MAX_FIELD_WRITES) * SOUND_WRITE_CYCLES // VDP_WRITE_CYCLES
@@ -32,3 +33,7 @@ NTSC_FIELD_HZ: Final = console.NTSC_FIELD_HZ
 FIELD_SECONDS: Final = 1.0 / NTSC_FIELD_HZ
 CODE_BANKS: Final = 2
 DEFAULT_MAX_BANKS: Final = 64 - CODE_BANKS
+
+
+def close_reserve(system: target.Target) -> int:
+    return stream.CLOSE_HEADER + stream.close_bytes(system.close_kind)

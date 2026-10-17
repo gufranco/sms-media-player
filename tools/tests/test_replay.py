@@ -158,6 +158,48 @@ class TestRender:
         assert str(refused.value) == "a 32x30 picture at row 0 does not fit the name table"
 
 
+def wide_close(entry_15: bytes) -> bytes:
+    cram = bytearray(64)
+    cram[30:32] = entry_15
+    return bytes([stream.CLOSE_WIDE, 0xFD]) + bytes(cram) + bytes([stream.END_FRAME])
+
+
+class TestTheWideCloseRun:
+    def test_it_flips_to_the_table_it_names(self):
+        # Arrange
+        m = replay.Machine()
+
+        # Act
+        m.apply(wide_close(bytes(2)))
+
+        # Assert
+        assert (m.table, m.flips) == (console.BACK_TABLE_BASE, 1)
+
+    def test_its_twelve_bit_colours_render(self):
+        # Arrange
+        m = replay.Machine()
+        m.apply(wide_close(bytes([0x05, 0x0A])))
+        m.vram[0x3000] = 0x01
+        m.vram[0x3001] = 0x00
+        m.vram[32:64] = 0xFF
+
+        # Act
+        out = m.render(columns=1, rows=1, top_row=0)
+
+        # Assert
+        assert out.reshape(-1, 3).tolist() == [[85, 0, 170]] * 64
+
+    def test_the_chunk_splitter_steps_over_it_whole(self):
+        # Arrange
+        blob = wide_close(bytes(2))
+
+        # Act
+        chunks = replay.frames_of(blob, bank_size=len(blob))
+
+        # Assert
+        assert chunks == [blob]
+
+
 def asymmetric_tile():
     cell = np.zeros((pattern.TILE_PX, pattern.TILE_PX), dtype=np.uint8)
     cell[:, : pattern.TILE_PX // 2] = 1

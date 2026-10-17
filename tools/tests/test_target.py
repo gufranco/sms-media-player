@@ -37,6 +37,48 @@ class TestTheMasterSystem:
         assert header == (0x4, ".sms")
 
 
+class TestTheGameGear:
+    def test_it_draws_the_window_its_panel_shows(self):
+        # Arrange
+        console = target.GAME_GEAR
+
+        # Act
+        cells = (console.columns, console.rows)
+
+        # Assert
+        assert cells == (20, 18)
+
+    def test_it_writes_two_cram_bytes_an_entry_in_its_own_close_run(self):
+        # Arrange
+        console = target.GAME_GEAR
+
+        # Act
+        palette = (console.cram_entry_bytes, console.close_kind)
+
+        # Assert
+        assert palette == (2, 0x07)
+
+    def test_its_header_says_game_gear_international(self):
+        # Arrange
+        console = target.GAME_GEAR
+
+        # Act
+        header = (console.region, console.extension)
+
+        # Assert
+        assert header == (0x7, ".gg")
+
+    def test_the_master_system_keeps_its_close_run(self):
+        # Arrange
+        console = target.MASTER_SYSTEM
+
+        # Act
+        kind = console.close_kind
+
+        # Assert
+        assert kind == 0x05
+
+
 class TestNamed:
     def test_a_known_name_gives_its_target(self):
         # Arrange
@@ -57,7 +99,7 @@ class TestNamed:
             target.named(name)
 
         # Assert
-        assert str(refused.value) == "no target named 'nes'; the targets are sms"
+        assert str(refused.value) == "no target named 'nes'; the targets are gg, sms"
 
     def test_the_default_is_the_master_system(self):
         # Arrange
