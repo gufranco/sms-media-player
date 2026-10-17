@@ -27,6 +27,7 @@ mvloop:
         jp  z, mvbank
         cp  a, #0x06
         jr  z, mvpsg
+        PAN_DISPATCH
         cp  a, #0x02
         jr  nc, mvbad
 
@@ -93,6 +94,8 @@ mvpsgskip:
         ld  d, #0x00
         add hl, de
         jp  mvloop
+
+        PAN_RUN
 
 mvclose:
         in  a, (#0x7E)

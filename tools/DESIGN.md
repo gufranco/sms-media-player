@@ -726,6 +726,36 @@ The chroma weight reaches the decision here, which is the only place it
 can change anything: with per-channel rounding the choice is made before
 any perceptual metric is consulted, so weighting it had no effect at all.
 
+### [`smsmedia/psgpan.py`](smsmedia/psgpan.py)
+
+Route each PSG channel to the left, the right or both, for the Game Gear.
+
+The Game Gear sends each of the four PSG channels to the left and right
+headphone through port `$06`: bits 0 to 3 enable channels 0 to 3 on the
+right and bits 4 to 7 on the left, per SMS Power's SN76489 page. The speaker
+is mono and ignores it.
+
+The tones come from the mixed soundtrack as on the Master System, so the
+writes are identical on both consoles. A register model replays those writes
+to learn which divider each channel holds, and the left and right spectra at
+that frequency decide its side: 80% of the energy on one side routes it there
+alone, anything less keeps it on both. Noise is routed by the 4 to 10 kHz band,
+and only while its attenuator is open, because a muted channel would otherwise
+be steered by window leakage from the tones.
+
+A routing takes effect after it has held for 6 fields, a tenth of a second.
+Without the hold Sintel's trailer flipped sides on 818 of 1,797 fields over
+thirty seconds, which jitters in the ear; with it the same passage changes
+routing 19 times. The pan is rewritten every 60 fields like the tones, so a
+seek finds the right sides within a second, and the player writes `$FF` to
+the port whenever it silences the PSG, since SMS Power states no power-on
+value.
+
+The run is kind `0x08`, the pan byte alone, and only a Game Gear stream
+carries it. On a Master System an even port below `$40` reaches the memory
+control register, so the Master System player refuses the kind as corrupt
+rather than write it.
+
 ### [`smsmedia/psgsound.py`](smsmedia/psgsound.py)
 
 Turn a soundtrack into the PSG register writes the player sends once a field.

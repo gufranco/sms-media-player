@@ -25,6 +25,7 @@ class Machine:
         self.table = NAME_TABLE_BASE
         self.flips = 0
         self.psg: list[int] = []
+        self.pans: list[int] = []
 
     def apply(self, chunk: bytes) -> bool:
         pos = 0
@@ -51,6 +52,9 @@ class Machine:
             start = body + stream.PSG_HEADER - 1
             self.psg = [*self.psg, *chunk[start : start + length]]
             return start + length
+        if kind == stream.PAN:
+            self.pans = [*self.pans, chunk[body]]
+            return body + 1
         raise ValueError(unknown_kind(kind, pos))
 
     def _close(self, kind: int, chunk: bytes, body: int) -> int:
@@ -176,6 +180,8 @@ def frames_of(blob: bytes, *, bank_size: int = limits.BANK_BYTES) -> list[bytes]
             size = stream.CLOSE_HEADER + stream.close_bytes(kind)
         elif kind == stream.PSG:
             size = stream.PSG_HEADER + blob[pos + 1]
+        elif kind == stream.PAN:
+            size = stream.PAN_BYTES
         else:
             raise ValueError(unknown_kind(kind, pos))
         current += blob[pos : pos + size]

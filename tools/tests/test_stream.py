@@ -401,6 +401,59 @@ class TestTheWideCloseRun:
         assert sounded[0][0] == close + bytes([stream.PSG, 1, 0x9F, stream.END_FRAME])
 
 
+class TestThePanRun:
+    def test_a_pan_is_its_kind_and_one_byte(self):
+        # Arrange
+        value = 0xFE
+
+        # Act
+        run = stream.pan_run(value)
+
+        # Assert
+        assert run == bytes([0x08, 0xFE])
+
+    def test_a_pan_past_one_byte_is_refused(self):
+        # Arrange
+        value = 0x100
+
+        # Act
+        with pytest.raises(ValueError) as refused:
+            stream.pan_run(value)
+
+        # Assert
+        assert str(refused.value) == "a pan is one byte, got 256"
+
+    def test_a_pan_comes_before_the_tones_of_its_field(self):
+        # Arrange
+        fields = [[bytes([stream.END_FRAME])]]
+
+        # Act
+        sounded = stream.add_sound(fields, [b"\x9f"], [0xEF])
+
+        # Assert
+        assert sounded[0][0] == bytes([0x08, 0xEF, stream.PSG, 1, 0x9F, stream.END_FRAME])
+
+    def test_a_field_with_a_pan_and_no_tones_carries_the_pan_alone(self):
+        # Arrange
+        fields = [[bytes([stream.END_FRAME])]]
+
+        # Act
+        sounded = stream.add_sound(fields, [b""], [0xFF])
+
+        # Assert
+        assert sounded[0][0] == bytes([0x08, 0xFF, stream.END_FRAME])
+
+    def test_no_pans_leaves_a_master_system_stream_as_it_was(self):
+        # Arrange
+        fields = [[bytes([stream.END_FRAME])]]
+
+        # Act
+        sounded = stream.add_sound(fields, [b"\x9f"])
+
+        # Assert
+        assert sounded[0][0] == bytes([stream.PSG, 1, 0x9F, stream.END_FRAME])
+
+
 class TestTheReserve:
     def test_only_the_first_chunk_keeps_room_for_a_closing_run(self):
         # Arrange

@@ -44,6 +44,7 @@ NOISE_WHITE_FAST: Final = 0xE4
 MAX_FIELD_WRITES: Final = 1 + (TONE_CHANNELS * 3) + 1
 DECODE_RATE: Final = 22050
 REFRESH_FIELDS: Final = 60
+MONO: Final = 1
 
 Spectrum = npt.NDArray[np.float64]
 Tone = tuple[float, float]
@@ -56,7 +57,12 @@ class Voice:
 
 
 def decode(
-    path: Path, *, start: float, duration: float | None, rate: int = DECODE_RATE
+    path: Path,
+    *,
+    start: float,
+    duration: float | None,
+    rate: int = DECODE_RATE,
+    channels: int = MONO,
 ) -> npt.NDArray[np.float32]:
     window = ["-t", str(duration)] if duration is not None else []
     command = [
@@ -70,7 +76,7 @@ def decode(
         str(path),
         "-vn",
         "-ac",
-        "1",
+        str(channels),
         "-ar",
         str(rate),
         "-f",
@@ -78,7 +84,8 @@ def decode(
         "-",
     ]
     done = subprocess.run(command, capture_output=True, check=True)
-    return np.frombuffer(done.stdout, dtype=np.float32)
+    samples = np.frombuffer(done.stdout, dtype=np.float32)
+    return samples if channels == MONO else samples.reshape(-1, channels)
 
 
 def synthesize(samples: npt.NDArray[np.float32], *, rate: int, fields: int) -> list[bytes]:
@@ -86,7 +93,7 @@ def synthesize(samples: npt.NDArray[np.float32], *, rate: int, fields: int) -> l
         msg = "a film needs at least one field of sound"
         raise ValueError(msg)
     wave = samples.astype(np.float64)
-    spectra = [_spectrum(wave, rate, field) for field in range(fields)]
+    spectra = [field_spectrum(wave, rate, field) for field in range(fields)]
     frequencies = np.fft.rfftfreq(WINDOW, 1.0 / rate)
     levels = _levels(wave, rate, fields)
     voices = _voices(spectra, frequencies, levels)
@@ -95,7 +102,7 @@ def synthesize(samples: npt.NDArray[np.float32], *, rate: int, fields: int) -> l
     return _changes(voices, noise)
 
 
-def _spectrum(wave: npt.NDArray[np.float64], rate: int, field: int) -> Spectrum:
+def field_spectrum(wave: npt.NDArray[np.float64], rate: int, field: int) -> Spectrum:
     first = round((field + 0.5) * rate / console.NTSC_FIELD_HZ) - WINDOW // 2
     low, high = max(0, first), min(wave.shape[0], first + WINDOW)
     segment = np.zeros(WINDOW, dtype=np.float64)

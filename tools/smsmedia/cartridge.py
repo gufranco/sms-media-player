@@ -24,6 +24,7 @@ from smsmedia import (
     limits,
     output,
     preview,
+    psgpan,
     psgsound,
     rate,
     schedule,
@@ -82,6 +83,7 @@ class Baked:
     dither: float
     sources: list[npt.NDArray[np.uint8]]
     sound_writes: int = 0
+    pan_writes: int = 0
     bars: source.Bars | None = None
     keys: tuple[int, ...] = (0,)
 
@@ -102,6 +104,7 @@ def build_report(
         "dither": baked.dither,
         "fps": settled.fps,
         "sound_writes": baked.sound_writes,
+        "pan_writes": baked.pan_writes,
         "bars": list(baked.bars) if baked.bars is not None else None,
     }
 
@@ -151,7 +154,7 @@ def bake_film(args: argparse.Namespace, *, geometry: bake.Geometry, settled: dia
     )
     encoder = bake.Encoder(
         geometry=geometry,
-        budget=args.budget - (limits.SOUND_RESERVE if sound else 0),
+        budget=args.budget - (limits.sound_reserve(args.target) if sound else 0),
         cap=args.cap,
         reuse_threshold=settled.reuse,
         upload_ceiling=args.upload_ceiling,
@@ -167,10 +170,10 @@ def bake_film(args: argparse.Namespace, *, geometry: bake.Geometry, settled: dia
         keyframe_every=args.seek_every,
     )
     fields = stream.defer_closes(timed.frames)
-    writes = _sound(args, fields) if sound else []
+    writes, pans = _sound(args, fields) if sound else ([], [])
     return Baked(
         encoded=encoder.result(),
-        fields=stream.add_sound(fields, writes),
+        fields=stream.add_sound(fields, writes, pans),
         decoded=len(decoded),
         lags=timed.lags,
         lead=timed.lead,
@@ -178,15 +181,25 @@ def bake_film(args: argparse.Namespace, *, geometry: bake.Geometry, settled: dia
         sources=[decoded[pick] for pick in timed.picks],
         dither=args.dither,
         sound_writes=sum(len(field) for field in writes),
+        pan_writes=sum(pan is not None for pan in pans),
         bars=args.bars,
         keys=tuple(timed.keys) or (0,),
     )
 
 
-def _sound(args: argparse.Namespace, fields: list[list[bytes]]) -> list[bytes]:
+def _sound(
+    args: argparse.Namespace, fields: list[list[bytes]]
+) -> tuple[list[bytes], list[int | None]]:
     count = sum(len(chunks) for chunks in fields)
-    samples = psgsound.decode(args.source, start=args.start, duration=args.duration)
-    return psgsound.synthesize(samples, rate=psgsound.DECODE_RATE, fields=count)
+    channels = psgpan.STEREO if args.target.stereo else psgsound.MONO
+    samples = psgsound.decode(
+        args.source, start=args.start, duration=args.duration, channels=channels
+    )
+    mixed = samples if samples.ndim == 1 else samples.mean(axis=1)
+    writes = psgsound.synthesize(mixed, rate=psgsound.DECODE_RATE, fields=count)
+    if samples.ndim == 1:
+        return writes, []
+    return writes, psgpan.pans(samples, rate=psgsound.DECODE_RATE, writes=writes)
 
 
 def _decode(

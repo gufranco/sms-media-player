@@ -541,6 +541,10 @@ from the same command, and look at the sheet before quoting a number.
   message names the base directory rather than the lock. Kill the stale process
   before recording. A run killed with SIGTERM leaves the `.mov` unfinalised at
   32 bytes, which reads as a failed emulator rather than a truncated capture.
+- CI's commit check wants a lowercase letter or digit right after the colon,
+  even for a proper noun, and no local hook checks it; write `game gear`,
+  never `Game Gear`, at the start of a subject. A pushed subject that fails
+  it stays red, because history is never rewritten.
 - `np.argpartition` does not order equal values the same way on x86 and Arm
   NumPy builds, so a tie broken by its order gives one output on this Mac
   and another in CI. Pick a nearest with `np.argmin` and rank with
@@ -614,6 +618,12 @@ listings in `build/gg`. Start, bit 7 of port `$00`, pauses instead of the
 Pause NMI. None of this is verified until it runs on the Game Gear in its own
 mode: play with sound, press Start to pause and again to resume, and watch for
 shredded tiles and wrong colours.
+
+The Game Gear build also routes the PSG to the left and right headphone
+through port `$06`, from a stereo source, and writes `$FF` there whenever it
+silences the PSG. The Master System build never writes that port: on a Master
+System an even port below `$40` is the memory control register. Stereo is
+unverified until it is heard on the Game Gear's headphones.
 
 Start pausing on a Game Gear rests on the SMS Power Start Button page, which
 says that in Master System mode the Start button acts identically to the

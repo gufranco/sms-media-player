@@ -22,6 +22,7 @@ HALT = 0x76
 STEP_LIMIT = 2_000_000
 DATA_PORT = 0xBE
 CONTROL_PORT = 0xBF
+PAN_PORT = 0x06
 V_COUNTER = 0x7E
 CYCLES_PER_LINE = 228
 LINES_PER_FIELD = 262
@@ -94,6 +95,7 @@ class Vdp:
         self.line = 0
         self.since = 0
         self.writes = 0
+        self.pans: list[int] = []
 
     def start_at(self, line: int) -> None:
         self.line = line
@@ -116,6 +118,8 @@ class Vdp:
             self._control(value)
         elif port == DATA_PORT:
             self._data(value)
+        elif port == PAN_PORT:
+            self.pans = [*self.pans, value]
 
     def _control(self, value: int) -> None:
         if self.latch is None:

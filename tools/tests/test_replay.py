@@ -216,6 +216,29 @@ def machine_showing(entry: int) -> replay.Machine:
     return m
 
 
+class TestThePanRun:
+    def test_the_machine_records_each_pan_it_reads(self):
+        # Arrange
+        machine = replay.Machine()
+        chunk = bytes([stream.PAN, 0xFE, stream.PAN, 0xEF, stream.END_CHUNK])
+
+        # Act
+        machine.apply(chunk)
+
+        # Assert
+        assert machine.pans == [0xFE, 0xEF]
+
+    def test_a_pan_run_is_two_bytes_long_in_a_packed_stream(self):
+        # Arrange
+        blob = bytes([stream.PAN, 0x01, stream.END_FRAME])
+
+        # Act
+        chunks = replay.frames_of(blob)
+
+        # Assert
+        assert chunks == [bytes([stream.PAN, 0x01, stream.END_FRAME])]
+
+
 class TestRenderFlips:
     def test_an_unflipped_cell_keeps_its_left_edge(self):
         # Arrange

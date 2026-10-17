@@ -70,3 +70,37 @@ class TestTheGameGearCartridge:
 
         # Assert
         assert bytes(vdp.cram[INK_ADDRESS : INK_ADDRESS + 4]) == INK_WORDS
+
+
+class TestThePanRun:
+    def test_its_byte_reaches_the_stereo_port(self, built):
+        # Arrange
+        lines = [INSIDE]
+        data = bytes([stream.PAN, 0xEF, stream.END_FRAME])
+
+        # Act
+        ports, _, _ = replay(built, lines, data=data)
+
+        # Assert
+        assert ports.pans() == [0xEF]
+
+    def test_the_tones_after_it_still_reach_the_sound_port(self, built):
+        # Arrange
+        lines = [INSIDE]
+        data = bytes([stream.PAN, 0xFE, stream.PSG, 1, 0x9F, stream.END_FRAME])
+
+        # Act
+        ports, _, _ = replay(built, lines, data=data)
+
+        # Assert
+        assert [value for _, value in ports.sound()] == [0x9F]
+
+    def test_silencing_the_psg_centres_every_channel(self, built):
+        # Arrange
+        routine = "_fmv_psg_silence"
+
+        # Act
+        vdp, _, _ = call(built, routine, gg=True)
+
+        # Assert
+        assert vdp.pans == [0xFF]

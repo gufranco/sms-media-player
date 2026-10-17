@@ -750,6 +750,28 @@ class TestSound:
         report = json.loads((tmp_path / "report.json").read_text())
         assert report["sound_writes"] == 0
 
+    def test_a_master_system_build_routes_no_channel(self, sounded_clip, tmp_path):
+        # Arrange
+        argv = _argv(sounded_clip, tmp_path)
+
+        # Act
+        cartridge.main(argv)
+
+        # Assert
+        report = json.loads((tmp_path / "report.json").read_text())
+        assert report["pan_writes"] == 0
+
+    def test_a_game_gear_build_centres_a_mono_soundtrack_once(self, sounded_clip, tmp_path):
+        # Arrange
+        argv = [*_argv(sounded_clip, tmp_path), "--target", "gg"]
+
+        # Act
+        cartridge.main(argv)
+
+        # Assert
+        report = json.loads((tmp_path / "report.json").read_text())
+        assert (report["sound_writes"] > 0, report["pan_writes"]) == (True, 1)
+
     def test_a_film_without_a_soundtrack_bakes_no_sound(self, clip, tmp_path):
         # Arrange
         argv = _argv(clip, tmp_path)

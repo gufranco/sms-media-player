@@ -11,12 +11,14 @@ VRAM: Final = 0x02
 CLOSE: Final = target.NARROW_CLOSE
 CLOSE_WIDE: Final = target.WIDE_CLOSE
 PSG: Final = 0x06
+PAN: Final = 0x08
 NEXT_BANK: Final = 0xFF
 
 MAX_RUN: Final = 255
 VRAM_HEADER: Final = 4
 CLOSE_HEADER: Final = 2
 PSG_HEADER: Final = 2
+PAN_BYTES: Final = 2
 TERMINATOR: Final = 1
 
 CLOSE_BYTES: Final = smscolor.CRAM_BYTES
@@ -187,21 +189,33 @@ def psg_run(data: bytes) -> bytes:
     return bytes([PSG, len(data)]) + data
 
 
-def add_sound(frames: list[list[bytes]], writes: list[bytes]) -> list[list[bytes]]:
+def pan_run(value: int) -> bytes:
+    if not 0 <= value < REGISTER_VALUES:
+        msg = f"a pan is one byte, got {value}"
+        raise ValueError(msg)
+    return bytes([PAN, value])
+
+
+def add_sound(
+    frames: list[list[bytes]], writes: list[bytes], pans: list[int | None] | None = None
+) -> list[list[bytes]]:
+    routes = pans or []
     out: list[list[bytes]] = []
     field = 0
     for chunks in frames:
         built: list[bytes] = []
         for chunk in chunks:
             data = writes[field] if field < len(writes) else b""
-            built.append(_with_sound(chunk, data))
+            pan = routes[field] if field < len(routes) else None
+            built.append(_with_sound(chunk, data, pan))
             field += 1
         out.append(built)
     return out
 
 
-def _with_sound(chunk: bytes, data: bytes) -> bytes:
-    if not data:
+def _with_sound(chunk: bytes, data: bytes, pan: int | None) -> bytes:
+    sound = (b"" if pan is None else pan_run(pan)) + (psg_run(data) if data else b"")
+    if not sound:
         return chunk
     carried = CLOSE_HEADER + close_bytes(chunk[0]) if chunk and chunk[0] in CLOSE_KINDS else 0
-    return chunk[:carried] + psg_run(data) + chunk[carried:]
+    return chunk[:carried] + sound + chunk[carried:]

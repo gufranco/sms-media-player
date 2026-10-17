@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 from z80 import Cpu, Memory
+from z80vdp import call
 
 from smsmedia import console, stream
 
@@ -22,6 +23,7 @@ V_COUNTER = 0x7E
 DATA_PORT = 0xBE
 CONTROL_PORT = 0xBF
 SOUND_PORT = 0x7F
+PAN_PORT = 0x06
 SOUND_FLOOR = 32
 SOUND_WRITES = bytes([0x9F, 0xBF, 0xDF, 0x80, 0x04])
 INSIDE = 0xC8
@@ -88,7 +90,12 @@ class Ports:
         return 0xFF
 
     def write(self, address: int, value: int) -> None:
-        if self.clock is not None and address & 0xFF in (DATA_PORT, CONTROL_PORT, SOUND_PORT):
+        if self.clock is not None and address & 0xFF in (
+            DATA_PORT,
+            CONTROL_PORT,
+            SOUND_PORT,
+            PAN_PORT,
+        ):
             self.writes.append((self.clock.cycles, address & 0xFF, value))
 
     def sound(self) -> list[tuple[int, int]]:
@@ -96,6 +103,9 @@ class Ports:
 
     def data(self) -> list[int]:
         return [value for _, port, value in self.writes if port == DATA_PORT]
+
+    def pans(self) -> list[int]:
+        return [value for _, port, value in self.writes if port == PAN_PORT]
 
 
 def film() -> bytes:
@@ -615,3 +625,26 @@ class TestAMutedSoundRun:
 
         # Assert
         assert ports.data() == list(PAYLOAD) + list(PALETTE)
+
+
+class TestAPanRunOnTheMasterSystem:
+    def test_it_is_refused_as_a_kind_the_player_does_not_know(self, built):
+        # Arrange
+        lines = [INSIDE]
+        data = bytes([stream.PAN, 0xEF, stream.END_FRAME])
+
+        # Act
+        ports, memory, names = replay(built, lines, data=data)
+
+        # Assert
+        assert (memory.read8(names["_movie_kind"]), ports.pans()) == (BAD, [])
+
+    def test_silencing_the_psg_never_writes_the_memory_control_mirror(self, built):
+        # Arrange
+        routine = "_fmv_psg_silence"
+
+        # Act
+        vdp, _, _ = call(built, routine)
+
+        # Assert
+        assert vdp.pans == []

@@ -5,3 +5,9 @@
         .macro INK_BYTES
         .db 0x00, 0x3F
         .endm
+        .macro PAN_DISPATCH
+        .endm
+        .macro PAN_RUN
+        .endm
+        .macro PAN_RESET
+        .endm

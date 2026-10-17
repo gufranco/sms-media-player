@@ -79,6 +79,18 @@ class TestTheGameGear:
         assert kind == 0x05
 
 
+class TestStereo:
+    def test_only_the_game_gear_routes_channels_left_and_right(self):
+        # Arrange
+        consoles = (target.MASTER_SYSTEM, target.GAME_GEAR)
+
+        # Act
+        stereo = [console.stereo for console in consoles]
+
+        # Assert
+        assert stereo == [False, True]
+
+
 class TestNamed:
     def test_a_known_name_gives_its_target(self):
         # Arrange

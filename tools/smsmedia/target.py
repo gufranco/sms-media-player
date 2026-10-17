@@ -18,6 +18,7 @@ class Target:
     close_kind: int
     region: int
     extension: str
+    stereo: bool
 
 
 MASTER_SYSTEM: Final = Target(
@@ -30,6 +31,7 @@ MASTER_SYSTEM: Final = Target(
     close_kind=NARROW_CLOSE,
     region=0x4,
     extension=".sms",
+    stereo=False,
 )
 
 GAME_GEAR: Final = Target(
@@ -42,6 +44,7 @@ GAME_GEAR: Final = Target(
     close_kind=WIDE_CLOSE,
     region=0x7,
     extension=".gg",
+    stereo=True,
 )
 
 TARGETS: Final = {each.name: each for each in (MASTER_SYSTEM, GAME_GEAR)}

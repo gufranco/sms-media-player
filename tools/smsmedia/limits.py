@@ -35,5 +35,9 @@ CODE_BANKS: Final = 2
 DEFAULT_MAX_BANKS: Final = 64 - CODE_BANKS
 
 
+def sound_reserve(system: target.Target) -> int:
+    return SOUND_RESERVE + (stream.PAN_BYTES if system.stereo else 0)
+
+
 def close_reserve(system: target.Target) -> int:
     return stream.CLOSE_HEADER + stream.close_bytes(system.close_kind)
