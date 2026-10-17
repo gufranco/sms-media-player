@@ -17,7 +17,7 @@ def displayed_error(
     flips: tuple[npt.NDArray[np.bool_], npt.NDArray[np.bool_]],
     floor: npt.NDArray[np.float32],
 ) -> tuple[float, float]:
-    lab = smscolor.oklab_palette(chroma_weight)
+    lab = fitted.lattice.oklab(chroma_weight)
     slots, data = cache.residents()
     if slots.size == 0:
         msg = "no pattern is resident, so nothing on screen can be scored"
@@ -100,7 +100,7 @@ def cell_colours(
     fitted: palettes.FramePalettes,
     chroma_weight: float,
 ) -> npt.NDArray[np.float32]:
-    lab = smscolor.oklab_palette(chroma_weight)
+    lab = fitted.lattice.oklab(chroma_weight)
     table = fitted.cram.reshape(smscolor.PALETTE_COUNT, smscolor.PALETTE_ENTRIES)
     entries = table[fitted.choice]
     colours = np.take_along_axis(

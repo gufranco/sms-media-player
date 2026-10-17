@@ -6,7 +6,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 
-from smsmedia import pattern, smscolor
+from smsmedia import lattice, pattern, smscolor
 
 LLOYD_ROUNDS: Final = 8
 ASSIGN_ROUNDS: Final = 6
@@ -15,11 +15,12 @@ FEWEST_TO_SPLIT: Final = 2
 
 @dataclass(frozen=True, slots=True)
 class FramePalettes:
-    cram: npt.NDArray[np.uint8]
+    cram: npt.NDArray[np.uint16]
     choice: npt.NDArray[np.uint8]
     indices: npt.NDArray[np.uint8]
     rows: int
     columns: int
+    lattice: lattice.Lattice = lattice.MASTER_SYSTEM
 
     def render(self) -> npt.NDArray[np.uint8]:
         table = self.cram.reshape(smscolor.PALETTE_COUNT, smscolor.PALETTE_ENTRIES)
@@ -29,7 +30,7 @@ class FramePalettes:
             self.indices[..., None].astype(np.intp),
             axis=3,
         )[..., 0]
-        rgb = smscolor.colour_to_rgb(colours.astype(np.uint8))
+        rgb = self.lattice.to_rgb(colours)
         cells = rgb.reshape(self.rows, self.columns, pattern.TILE_PX, pattern.TILE_PX, 3)
         return cells.transpose(0, 2, 1, 3, 4).reshape(
             self.rows * pattern.TILE_PX, self.columns * pattern.TILE_PX, 3
@@ -37,22 +38,22 @@ class FramePalettes:
 
 
 def choose_entries(
-    present: npt.NDArray[np.uint8],
+    present: npt.NDArray[np.unsignedinteger],
     counts: npt.NDArray[np.integer],
     lab: npt.NDArray[np.float32],
     slots: int,
-) -> npt.NDArray[np.uint8]:
+) -> npt.NDArray[np.uint16]:
     if slots < 1:
         msg = "a palette needs at least one entry"
         raise ValueError(msg)
     if present.size == 0:
-        return np.zeros(slots, dtype=np.uint8)
+        return np.zeros(slots, dtype=np.uint16)
 
     points = lab[present]
     weight = counts.astype(np.float64)
     seeds = _seed_centres(points, weight, count=min(slots, present.size))
     centres = _refine_centres(points, weight, seeds)
-    return _padded(present[centres].astype(np.uint8), slots)
+    return _padded(present[centres].astype(np.uint16), slots)
 
 
 def _seed_centres(
@@ -96,44 +97,49 @@ def _refine_centres(
     return centres
 
 
-def _padded(entries: npt.NDArray[np.uint8], slots: int) -> npt.NDArray[np.uint8]:
+def _padded(entries: npt.NDArray[np.uint16], slots: int) -> npt.NDArray[np.uint16]:
     if entries.size >= slots:
         return entries
-    padding = np.full(slots - entries.size, entries[0], dtype=np.uint8)
+    padding = np.full(slots - entries.size, entries[0], dtype=np.uint16)
     return np.concatenate([entries, padding])
 
 
 def fit_or_keep(
     frame: npt.NDArray[np.uint8],
-    previous: npt.NDArray[np.uint8] | None,
+    previous: npt.NDArray[np.uint16] | None,
     *,
     margin: float,
     chroma_weight: float = 1.0,
     ordered_dither: float = smscolor.NO_DITHER,
+    space: lattice.Lattice = lattice.MASTER_SYSTEM,
 ) -> FramePalettes:
     if margin < 0.0:
         msg = f"a palette keep margin must not be negative, got {margin}"
         raise ValueError(msg)
-    lab = smscolor.oklab_palette(chroma_weight)
-    cells = _cells_of(frame, ordered_dither)
+    lab = space.oklab(chroma_weight)
+    cells = _cells_of(frame, ordered_dither, space)
     columns = frame.shape[1] // pattern.TILE_PX
-    fresh, fresh_error = _quantise(cells, _fit(cells, lab), lab, columns=columns)
+    fresh, fresh_error = _quantise(cells, _fit(cells, lab), space, columns=columns, lab=lab)
     if previous is None:
         return fresh
     table = previous.reshape(smscolor.PALETTE_COUNT, smscolor.PALETTE_ENTRIES)
-    kept, kept_error = _quantise(cells, table, lab, columns=columns)
+    kept, kept_error = _quantise(cells, table, space, columns=columns, lab=lab)
     return kept if kept_error <= fresh_error * (1.0 + margin) else fresh
 
 
-def _cells_of(frame: npt.NDArray[np.uint8], ordered_dither: float) -> npt.NDArray[np.uint8]:
+def _cells_of(
+    frame: npt.NDArray[np.uint8], ordered_dither: float, space: lattice.Lattice
+) -> npt.NDArray[np.unsignedinteger]:
     if frame.ndim != smscolor.IMAGE_RANK or frame.shape[2] != smscolor.RGB_CHANNELS:
         msg = f"expected a trailing RGB axis, got shape {frame.shape}"
         raise ValueError(msg)
-    colours = smscolor.pack_colour(smscolor.quantise_levels(frame, dither=ordered_dither))
+    colours = space.pack(space.quantise(frame, dither=ordered_dither))
     return pattern.tile_frame(colours)
 
 
-def _fit(cells: npt.NDArray[np.uint8], lab: npt.NDArray[np.float32]) -> npt.NDArray[np.uint8]:
+def _fit(
+    cells: npt.NDArray[np.unsignedinteger], lab: npt.NDArray[np.float32]
+) -> npt.NDArray[np.uint16]:
     cell_lab = lab[cells].reshape(cells.shape[0], -1, 3).mean(axis=1)
     group = _split(cell_lab)
     table = _fit_tables(cells, group, lab)
@@ -148,11 +154,12 @@ def _fit(cells: npt.NDArray[np.uint8], lab: npt.NDArray[np.float32]) -> npt.NDAr
 
 
 def _quantise(
-    cells: npt.NDArray[np.uint8],
-    table: npt.NDArray[np.uint8],
-    lab: npt.NDArray[np.float32],
+    cells: npt.NDArray[np.unsignedinteger],
+    table: npt.NDArray[np.uint16],
+    space: lattice.Lattice,
     *,
     columns: int,
+    lab: npt.NDArray[np.float32],
 ) -> tuple[FramePalettes, float]:
     flat = cells.reshape(cells.shape[0], -1)
     best_index = np.zeros((smscolor.PALETTE_COUNT, *flat.shape), dtype=np.uint8)
@@ -167,11 +174,12 @@ def _quantise(
     choice = np.argmin(best_error, axis=0).astype(np.uint8)
     indices = np.take_along_axis(best_index, choice[None, :, None], axis=0)[0]
     fitted = FramePalettes(
-        cram=table.reshape(-1).astype(np.uint8),
+        cram=table.reshape(-1).astype(np.uint16),
         choice=choice,
         indices=indices.reshape(cells.shape).astype(np.uint8),
         rows=cells.shape[0] // columns,
         columns=columns,
+        lattice=space,
     )
     return fitted, float(best_error.min(axis=0).sum())
 
@@ -225,26 +233,24 @@ BACKDROP_COLOUR: Final = 0
 
 
 def _fit_tables(
-    cells: npt.NDArray[np.uint8],
+    cells: npt.NDArray[np.unsignedinteger],
     group: npt.NDArray[np.intp],
     lab: npt.NDArray[np.float32],
-) -> npt.NDArray[np.uint8]:
-    table = np.zeros((smscolor.PALETTE_COUNT, smscolor.PALETTE_ENTRIES), dtype=np.uint8)
+) -> npt.NDArray[np.uint16]:
+    table = np.zeros((smscolor.PALETTE_COUNT, smscolor.PALETTE_ENTRIES), dtype=np.uint16)
     for index in range(smscolor.PALETTE_COUNT):
         members = cells[group == index]
         if members.size == 0:
             members = cells
         present, counts = np.unique(members.reshape(-1), return_counts=True)
-        table[index] = choose_entries(
-            present.astype(np.uint8), counts, lab, smscolor.PALETTE_ENTRIES
-        )
+        table[index] = choose_entries(present, counts, lab, smscolor.PALETTE_ENTRIES)
     table[1][BACKDROP_ENTRY] = BACKDROP_COLOUR
     return table
 
 
 def _assign(
-    flat: npt.NDArray[np.uint8],
-    table: npt.NDArray[np.uint8],
+    flat: npt.NDArray[np.unsignedinteger],
+    table: npt.NDArray[np.uint16],
     lab: npt.NDArray[np.float32],
 ) -> npt.NDArray[np.intp]:
     error = np.zeros((smscolor.PALETTE_COUNT, flat.shape[0]), dtype=np.float64)

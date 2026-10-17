@@ -152,7 +152,7 @@ def reuse_residents(
     if slots.size == 0:
         return result
 
-    lab = smscolor.oklab_palette(chroma_weight)
+    lab = fitted.lattice.oklab(chroma_weight)
     table = fitted.cram.reshape(smscolor.PALETTE_COUNT, smscolor.PALETTE_ENTRIES)
     indices = pattern.unpack_patterns(data).reshape(data.shape[0], -1)
 
@@ -294,7 +294,7 @@ def better_standins(
         return cell_slot
     tiles = pattern.unpack_patterns(data[rows]).reshape(rows.size, -1)
     table = fitted.cram.reshape(smscolor.PALETTE_COUNT, smscolor.PALETTE_ENTRIES)
-    lab = smscolor.oklab_palette(chroma_weight)
+    lab = fitted.lattice.oklab(chroma_weight)
     current, stand_in = _stand_ins(fitted, tiles, slots[rows], cell_slot=cell_slot)
     result = cell_slot.copy()
     for palette in range(smscolor.PALETTE_COUNT):

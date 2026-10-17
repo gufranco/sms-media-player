@@ -367,36 +367,6 @@ class TestNearestColour:
 
 
 class TestWideEntries:
-    def test_white_widens_to_every_nibble_lit(self):
-        # Arrange
-        indices = np.array([0x3F], dtype=np.uint8)
-
-        # Act
-        wide = smscolor.widen(indices)
-
-        # Assert
-        assert wide == bytes([0xFF, 0x0F])
-
-    def test_each_channel_lands_in_its_own_nibble(self):
-        # Arrange
-        indices = np.array([0x03, 0x0C, 0x30], dtype=np.uint8)
-
-        # Act
-        wide = smscolor.widen(indices)
-
-        # Assert
-        assert wide == bytes([0x0F, 0x00, 0xF0, 0x00, 0x00, 0x0F])
-
-    def test_a_middle_level_keeps_its_place_on_the_wider_scale(self):
-        # Arrange
-        indices = np.array([0x01], dtype=np.uint8)
-
-        # Act
-        wide = smscolor.widen(indices)
-
-        # Assert
-        assert wide == bytes([0x05, 0x00])
-
     def test_a_wide_entry_reads_back_as_the_same_colour(self):
         # Arrange
         wide = bytes([0x05, 0x0A])

@@ -620,6 +620,40 @@ The numbers it reports are estimates from samples, not a bake. A window it
 likes still has to be baked, and the baker remains the thing that decides
 whether a film fits.
 
+### [`smsmedia/target.py`](smsmedia/target.py)
+
+What differs between the consoles a cartridge is baked for, as one profile.
+
+A target names its picture size in cells, its levels per colour channel, how
+many bytes a CRAM entry takes, the run kind that closes a field, the header
+region and the file extension. The Master System profile is 32 by 24 cells,
+four levels, one byte an entry and close kind `0x05`. The Game Gear profile is
+20 by 18 cells, the 160 by 144 the panel shows, sixteen levels, two bytes an
+entry and close kind `0x07`, so the replay and the oracle both read the run's
+size from its kind rather than from a flag. Every module that differs between
+the two reads the profile, and nothing branches on a console name.
+
+### [`smsmedia/lattice.py`](smsmedia/lattice.py)
+
+The grid of colours a target can show, and the CRAM bytes for an entry.
+
+A lattice is a number of levels per channel. The Master System has 4, 64
+colours, a CRAM entry of `--BBGGRR` in one byte. The Game Gear has 16, 4096
+colours, an entry of `----BBBB GGGGRRRR` in two bytes written low byte first.
+A colour index packs red in the low bits, then green, then blue, so on both
+consoles the index is already the CRAM value, and `cram_bytes` only chooses
+the width.
+
+Palette fitting, tile scoring and placement all take their Oklab table from
+the lattice the frame was fitted on, so "close" means the same thing on both
+consoles. The table is built once per lattice and chroma weight and cached
+read-only: 4096 entries cost nothing to keep and a lot to rebuild every frame.
+
+A sixteen-level fit costs the same as a four-level one, 0.12 s for a noisy
+160 by 144 gradient on an M-series Mac, because the fit works on the colours
+present in the frame, never on the whole lattice. On that gradient the mean
+absolute error fell from 22.3 to 14.2.
+
 ### [`smsmedia/smscolor.py`](smsmedia/smscolor.py)
 
 The Master System colour space, and distance within it.
@@ -655,7 +689,8 @@ thing by "close".
 
 #### `quantise_levels`
 
-Round 8-bit RGB onto the console's two-bit-per-channel grid.
+Round 8-bit RGB onto a grid of levels per channel, two bits on the Master
+System and four on the Game Gear through `top`.
 
 With no dither every pixel takes the level nearest its own value. Four
 levels a channel leaves wide steps, and a pale gradient rounds to flat

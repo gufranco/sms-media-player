@@ -9,11 +9,11 @@ import numpy.typing as npt
 from smsmedia import (
     console,
     fidelity,
+    lattice,
     limits,
     palettes,
     pattern,
     placement,
-    smscolor,
     stream,
     tablewrites,
     target,
@@ -103,7 +103,7 @@ class Encoder:
     dither: float = DEFAULT_DITHER
     palette_margin: float = PALETTE_KEEP_MARGIN
     system: target.Target = target.DEFAULT
-    cram: npt.NDArray[np.uint8] | None = field(default=None, init=False)
+    cram: npt.NDArray[np.uint16] | None = field(default=None, init=False)
     cache: workingset.WorkingSet = field(init=False)
     committed: npt.NDArray[np.int64] = field(init=False)
     committed_slot: npt.NDArray[np.int64] = field(init=False)
@@ -139,6 +139,7 @@ class Encoder:
             margin=self.palette_margin,
             chroma_weight=self.chroma_weight,
             ordered_dither=self.dither,
+            space=lattice.for_target(self.system),
         )
         self.cram = fitted.cram
         self.unknown_tables = BOTH_TABLES if keyframe else self.unknown_tables
@@ -337,11 +338,10 @@ def _entry_writes(
 
 
 def _closing(fitted: palettes.FramePalettes, back_base: int, system: target.Target) -> stream.Write:
-    wide = system.close_kind == stream.CLOSE_WIDE
     return stream.Write(
         target=system.close_kind,
         address=console.TABLE_REGISTER[back_base],
-        data=smscolor.widen(fitted.cram) if wide else bytes(fitted.cram.tolist()),
+        data=fitted.lattice.cram_bytes(fitted.cram),
     )
 
 

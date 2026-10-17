@@ -19,7 +19,6 @@ COLOUR_COUNT: Final = LEVELS**3
 NIBBLE: Final = 4
 NIBBLE_MASK: Final = (1 << NIBBLE) - 1
 WIDE_ENTRY_BYTES: Final = target.GAME_GEAR.cram_entry_bytes
-WIDE_STEP: Final = NIBBLE_MASK // CHANNEL_MAX
 WIDE_TO_BYTE: Final = 255 // NIBBLE_MASK
 
 _LEVEL_TO_BYTE: Final = np.array([0, 85, 170, 255], dtype=np.uint8)
@@ -42,7 +41,7 @@ _BAYER: Final = (_BAYER_ORDER + 0.5) / _BAYER_ORDER.size - 0.5
 
 
 def quantise_levels(
-    rgb: npt.NDArray[np.uint8], *, dither: float = NO_DITHER
+    rgb: npt.NDArray[np.uint8], *, dither: float = NO_DITHER, top: int = CHANNEL_MAX
 ) -> npt.NDArray[np.uint8]:
     if rgb.shape[-1] != RGB_CHANNELS:
         msg = f"expected a trailing RGB axis, got shape {rgb.shape}"
@@ -56,12 +55,12 @@ def quantise_levels(
     if dither > NO_DITHER and rgb.ndim != IMAGE_RANK:
         msg = f"dithering needs a height and width axis, got shape {rgb.shape}"
         raise ValueError(msg)
-    scaled = rgb.astype(np.float32) * (CHANNEL_MAX / 255.0)
+    scaled = rgb.astype(np.float32) * (top / 255.0)
     if dither > NO_DITHER:
         height, width = rgb.shape[0], rgb.shape[1]
         repeats = (height // DITHER_SIDE + 1, width // DITHER_SIDE + 1)
         scaled = scaled + (np.tile(_BAYER, repeats)[:height, :width, None] * dither)
-    return np.clip(np.rint(scaled), 0, CHANNEL_MAX).astype(np.uint8)
+    return np.clip(np.rint(scaled), 0, top).astype(np.uint8)
 
 
 def pack_colour(levels: npt.NDArray[np.integer]) -> npt.NDArray[np.uint8]:
@@ -86,12 +85,6 @@ def unpack_colour(byte: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:
 
 def colour_to_rgb(byte: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:
     return level_to_byte(unpack_colour(byte))
-
-
-def widen(indices: npt.NDArray[np.uint8]) -> bytes:
-    nibbles = unpack_colour(indices).astype(np.uint16) * WIDE_STEP
-    words = nibbles[..., 0] | (nibbles[..., 1] << NIBBLE) | (nibbles[..., 2] << (2 * NIBBLE))
-    return words.astype("<u2").tobytes()
 
 
 def wide_to_rgb(wide: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from fmvcore import colour
 
-from smsmedia import bake, console, limits, palettes, replay, smscolor, stream, target
+from smsmedia import bake, console, lattice, limits, palettes, replay, stream, target
 
 
 def gradient_frame(height: int, width: int, shift: int = 0) -> np.ndarray:
@@ -752,7 +752,7 @@ class TestTheGameGearTarget:
         chunks = encoder.add(frames[0])
 
         # Assert
-        assert chunks[-1][-(64 + 1) : -1] == smscolor.widen(encoder.cram)
+        assert chunks[-1][-(64 + 1) : -1] == lattice.GAME_GEAR.cram_bytes(encoder.cram)
 
     def test_its_budget_floor_keeps_room_for_the_wider_run(self):
         # Arrange

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from smsmedia import palettes, pattern, smscolor
+from smsmedia import lattice, palettes, pattern, smscolor
 
 
 def fresh_fit(frame, **options):
@@ -307,3 +307,42 @@ class TestKeepingPalettes:
 
         # Assert
         assert str(raised.value) == "a palette keep margin must not be negative, got -0.1"
+
+
+def grey_ramp() -> np.ndarray:
+    ramp = np.linspace(0, 255, 64).astype(np.uint8)
+    return np.repeat(np.repeat(ramp[None, :, None], 16, axis=0), 3, axis=2)
+
+
+class TestTheGameGearLattice:
+    def test_a_grey_ramp_keeps_more_greys_than_the_master_system_has(self):
+        # Arrange
+        frame = grey_ramp()
+
+        # Act
+        result = fresh_fit(frame, space=lattice.GAME_GEAR)
+
+        # Assert
+        greys = {tuple(pixel) for pixel in result.render().reshape(-1, 3).tolist()}
+        assert len(greys) > lattice.MASTER_SYSTEM.levels
+
+    def test_a_fitted_frame_names_the_lattice_it_was_fitted_on(self):
+        # Arrange
+        frame = grey_ramp()
+
+        # Act
+        result = fresh_fit(frame, space=lattice.GAME_GEAR)
+
+        # Assert
+        assert result.lattice is lattice.GAME_GEAR
+
+    def test_its_render_is_closer_to_a_gradient_than_the_master_system_render(self):
+        # Arrange
+        frame = grey_ramp()
+        narrow = np.abs(fresh_fit(frame).render().astype(int) - frame).mean()
+
+        # Act
+        result = fresh_fit(frame, space=lattice.GAME_GEAR)
+
+        # Assert
+        assert np.abs(result.render().astype(int) - frame).mean() < narrow
