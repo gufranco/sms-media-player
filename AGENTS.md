@@ -598,6 +598,13 @@ Still open: the owner's verdict on the dither default, and a listening verdict
 on the PSG sound. The next change to `src/replay.s`, the transfer loop or the
 overlay's VDP writes is unverified again until it runs on a console.
 
+Since that run the overlay moved up: text at sprite y 145, the bar at 157 and
+the diagnostics rows at 121 and 133, so every overlay sprite sits inside the
+Game Gear's visible window, lines 24 to 167 and columns 48 to 207. Before, the
+bar drew at y 179, below that window, so a Game Gear in Master System mode
+never showed it. Only sprite positions changed; a Game Gear run should confirm
+the clock and bar now show on the panel.
+
 Start pausing on a Game Gear rests on the SMS Power Start Button page, which
 says that in Master System mode the Start button acts identically to the
 Pause button, and on the Mark III software reference, which wires Pause to

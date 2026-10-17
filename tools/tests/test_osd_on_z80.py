@@ -27,8 +27,12 @@ OSD_SPRITES = 15
 STATE_SPRITE = TEXT_TILES + BAR_SPRITES
 STATE_TILE = 243
 BLANK_TILE = 244
-TEXT_Y = 167
-BAR_Y = 179
+TEXT_Y = 145
+BAR_Y = 157
+GG_FIRST_LINE = 24
+GG_LAST_LINE = 167
+GG_FIRST_COLUMN = 48
+GG_LAST_COLUMN = 207
 TEXT_X = 112
 BAR_X = 96
 STATE_X = 96
@@ -122,6 +126,22 @@ class TestShow:
         assert sprites(vdp)[:TEXT_TILES] == [
             (TEXT_Y, TEXT_X + 8 * index, FIRST_TILE + index) for index in range(TEXT_TILES)
         ]
+
+    def test_every_sprite_stays_inside_the_game_gear_window(self, built):
+        # Arrange
+        payload = view(elapsed=fields(1), total=fields(3))
+
+        # Act
+        vdp = run(built, "_fmv_osd_show", payload)
+
+        # Assert
+        assert all(
+            y + 1 >= GG_FIRST_LINE
+            and y + 8 <= GG_LAST_LINE
+            and x >= GG_FIRST_COLUMN
+            and x + 7 <= GG_LAST_COLUMN
+            for y, x, _ in sprites(vdp)[:OSD_SPRITES]
+        )
 
     def test_half_way_lights_half_the_bar(self, built):
         # Arrange

@@ -10,8 +10,8 @@ TOP_ROW = [185, 186, 187, 188, 189]
 BOTTOM_ROW = [190, 191, 240, 241, 242]
 FIRST_SPRITE = 15
 ROW_X = [108, 116, 124, 132, 140]
-TOP_Y = 143
-BOTTOM_Y = 155
+TOP_Y = 121
+BOTTOM_Y = 133
 SPRITE_HEIGHT = 8
 SPRITES_PER_LINE = 8
 FRAME_INTERRUPT_LINE = 0xC1
@@ -89,6 +89,19 @@ class TestShow:
         assert sprites(vdp)[FIRST_SPRITE:] == [
             (TOP_Y, x, number) for x, number in zip(ROW_X, TOP_ROW, strict=True)
         ] + [(BOTTOM_Y, x, number) for x, number in zip(ROW_X, BOTTOM_ROW, strict=True)]
+
+    def test_every_row_stays_inside_the_game_gear_window(self, built):
+        # Arrange
+        payload = seen(frame=1, total=2, bank=2, defers=0)
+
+        # Act
+        vdp = run(built, "_fmv_diag_show", payload)
+
+        # Assert
+        assert all(
+            y + 1 >= 24 and y + 8 <= 167 and x >= 48 and x + 7 <= 207
+            for y, x, _ in sprites(vdp)[FIRST_SPRITE:]
+        )
 
     def test_no_line_carries_more_than_eight_sprites_with_both_overlays_up(self, built):
         # Arrange

@@ -15,7 +15,7 @@
 #define DIAG_SPRITE_END    0xD0u
 #define DIAG_SPRITE_PIXELS 8u
 #define DIAG_X             108u
-#define DIAG_TOP_Y         143u
+#define DIAG_TOP_Y         121u
 #define DIAG_ROW_PITCH     12u
 #define DIAG_MAX_FOUR      9999u
 #define DIAG_MAX_TWO       99u

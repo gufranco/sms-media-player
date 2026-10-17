@@ -25,8 +25,8 @@
 #define OSD_STATE_SPRITE   (OSD_TEXT_TILES + OSD_BAR_SPRITES)
 #define OSD_SAT_Y          0x3F00u
 #define OSD_SAT_XN         0x3F80u
-#define OSD_TEXT_Y         167u
-#define OSD_BAR_Y          179u
+#define OSD_TEXT_Y         145u
+#define OSD_BAR_Y          157u
 #define OSD_TEXT_X         112u
 #define OSD_BAR_X          96u
 #define OSD_STATE_X        96u
