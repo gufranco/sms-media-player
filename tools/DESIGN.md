@@ -171,7 +171,12 @@ guide rendered against the film's own figures. The copying and rendering are
 `fmvcore.bundle`, which the Neo Geo player shares. The fragment links the
 film's bank objects in ascending numeric order, because `ihx2sms` drops banks
 linked alphabetically, and it restores the including Makefile's default goal.
-`examples/cutscene` is a game built from a fresh bundle, and CI builds it.
+A bundle is baked for one console, because a Game Gear film closes each field
+with a 64-byte palette run a Master System replay refuses. It carries that
+console's `target.inc` and a one-line `target.mk` naming it, from which the
+fragment adds `-DTARGET_GG` and picks `SMSlib_GG.lib` for a Game Gear film.
+`examples/cutscene` is a game built from a fresh bundle, and CI builds it from
+a Master System bundle and from a Game Gear one.
 
 ### [`smsggmedia/captions.py`](smsggmedia/captions.py)
 

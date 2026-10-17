@@ -463,7 +463,7 @@ make timing
 | 介面 | 承諾 |
 |:--------|:--------|
 | `python -m smsggmedia.cartridge <source>` | 唯一的指令。它的參數保持名稱及意思不變 |
-| `--bundle DIR` | 輸出一個可直接嵌入的資料夾，其結構保持名稱不變：`DIR/src/`、`DIR/include/fmv/`、`DIR/movie/`、`DIR/fmv.mk`、`DIR/README.md` |
+| `--bundle DIR` | 輸出一個可直接嵌入的資料夾，其結構保持名稱不變：`DIR/src/`、`DIR/include/fmv/`、`DIR/movie/`、`DIR/fmv.mk`、`DIR/target.mk`、`DIR/README.md` |
 | `build/smsggmedia.sms` | 卡帶輸出的位置及其名稱 |
 | 結束碼 | 成功時為 0，失敗時為非 0 |
 

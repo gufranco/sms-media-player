@@ -461,7 +461,7 @@ make rom`、`make analyse`、`make timing
 | 接口 | 承诺 |
 |:--------|:--------|
 | `python -m smsggmedia.cartridge <source>` | 唯一的命令。它的参数保持名称和含义不变 |
-| `--bundle DIR` | 输出一个可直接接入的文件夹，其结构保持名称不变：`DIR/src/`、`DIR/include/fmv/`、`DIR/movie/`、`DIR/fmv.mk`、`DIR/README.md` |
+| `--bundle DIR` | 输出一个可直接接入的文件夹，其结构保持名称不变：`DIR/src/`、`DIR/include/fmv/`、`DIR/movie/`、`DIR/fmv.mk`、`DIR/target.mk`、`DIR/README.md` |
 | `build/smsggmedia.sms` | 卡带输出的位置及其名称 |
 | 退出码 | 成功为 0，失败为非 0 |
 

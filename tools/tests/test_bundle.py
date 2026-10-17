@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from fmvcore.testing import seeded
 
-from smsggmedia import bundle
+from smsggmedia import bundle, target
 
 FAKE = seeded()
 
@@ -46,6 +46,7 @@ class TestWrite:
                 "movie/movie.h",
                 "movie/assets/movie.bin",
                 "fmv.mk",
+                bundle.TARGET_MAKEFILE,
                 "README.md",
             ]
         )
@@ -93,6 +94,57 @@ class TestWrite:
 
         # Assert
         assert str(refused.value) == f"the bundle needs movie.bin, which is not in {assets}"
+
+
+class TestTheTarget:
+    def test_a_master_system_bundle_names_its_target_for_the_fragment(self, tmp_path, film):
+        # Arrange
+        assets, generated, _ = film
+        where = tmp_path / "bundle"
+
+        # Act
+        bundle.write(target=where, assets=assets, generated=generated, figures=figures())
+
+        # Assert
+        assert (where / bundle.TARGET_MAKEFILE).read_text() == "FMV_TARGET := sms\n"
+
+    def test_a_game_gear_bundle_carries_the_game_gear_replay_settings(self, tmp_path, film):
+        # Arrange
+        assets, generated, _ = film
+        where = tmp_path / "bundle"
+
+        # Act
+        bundle.write(
+            target=where,
+            assets=assets,
+            generated=generated,
+            figures=figures(),
+            system=target.GAME_GEAR,
+        )
+
+        # Assert
+        included = (where / "src" / bundle.TARGET_INCLUDE).read_text()
+        assert ((where / bundle.TARGET_MAKEFILE).read_text(), "CLOSE_BYTES = 64" in included) == (
+            "FMV_TARGET := gg\n",
+            True,
+        )
+
+    def test_a_game_gear_guide_names_its_console_and_library(self, tmp_path, film):
+        # Arrange
+        assets, generated, _ = film
+
+        # Act
+        guide = bundle.write(
+            target=tmp_path / "bundle",
+            assets=assets,
+            generated=generated,
+            figures=figures(),
+            system=target.GAME_GEAR,
+        )
+
+        # Assert
+        text = guide.read_text()
+        assert ("# A film for your Game Gear game" in text, "SMSlib_GG.lib" in text) == (True, True)
 
 
 class TestVersion:

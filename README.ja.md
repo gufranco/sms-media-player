@@ -462,7 +462,7 @@ make rom`、`make analyse`、`make timing
 | 対象 | 約束 |
 |:--------|:--------|
 | `python -m smsggmedia.cartridge <source>` | 唯一のコマンド。フラグの名前と意味は変わりません |
-| `--bundle DIR` | 組み込み用フォルダーを出力し、その構成の名前は変わりません。`DIR/src/`、`DIR/include/fmv/`、`DIR/movie/`、`DIR/fmv.mk`、`DIR/README.md` |
+| `--bundle DIR` | 組み込み用フォルダーを出力し、その構成の名前は変わりません。`DIR/src/`、`DIR/include/fmv/`、`DIR/movie/`、`DIR/fmv.mk`、`DIR/target.mk`、`DIR/README.md` |
 | `build/smsggmedia.sms` | カートリッジの出力先とその名前 |
 | 終了コード | 成功時は0、失敗時は0以外 |
 

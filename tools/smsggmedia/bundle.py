@@ -7,6 +7,8 @@ from typing import Final
 
 from fmvcore import bundle
 
+from smsggmedia import target as targets
+
 ROOT: Final = Path(__file__).resolve().parents[2]
 TEMPLATES: Final = Path(__file__).resolve().parent / "templates"
 LIBRARY_SOURCES: Final = (
@@ -29,6 +31,11 @@ LIBRARY_HEADERS: Final = (
 )
 MAKEFILE: Final = "fmv.mk"
 TARGET_INCLUDE: Final = "target.inc"
+TARGET_MAKEFILE: Final = "target.mk"
+LIBRARIES: Final = {
+    targets.MASTER_SYSTEM.name: "SMSlib.lib",
+    targets.GAME_GEAR.name: "SMSlib_GG.lib",
+}
 GUIDE: Final = "README.md"
 GUIDE_TEMPLATE: Final = "bundle_readme.md"
 FILM: Final = "movie.bin"
@@ -49,22 +56,33 @@ class Figures:
     sound: bool
 
 
-def write(*, target: Path, assets: Path, generated: Path, figures: Figures) -> Path:
+def write(
+    *,
+    target: Path,
+    assets: Path,
+    generated: Path,
+    figures: Figures,
+    system: targets.Target = targets.DEFAULT,
+) -> Path:
     bundle.copy_files(LIBRARY_SOURCES, ROOT / "src", target / "src", required=True)
-    bundle.copy_files((TARGET_INCLUDE,), ROOT / "src" / "sms", target / "src", required=True)
+    bundle.copy_files((TARGET_INCLUDE,), ROOT / "src" / system.name, target / "src", required=True)
     bundle.copy_files(
         LIBRARY_HEADERS, ROOT / "include" / "fmv", target / "include" / "fmv", required=True
     )
     bundle.copy_files((HEADER,), generated, target / "movie", required=True)
     bundle.copy_files((FILM,), assets, target / "movie" / "assets", required=True)
     bundle.copy_files((MAKEFILE,), TEMPLATES, target, required=True)
+    (target / TARGET_MAKEFILE).write_text(f"FMV_TARGET := {system.name}\n", encoding="utf-8")
     guide = target / GUIDE
-    guide.write_text(bundle.render(TEMPLATES / GUIDE_TEMPLATE, _fields(figures)), encoding="utf-8")
+    fields = _fields(figures, system)
+    guide.write_text(bundle.render(TEMPLATES / GUIDE_TEMPLATE, fields), encoding="utf-8")
     return guide
 
 
-def _fields(figures: Figures) -> dict[str, object]:
+def _fields(figures: Figures, system: targets.Target) -> dict[str, object]:
     return {
+        "console": system.console,
+        "library": LIBRARIES[system.name],
         "seconds": f"{figures.seconds:.1f}",
         "frames": figures.frames,
         "fields": figures.fields,

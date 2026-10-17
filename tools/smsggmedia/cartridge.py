@@ -420,7 +420,11 @@ def _write_bundle(
         sound=baked.sound_writes > 0,
     )
     guide = bundle.write(
-        target=args.bundle, assets=args.assets, generated=args.generated, figures=figures
+        target=args.bundle,
+        assets=args.assets,
+        generated=args.generated,
+        figures=figures,
+        system=args.target,
     )
     print(f"bundle written to {args.bundle}; start with {guide}")
 

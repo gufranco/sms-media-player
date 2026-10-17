@@ -1,4 +1,4 @@
-# A film for your Master System game
+# A film for your {console} game
 
 This folder plays one baked film inside your own devkitSMS project. It was written against the film it carries: {seconds} seconds, {frames} frames over {fields} fields, {banks} banks of 16 KB, a picture of {columns} by {rows} cells, {keys} seek points, sound {sound}. Library version {version}.
 
@@ -11,6 +11,7 @@ This folder plays one baked film inside your own devkitSMS project. It was writt
 | `movie/movie.h` | The film's figures: banks, frames, fields, seek points |
 | `movie/assets/movie.bin` | The baked film, split into banks by `assets2banks` |
 | `fmv.mk` | A make fragment that builds the library and the film's banks |
+| `target.mk` | The console the film was baked for, which picks the replay's settings and `{library}` |
 
 ## Build it
 
@@ -23,7 +24,7 @@ include $(FMV_DIR)/fmv.mk
 
 game.ihx: main.rel $(FMV_OBJECTS) $(FMV_ASSET_HDR)
 	sdcc -mz80 --sdcccall 1 --no-std-crt0 --data-loc 0xC000 $(FMV_BANK_FLAGS) -o $@ \
-	    $(CRT0)/crt0_sms.rel main.rel $(FMV_OBJECTS) $(FMV_BANK_RELS) $(SMSLIB)/SMSlib.lib
+	    $(CRT0)/crt0_sms.rel main.rel $(FMV_OBJECTS) $(FMV_BANK_RELS) $(SMSLIB)/$(FMV_SMSLIB_LIB)
 ```
 
 `FMV_FIRST_BANK` is the first 16 KB bank the film may take. Put it after your own code and data.

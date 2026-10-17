@@ -621,7 +621,7 @@ They are the surfaces that will be promised from 1.0:
 | Surface | Promise |
 |:--------|:--------|
 | `python -m smsggmedia.cartridge <source>` | The one command. Its flags keep their names and meanings |
-| `--bundle DIR` | Emits a drop-in folder whose shape keeps its names: `DIR/src/`, `DIR/include/fmv/`, `DIR/movie/`, `DIR/fmv.mk`, `DIR/README.md` |
+| `--bundle DIR` | Emits a drop-in folder whose shape keeps its names: `DIR/src/`, `DIR/include/fmv/`, `DIR/movie/`, `DIR/fmv.mk`, `DIR/target.mk`, `DIR/README.md` |
 | `build/smsggmedia.sms` | Where the cartridge lands, and what it is called |
 | Exit codes | 0 on success, and non-zero on failure |
 

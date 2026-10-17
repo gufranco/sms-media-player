@@ -12,7 +12,7 @@ build/main.rel: main.c $(FMV_ASSET_HDR)
 
 build/cutscene.ihx: build/main.rel $(FMV_OBJECTS)
 	sdcc -mz80 --sdcccall 1 --no-std-crt0 --data-loc 0xC000 $(FMV_BANK_FLAGS) -o $@ \
-	    $(CRT0)/crt0_sms.rel build/main.rel $(FMV_OBJECTS) $(FMV_BANK_RELS) $(SMSLIB)/SMSlib.lib
+	    $(CRT0)/crt0_sms.rel build/main.rel $(FMV_OBJECTS) $(FMV_BANK_RELS) $(SMSLIB)/$(FMV_SMSLIB_LIB)
 
 build/cutscene.sms: build/cutscene.ihx
 	ihx2sms $< $@

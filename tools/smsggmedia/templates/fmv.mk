@@ -2,13 +2,16 @@ FMV_CALLER_GOAL := $(.DEFAULT_GOAL)
 FMV_DIR ?= fmv
 FMV_BUILD ?= build/fmv
 FMV_FIRST_BANK ?= 2
+include $(FMV_DIR)/target.mk
+FMV_TARGET_FLAGS := $(if $(filter gg,$(FMV_TARGET)),-DTARGET_GG)
+FMV_SMSLIB_LIB := $(if $(filter gg,$(FMV_TARGET)),SMSlib_GG.lib,SMSlib.lib)
 FMV_C_SOURCES := mediaplayer screen assert seek
 FMV_ASM_SOURCES := replay psg vdp
 FMV_OBJECTS := $(FMV_C_SOURCES:%=$(FMV_BUILD)/%.rel) $(FMV_ASM_SOURCES:%=$(FMV_BUILD)/%.rel)
 FMV_ASSETS := $(FMV_BUILD)/assets
 FMV_ASSET_HDR := $(FMV_ASSETS)/assets.h
 FMV_INCLUDES := -I$(FMV_DIR)/include -I$(FMV_DIR)/movie -I$(FMV_ASSETS)
-FMV_SDCC_FLAGS := -mz80 --sdcccall 1 --std-c23 $(FMV_INCLUDES) -I$(SMSLIB)/src
+FMV_SDCC_FLAGS := -mz80 --sdcccall 1 --std-c23 $(FMV_INCLUDES) -I$(SMSLIB)/src $(FMV_TARGET_FLAGS)
 
 $(FMV_ASSET_HDR): $(FMV_DIR)/movie/assets/movie.bin
 	rm -rf $(FMV_ASSETS)

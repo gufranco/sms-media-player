@@ -15,6 +15,7 @@ endif
 ROM          := build/$(ROM_NAME).$(TARGET)
 DOCKER_IMAGE := $(PROJECT)-toolchain
 DOCKER_USER  := $(shell id -u):$(shell id -g)
+EXAMPLE_FMV_DIR ?= ../../build/bundle
 
 SRC_DIR      := src
 INC_DIR      := include
@@ -88,7 +89,7 @@ timing:
 	@echo "timing runs on the host, not in the image: see the outer target"
 
 example:
-	$(MAKE) --no-print-directory -C examples/cutscene
+	$(MAKE) --no-print-directory -C examples/cutscene FMV_DIR=$(EXAMPLE_FMV_DIR)
 
 analyse:
 	cppcheck --std=c23 --enable=warning,style,performance,portability \
@@ -123,7 +124,7 @@ timing:
 
 example: image
 	docker run --rm --user $(DOCKER_USER) -e HOME=/tmp -v "$(CURDIR):/work" -w /work $(DOCKER_IMAGE) \
-	    make --no-print-directory example
+	    make --no-print-directory example EXAMPLE_FMV_DIR=$(EXAMPLE_FMV_DIR)
 
 hooks:
 	git config core.hooksPath .githooks

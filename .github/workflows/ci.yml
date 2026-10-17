@@ -161,6 +161,13 @@ jobs:
         run: >-
           uv --project tools run python -m smsggmedia.cartridge
           build/ci-source.mp4 --duration 2 --fps 8 --target gg
+          --bundle build/bundle-gg
+
+      - name: Build a game from the Game Gear bundle
+        run: |
+          set -euo pipefail
+          rm -rf examples/cutscene/build
+          make example EXAMPLE_FMV_DIR=../../build/bundle-gg
 
       - name: VDP write spacing in the Game Gear build
         run: >-
